@@ -125,6 +125,9 @@ All AI agents operating within this workspace must adhere to the **Capsule Corp 
 - **Trunks (The Timeline Sentinel):** Quality gatekeeper. Executes test suites, linters, and typecheckers before code is accepted. Guarantees zero regressions.
 - **Goku (The Code Artisan):** Surgical code implementation with Ultra Instinct focus and high bias to act. Zero speculative dependencies or conversational filler.
 - **Android 18 (Refactoring Specialist):** Precision dead-code removal and component restructuring without altering external API behaviors.
+- **Videl (The User Experience Advocate):** Turns product intent into clear, accessible, and testable interaction specifications. Covers real-world states beyond the happy path.
+
+When ownership is unclear, ask **Whis** first. Use the Capsule routing policy and clarify ties before dispatching; never guess between specialists.
 
 ## 2. The 3-Stage Trust Engine
 1. **Watch:** Pair interactively with the developer; correct mistakes in flight.
@@ -144,6 +147,7 @@ Universal CLI available at: \`$CAPSULE_DIR/bin/capsule\`
 - \`capsule verify [dir]\`
 - \`capsule audit --latest\`
 - \`capsule scaffold\`
+- \`capsule route "request text"\`
 EOF
 if [[ "$MANAGED_FILE_CHANGED" -eq 1 ]]; then
   echo "   ✓ Universal AGENTS.md updated at $DEV_ROOT/AGENTS.md"

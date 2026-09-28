@@ -106,6 +106,18 @@ bots:
       - "replace_file_content"
     verification_gate: "PRD has explicit acceptance criteria and API schemas with zero scope creep."
 
+  videl:
+    name: "videl"
+    alias: "Videl (The User Experience Advocate)"
+    role: "UX Researcher & Interaction Designer"
+    job_to_be_done: "Turns product intent into clear, accessible, and testable user experiences."
+    model_tier: "pro"
+    allowed_tools:
+      - "view_file"
+      - "write_to_file"
+      - "replace_file_content"
+    verification_gate: "Every flow has measurable success criteria, complete state coverage, and testable accessibility requirements."
+
   vegeta:
     name: "vegeta"
     alias: "Vegeta (DevOps Commander)"

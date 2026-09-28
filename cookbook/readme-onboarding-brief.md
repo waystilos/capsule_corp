@@ -81,7 +81,7 @@ Forced replacements create timestamped backups. Do not run global sync on a shar
 
 #### Optional package installation
 
-The repository should provide a standard Python package entry point for developers who prefer a global command:
+The repository provides a standard Python package entry point for developers who prefer a global command:
 
 ```bash
 python3 -m pip install --user /path/to/capsule-corp
@@ -95,7 +95,7 @@ pipx install /path/to/capsule-corp
 capsule list
 ```
 
-Until package metadata is added, use `./bin/capsule` directly.
+The local `./bin/capsule` path remains available for source checkouts.
 
 ## Goku handoff
 
@@ -108,10 +108,9 @@ Implement the README section above and make the documented future path true.
 3. README documents local execution, temporary PATH setup, and permanent PATH setup without editing shell files automatically.
 4. README distinguishes `init` from `sync` and documents `--force` and `--dry-run` safety behavior.
 5. README documents the exact `test`, `verify`, and `security` commands and their expected exit-code requirement.
-6. Add `pyproject.toml` or equivalent package metadata so the documented `pip`/`pipx` install works, while preserving `./bin/capsule`.
-7. Add a `capsule doctor` command or revise the README until it no longer promises a command that does not exist.
-8. Add or update tests for the package entry point, missing optional dependencies, PATH guidance, and safe first-run behavior.
-9. Run `capsule test`, `capsule verify`, and `capsule security` after the README and packaging changes.
+6. Add a `capsule doctor` command or revise the README until it no longer promises a command that does not exist.
+7. Add or update tests for the package entry point, missing optional dependencies, PATH guidance, and safe first-run behavior.
+8. Run `capsule test`, `capsule verify`, and `capsule security` after the README and packaging changes.
 
 ### Non-goals
 

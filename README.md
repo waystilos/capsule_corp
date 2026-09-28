@@ -40,6 +40,16 @@ Project-specific tools such as `pytest`, `npm`, `cargo`, or `go` are only needed
 
 All three commands should exit with code 0 before treating the local setup as ready.
 
+### Route a request when you are unsure
+
+Ask Whis first, or inspect the deterministic routing policy directly:
+
+```bash
+capsule route "We need an accessible onboarding flow with good error states"
+```
+
+The command returns one owner and the expected handoff chain. If the request is ambiguous, it returns `needs_clarification` and assigns it to Whis rather than guessing.
+
 ### Windows quick start
 
 From PowerShell or Command Prompt, use the Windows launcher:
@@ -69,6 +79,30 @@ capsule list
 ```
 
 To make that permanent, add the equivalent `export PATH=...` line to your shell startup file. The local `./bin/capsule` path always remains available.
+
+### Optional global installation
+
+Capsule is also a Python package. Use `pipx` for an isolated global command when it is available:
+
+```bash
+pipx install /path/to/capsule-corp
+capsule list
+```
+
+Or install it into your user Python environment:
+
+```bash
+python3 -m pip install --user /path/to/capsule-corp
+```
+
+On Windows, use the Python launcher:
+
+```powershell
+py -m pip install --user C:\path\to\capsule-corp
+capsule list
+```
+
+The package provides the same `capsule init --tool ...` behavior on macOS, Windows, and Linux. The source checkout and `./bin/capsule`/`bin\capsule.cmd` launchers remain supported.
 
 ### Connect a project to Copilot
 
@@ -113,6 +147,7 @@ For detailed situation-based workflows, see the [Capsule Corp Cookbook](cookbook
 | Character | Role | Operational Focus | Primary Job To Be Done (JTBD) |
 | :--- | :--- | :--- | :--- |
 | **Bulma**<br>`Chief Product Architect` | **Product Architect & Spec Maker** | MVP Scoping & API Contracts | Translates founder ideas into sharp PRDs, user flows, and API specifications. Cuts non-essential feature bloat. |
+| **Videl**<br>`User Experience Advocate` | **UX Researcher & Interaction Designer** | Usability, Accessibility & Interaction Design | Turns product intent into clear, accessible, and testable user experiences. Covers real-world states beyond the happy path. |
 | **Piccolo**<br>`The Tactical Lead` | **Engineering Lead & Decomposer** | Strategy & Orchestration | Deconstructs feature epics into atomic task trees. Orchestrates parallel worker agents and coordinates verification. Never writes raw code directly. |
 | **Goku**<br>`The Code Artisan` | **Frontline Implementation Worker** | Ultra Instinct Execution | Surgical code implementation with Ultra Instinct focus and high bias to act. Zero speculative dependencies or conversational filler. |
 | **Android 17**<br>`The Security Sentinel` | **Security & Compliance Sentinel** | Zero-Trust & Vulnerability Audit | Inspects codebases and PRs for exposed secrets, OWASP vulnerabilities, injection risks, and dependency flaws. |
@@ -195,7 +230,7 @@ Then prompt Claude:
 
 ### D. In Google Antigravity / Gemini
 In your chat or CLI session:
-* The subagents `bulma`, `piccolo`, `goku`, `android-17`, `trunks`, `vegeta`, `android-18`, `dr-gero`, and `whis` are natively registered.
+* The subagents `bulma`, `videl`, `piccolo`, `goku`, `android-17`, `trunks`, `vegeta`, `android-18`, `dr-gero`, and `whis` are natively registered.
 * Simply say: *"Bulma, scope this feature"* or *"Android 17, audit this codebase for security"*.
 
 ---
@@ -262,6 +297,7 @@ capsule-corp/
 │   └── copilot-instructions.md # GitHub Copilot directives
 ├── bots/                     # Persona specifications (One Job, One Voice)
 │   ├── bulma.md              # Bulma: Product Architect & Rapid Prototyper
+│   ├── videl.md              # Videl: UX Researcher & Interaction Designer
 │   ├── piccolo.md            # Piccolo: Tactical Lead & Task Decomposer
 │   ├── goku.md               # Goku: Frontline Code Artisan
 │   ├── android_17.md         # Android 17: Security & Compliance Sentinel
@@ -280,6 +316,9 @@ capsule-corp/
 │   ├── scaffold_bot.py       # Bot creation script
 │   ├── audit_transcripts.py  # JSONL transcript analysis engine
 │   └── verify_project.py     # Multi-ecosystem test runner & diff scanner
+├── src/capsule/              # Installable cross-platform CLI package
+│   └── cli.py
+├── pyproject.toml             # Python package metadata and `capsule` entry point
 ├── tests/
 │   └── test_cohort.py        # Unit tests for Capsule Corp
 ├── config/

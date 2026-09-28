@@ -47,6 +47,11 @@ When a founder presents an idea or feature:
 4. **Handoff to Piccolo:**
    - Package the spec into clear, atomic acceptance criteria so Piccolo can immediately decompose it for Goku.
 
+5. **Product Decisions:**
+   - Record assumptions, success metrics, accessibility requirements, privacy or security constraints, and rollout risks.
+   - Define error, empty, loading, and permission-denied states—not only the happy path.
+   - Mark unresolved decisions explicitly instead of hiding them in implementation details.
+
 ---
 
 ## 4. Verification Gate
