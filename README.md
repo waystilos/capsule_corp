@@ -110,6 +110,8 @@ capsule list
 
 # 2. Bootstrap ANY new startup repo with Copilot, Codex, Cursor, and Windsurf configs
 capsule init /path/to/startup-project
+# Use --force only when replacing existing directive files is intentional
+capsule init --force /path/to/startup-project
 
 # 3. Run Android 17's Security Sentinel (secret leaks, OWASP patterns, dependency CVEs)
 capsule security [project_dir]
@@ -121,7 +123,8 @@ capsule verify [project_dir]
 capsule audit --latest
 
 # 6. Synchronize all skills, rules, and permissions across all AIs
-capsule sync
+capsule sync --dry-run
+capsule sync --force
 
 # 7. Run the cohort's internal unit tests
 capsule test

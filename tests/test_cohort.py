@@ -6,15 +6,19 @@ Verifies registry schema, Dr. Gero's auditor, Trunks' sentinel, and bot scaffold
 
 import unittest
 from pathlib import Path
+import subprocess
 import yaml
 import sys
+import tempfile
 
 CAPSULE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(CAPSULE_ROOT / "scripts"))
 
-from scaffold_bot import generate_bot_markdown
+from init_project import init_project
+from scaffold_bot import generate_bot_markdown, update_registry_yaml, validate_bot_name
 from audit_transcripts import analyze_transcript
-from verify_project import SUSPICIOUS_DIFF_PATTERNS
+from security_audit import scan_for_secrets
+from verify_project import SUSPICIOUS_DIFF_PATTERNS, audit_git_diff
 
 
 class TestCapsuleCorpRegistry(unittest.TestCase):
@@ -50,6 +54,25 @@ class TestDrGeroScaffolder(unittest.TestCase):
         self.assertIn("## 2. Allowed Tools", md)
         self.assertIn("## 3. Execution Directives", md)
         self.assertIn("## 4. Verification Gate", md)
+
+    def test_bot_names_are_safe_and_registry_values_are_escaped(self):
+        with self.assertRaises(ValueError):
+            validate_bot_name("../../outside")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            registry = Path(temp_dir) / "registry.yaml"
+            registry.write_text("bots:\n", encoding="utf-8")
+            update_registry_yaml(
+                registry_path=registry,
+                name="safe-bot",
+                alias='Alias: "quoted"',
+                role="Testing",
+                jtbd="Run checks",
+                tools=["run_command"],
+                verification="exit code 0",
+            )
+            data = yaml.safe_load(registry.read_text(encoding="utf-8"))
+            self.assertEqual(data["bots"]["safe_bot"]["alias"], 'Alias: "quoted"')
 
 
 class TestDrGeroAuditor(unittest.TestCase):
@@ -87,6 +110,55 @@ class TestTrunksSentinel(unittest.TestCase):
         self.assertIn("Git merge conflict marker (mid)", detected_issues)
         self.assertIn("Git merge conflict marker (end)", detected_issues)
         self.assertIn("Exposed OpenAI / Service Secret Key", detected_issues)
+
+    def test_cli_propagates_failed_child_exit_code(self):
+        result = subprocess.run(
+            [sys.executable, str(CAPSULE_ROOT / "bin" / "capsule"), "verify", "--test-cmd", "false"],
+            cwd=CAPSULE_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 1)
+
+    def test_verifier_scans_untracked_files_in_fresh_repositories(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            secret = "sk-" + "b" * 24
+            (root / "new_config.py").write_text(f"value = '{secret}'\n", encoding="utf-8")
+
+            issues = audit_git_diff(root)
+
+            self.assertTrue(any("OpenAI / Service Secret Key" in issue["description"] for issue in issues))
+
+
+class TestProjectSafety(unittest.TestCase):
+    def test_security_scan_does_not_skip_test_named_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            secret = "sk-" + "a" * 24
+            (root / "contest.py").write_text(f"value = '{secret}'\n", encoding="utf-8")
+            (root / "test_fixture.py").write_text(f"value = '{secret}'\n", encoding="utf-8")
+
+            findings = scan_for_secrets(root)
+            files = {finding["file"] for finding in findings}
+            self.assertEqual(files, {"contest.py", "test_fixture.py"})
+
+    def test_initializer_preserves_existing_directives(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            github_dir = root / ".github"
+            github_dir.mkdir()
+            existing = "project-specific instructions\n"
+            (github_dir / "copilot-instructions.md").write_text(existing, encoding="utf-8")
+
+            init_project(root)
+
+            self.assertEqual(
+                (github_dir / "copilot-instructions.md").read_text(encoding="utf-8"),
+                existing,
+            )
 
 
 class TestAndroid17Security(unittest.TestCase):

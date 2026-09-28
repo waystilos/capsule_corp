@@ -14,7 +14,6 @@ Usage:
   capsule test              Run unit tests for Capsule Corp scripts
 """
 
-import os
 import sys
 import subprocess
 from pathlib import Path
@@ -30,15 +29,23 @@ def cmd_list():
         print(f"Error: {REGISTRY_FILE} not found.", file=sys.stderr)
         sys.exit(1)
 
-    import yaml
     try:
+        import yaml
+    except ImportError:
+        yaml = None
+
+    try:
+        if yaml is None:
+            raise ImportError
         data = yaml.safe_load(REGISTRY_FILE.read_text(encoding="utf-8"))
-    except Exception:
+        if not isinstance(data, dict):
+            raise ValueError("registry root must be a mapping")
+    except (ImportError, OSError, ValueError) + ((yaml.YAMLError,) if yaml is not None else ()):
         # Fallback simple line parser if pyyaml not installed
         print("Capsule Corp Cohort Registry:")
         for line in REGISTRY_FILE.read_text(encoding="utf-8").splitlines():
             print(f"  {line}")
-        return
+        return 0
 
     bots = data.get("bots", {})
     print("==========================================================================================")
@@ -54,44 +61,50 @@ def cmd_list():
         print(f"{name:<16} | {alias[:32]:<32} | {tier:<10} | {role}")
     print("==========================================================================================")
     print(f"Total Agents: {len(bots)} | Centralized at: {CAPSULE_ROOT}")
+    return 0
+
+
+def run_child(command):
+    """Run a delegated command and preserve its exit status."""
+    return subprocess.run(command).returncode
 
 
 def cmd_scaffold(args):
     script = SCRIPTS_DIR / "scaffold_bot.py"
-    subprocess.run([sys.executable, str(script)] + args)
+    return run_child([sys.executable, str(script)] + args)
 
 
 def cmd_audit(args):
     script = SCRIPTS_DIR / "audit_transcripts.py"
-    subprocess.run([sys.executable, str(script)] + args)
+    return run_child([sys.executable, str(script)] + args)
 
 
 def cmd_verify(args):
     script = SCRIPTS_DIR / "verify_project.py"
-    subprocess.run([sys.executable, str(script)] + args)
+    return run_child([sys.executable, str(script)] + args)
 
 
 def cmd_security(args):
     script = SCRIPTS_DIR / "security_audit.py"
-    subprocess.run([sys.executable, str(script)] + args)
+    return run_child([sys.executable, str(script)] + args)
 
 
 def cmd_init(args):
     script = SCRIPTS_DIR / "init_project.py"
-    subprocess.run([sys.executable, str(script)] + args)
+    return run_child([sys.executable, str(script)] + args)
 
 
-def cmd_sync():
+def cmd_sync(args):
     script = CONFIG_DIR / "sync_all_ais.sh"
-    subprocess.run(["bash", str(script)])
+    return run_child(["bash", str(script)] + args)
 
 
 def cmd_test():
     test_dir = CAPSULE_ROOT / "tests"
-    subprocess.run(
+    return subprocess.run(
         [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-p", "test_*.py", "-v"],
         cwd=str(CAPSULE_ROOT)
-    )
+    ).returncode
 
 
 def main():
@@ -103,25 +116,27 @@ def main():
     extra_args = sys.argv[2:]
 
     if subcommand == "list":
-        cmd_list()
+        exit_code = cmd_list()
     elif subcommand == "scaffold":
-        cmd_scaffold(extra_args)
+        exit_code = cmd_scaffold(extra_args)
     elif subcommand == "audit":
-        cmd_audit(extra_args)
+        exit_code = cmd_audit(extra_args)
     elif subcommand == "verify":
-        cmd_verify(extra_args)
+        exit_code = cmd_verify(extra_args)
     elif subcommand == "security":
-        cmd_security(extra_args)
+        exit_code = cmd_security(extra_args)
     elif subcommand == "init":
-        cmd_init(extra_args)
+        exit_code = cmd_init(extra_args)
     elif subcommand == "sync":
-        cmd_sync()
+        exit_code = cmd_sync(extra_args)
     elif subcommand == "test":
-        cmd_test()
+        exit_code = cmd_test()
     else:
         print(f"Unknown subcommand: '{subcommand}'\n", file=sys.stderr)
         print(__doc__)
         sys.exit(1)
+
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
