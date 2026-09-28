@@ -91,5 +91,20 @@ class TestTrunksSentinel(unittest.TestCase):
         self.assertIn("Exposed OpenAI / Service Secret Key", detected_issues)
 
 
+class TestAndroid17Security(unittest.TestCase):
+    def test_security_patterns_detect_eval_and_injection(self):
+        from security_audit import CODE_VULN_PATTERNS
+        dirty_code = """
+        eval(user_input)
+        f"SELECT * FROM users WHERE id = {user_id}"
+        """
+        detected = []
+        for pattern, desc in CODE_VULN_PATTERNS:
+            if pattern.search(dirty_code):
+                detected.append(desc)
+        self.assertIn("Dangerous dynamic code execution (eval)", detected)
+        self.assertIn("Possible SQL injection in formatted string query", detected)
+
+
 if __name__ == "__main__":
     unittest.main()

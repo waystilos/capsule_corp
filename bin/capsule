@@ -8,6 +8,8 @@ Usage:
   capsule scaffold ...      Dr. Gero's tool to create a new specialized agent
   capsule audit [--latest]  Dr. Gero's transcript auditor to detect friction & patch prompts
   capsule verify [dir]      Trunks' verification gate (tests + diff integrity check)
+  capsule security [dir]    Android 17's security scan (secrets, CVEs, static code audit)
+  capsule init [dir]        Bootstrap any startup repo with Copilot, Codex, Cursor configs
   capsule sync              Sync skills and rules globally across all AIs
   capsule test              Run unit tests for Capsule Corp scripts
 """
@@ -69,6 +71,16 @@ def cmd_verify(args):
     subprocess.run([sys.executable, str(script)] + args)
 
 
+def cmd_security(args):
+    script = SCRIPTS_DIR / "security_audit.py"
+    subprocess.run([sys.executable, str(script)] + args)
+
+
+def cmd_init(args):
+    script = SCRIPTS_DIR / "init_project.py"
+    subprocess.run([sys.executable, str(script)] + args)
+
+
 def cmd_sync():
     script = CONFIG_DIR / "sync_all_ais.sh"
     subprocess.run(["bash", str(script)])
@@ -98,6 +110,10 @@ def main():
         cmd_audit(extra_args)
     elif subcommand == "verify":
         cmd_verify(extra_args)
+    elif subcommand == "security":
+        cmd_security(extra_args)
+    elif subcommand == "init":
+        cmd_init(extra_args)
     elif subcommand == "sync":
         cmd_sync()
     elif subcommand == "test":
