@@ -30,7 +30,7 @@ The output should say that `./bin/capsule` is the supported local runner and sho
 
 ### Optional global command
 
-Add a standard Python package entry point so developers can choose an isolated install:
+The repository now provides a standard Python package entry point so developers can choose an isolated install:
 
 ```bash
 python3 -m pip install --user /path/to/capsule-corp

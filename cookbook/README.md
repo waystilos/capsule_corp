@@ -8,6 +8,8 @@ For the exact root README onboarding handoff, see the [Bulma README brief](readm
 
 For the terminology cleanup and crew ownership, see the [crew terminology brief](crew-terminology-brief.md).
 
+When you are unsure who to ask, use the [request routing recipe](situations/10-routing-a-request.md) or ask Whis first.
+
 ## The five-minute start
 
 From this repository:
@@ -32,13 +34,15 @@ The initializer installs only the selected integration and preserves existing AI
 
 ## The standard working loop
 
-1. Ask **Bulma** to turn the idea into a small PRD with acceptance criteria.
-2. Ask **Piccolo** to decompose the work into bounded tasks.
-3. Ask **Goku** to implement one task at a time.
-4. Ask **Android 17** to inspect secrets, dependencies, and security risks.
-5. Ask **Trunks** to run tests and inspect the diff.
-6. Ask **Android 18** only when the goal is behavior-preserving cleanup.
-7. Ask **Vegeta** for deployment, CI, database, or performance work.
+1. Ask **Whis** when ownership or the next step is unclear.
+2. Ask **Bulma** to turn the idea into a small PRD with acceptance criteria.
+3. Ask **Videl** to validate user journeys, accessibility, and non-happy-path states.
+4. Ask **Piccolo** to decompose the work into bounded tasks.
+5. Ask **Goku** to implement one task at a time.
+6. Ask **Android 17** to inspect secrets, dependencies, and security risks.
+7. Ask **Trunks** to run tests and inspect the diff.
+8. Ask **Android 18** only when the goal is behavior-preserving cleanup.
+9. Ask **Vegeta** for deployment, CI, database, or performance work.
 
 Use the same handoff pattern every time:
 

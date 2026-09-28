@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "capsule-corp"
+version = "1.0.0"
+description = "Cross-platform Capsule Corp agent cohort CLI"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "PyYAML>=6.0",
+]
+
+[project.scripts]
+capsule = "capsule.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src", "scripts" = "scripts"}
+packages = ["capsule", "scripts"]
+include-package-data = true
+
+[tool.setuptools.data-files]
+"share/capsule-corp" = ["registry.yaml"]
+"share/capsule-corp/config" = ["config/routing.yaml"]
+"share/capsule-corp/.github" = [".github/copilot-instructions.md"]
+"share/capsule-corp/bots" = ["bots/*.md"]
+"share/capsule-corp/skills/audit-transcripts" = ["skills/audit-transcripts/SKILL.md"]
+"share/capsule-corp/skills/scaffold-agent" = ["skills/scaffold-agent/SKILL.md"]
+"share/capsule-corp/skills/verification-gate" = ["skills/verification-gate/SKILL.md"]

@@ -1,0 +1,48 @@
+version: "1.0.0"
+fallback: whis
+routes:
+  - intent: product_strategy
+    owner: bulma
+    keywords: [product, mvp, prd, roadmap, scope, api, requirements, feature brief]
+    handoff: [bulma, videl, piccolo]
+    avoid: [implementation, usability, accessibility]
+  - intent: user_experience
+    owner: videl
+    keywords: [ux, usability, user experience, accessibility, onboarding, wireframe, interaction, journey, empty state, error state]
+    handoff: [videl, bulma, piccolo]
+    avoid: [api schema, database migration, deployment]
+  - intent: task_planning
+    owner: piccolo
+    keywords: [plan, decompose, epic, task tree, orchestrate, break down]
+    handoff: [piccolo, goku, trunks]
+    avoid: [write code, implement]
+  - intent: implementation
+    owner: goku
+    keywords: [implement, code, fix, bug, build, feature, test]
+    handoff: [goku, trunks]
+    avoid: [security audit, product scope, deploy]
+  - intent: verification
+    owner: trunks
+    keywords: [verify, test, tests, lint, typecheck, regression, ci, quality]
+    handoff: [trunks]
+    avoid: [implement, refactor]
+  - intent: security
+    owner: android-17
+    keywords: [security, vulnerability, secret, cve, owasp, auth, injection, dependency audit]
+    handoff: [android-17, trunks]
+    avoid: [design, product scope]
+  - intent: refactoring
+    owner: android-18
+    keywords: [refactor, technical debt, dead code, cleanup, simplify, duplicate]
+    handoff: [android-18, trunks]
+    avoid: [new feature, product scope]
+  - intent: infrastructure
+    owner: vegeta
+    keywords: [docker, ci/cd, pipeline, deploy, infrastructure, database, migration, performance, index]
+    handoff: [vegeta, android-17, trunks]
+    avoid: [frontend, user experience]
+  - intent: agent_design
+    owner: dr-gero
+    keywords: [agent, bot, skill, prompt, persona, transcript, scaffold]
+    handoff: [dr-gero, trunks]
+    avoid: [product feature]

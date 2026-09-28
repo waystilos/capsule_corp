@@ -5,6 +5,7 @@ Built for Capsule Corp's own agent engineering system
 
 Usage:
   capsule list              List all registered cohort bots and their specs
+  capsule route "request"   Route a request safely through the cohort
   capsule scaffold ...      Dr. Gero's tool to create a new specialized agent
   capsule audit [--latest]  Dr. Gero's transcript auditor to detect friction & patch prompts
   capsule verify [dir]      Trunks' verification gate (tests + diff integrity check)
@@ -64,6 +65,11 @@ def cmd_list():
     return 0
 
 
+def cmd_route(args):
+    script = SCRIPTS_DIR / "route_request.py"
+    return run_child([sys.executable, str(script)] + args)
+
+
 def run_child(command):
     """Run a delegated command and preserve its exit status."""
     return subprocess.run(command).returncode
@@ -117,6 +123,8 @@ def main():
 
     if subcommand == "list":
         exit_code = cmd_list()
+    elif subcommand == "route":
+        exit_code = cmd_route(extra_args)
     elif subcommand == "scaffold":
         exit_code = cmd_scaffold(extra_args)
     elif subcommand == "audit":

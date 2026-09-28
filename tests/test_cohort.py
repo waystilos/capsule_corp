@@ -19,6 +19,7 @@ from scaffold_bot import generate_bot_markdown, update_registry_yaml, validate_b
 from audit_transcripts import analyze_transcript
 from security_audit import scan_for_secrets
 from verify_project import SUSPICIOUS_DIFF_PATTERNS, audit_git_diff
+from route_request import route_request
 
 
 class TestCapsuleCorpRegistry(unittest.TestCase):
@@ -35,6 +36,15 @@ class TestCapsuleCorpRegistry(unittest.TestCase):
             self.assertIn("job_to_be_done", details, f"{bot_id} missing job_to_be_done")
             self.assertIn("allowed_tools", details, f"{bot_id} missing allowed_tools")
             self.assertIn("verification_gate", details, f"{bot_id} missing verification_gate")
+
+    def test_routing_uses_specialist_and_whis_for_ambiguity(self):
+        ux = route_request("design an accessible onboarding flow with useful error states")
+        self.assertEqual(ux["owner"], "videl")
+        self.assertEqual(ux["status"], "routed")
+
+        ambiguous = route_request("help me with this project")
+        self.assertEqual(ambiguous["owner"], "whis")
+        self.assertEqual(ambiguous["status"], "needs_clarification")
 
 
 class TestDrGeroScaffolder(unittest.TestCase):

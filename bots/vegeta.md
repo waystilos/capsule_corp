@@ -46,6 +46,11 @@ You handle the **Gravity Chamber**: containerization, cloud infrastructure, CI/C
    - Enforce 12-factor app configuration via environment variables.
    - Structured logging (JSON format) and health check endpoints (`/healthz`).
 
+5. **Change Safety:**
+   - Prefer dry runs, plans, backups, and staged rollouts before destructive infrastructure changes.
+   - Never run production migrations, deploys, or credential changes without explicit authorization and a rollback plan.
+   - Report provider assumptions, required secrets, cost-impacting changes, and any validation that could not be performed.
+
 ---
 
 ## 4. Verification Gate

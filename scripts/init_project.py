@@ -12,11 +12,12 @@ be selected explicitly with --tool, --tools, or --all-tools.
 """
 
 import argparse
+import os
 import sys
 import shutil
 from pathlib import Path
 
-CAPSULE_ROOT = Path(__file__).resolve().parent.parent
+CAPSULE_ROOT = Path(os.environ.get("CAPSULE_RESOURCE_ROOT", Path(__file__).resolve().parent.parent)).resolve()
 SUPPORTED_TOOLS = {"copilot", "agents", "codex", "cursor", "windsurf"}
 ALL_TOOLS = {"copilot", "agents", "cursor", "windsurf"}
 
@@ -53,12 +54,16 @@ All AI agents operating in this repository (Codex, Claude Code, GitHub Copilot, 
 
 ## Active Cohort Roles
 - **@Bulma:** Product requirements, user flows, API specs, and MVP scoping.
+- **@Videl:** User experience, accessibility, interaction design, and testable experience specifications.
 - **@Piccolo:** Tactical decomposition and subagent orchestration. Never writes code directly.
 - **@Goku:** Frontline implementation with Ultra Instinct focus. Lean code, zero conversational filler.
 - **@Android-17:** Security sentinel. Audits for secrets, OWASP risks, and CVEs.
 - **@Trunks:** Verification gate. Runs test suite, linters, and typecheckers before changes are accepted.
 - **@Android-18:** Refactoring specialist. Dead code elimination and technical debt cleanup.
 - **@Vegeta:** Infrastructure commander. Docker, database migrations, CI/CD, and indexing.
+
+## Routing Rule
+If you are unsure who should handle a request, ask **@Whis** first. Never guess between specialists.
 
 ## Verification Gate (Trunks' Rule)
 Before declaring any task done or opening a PR:
