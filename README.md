@@ -1,27 +1,29 @@
-# ⚡ Capsule Corp: Universal Multi-AI Agent Cohort
+# ⚡ Capsule Corp: Autonomous Multi-AI Agent Cohort
 
-Built with **Lauren Tan’s (SpaceXAI / Grok Bot) Michelin Kitchen Framework**, powered by **Dragon Ball Z** archetypes, and unified across **all AI tools on your Mac** (Codex, Claude Code, Gemini/Antigravity, Cursor, Windsurf, and Copilot).
+A specialized cohort of autonomous AI agents modeled on **Dragon Ball Z** archetypes, unified across all your development tools (**Codex**, **Claude Code**, **Gemini**, **Cursor**, **Windsurf**, and **Copilot**).
 
-> *"Treat your AI team like a 3-star Michelin kitchen, not a mass-produced software factory. One job, one voice, tight toolsets, and strict verification."*
+*Inspired by Lauren Tan's agentic engineering concepts.*
+
+> *"Build warriors, not generic chatbots. Single-purpose operatives, ruthless verification, and relentless execution."*
 
 ---
 
 ## 1. The Capsule Corp Roster
 
-| Persona & Character | Role | Inspiration (Lauren Tan / Grok Bot) | Primary Job To Be Done (JTBD) |
+| Character | Role | Operational Focus | Primary Job To Be Done (JTBD) |
 | :--- | :--- | :--- | :--- |
-| **Dr. Gero**<br>`The Android Architect` | **Meta-Agent Architect & Auditor** | **Dr. Eggbot** (Meta-Bot) | Designs, scaffolds, audits, and prunes other agents and skills. Audits conversation transcripts to eliminate friction and tool bloat. |
-| **Piccolo**<br>`The Tactical Lead` | **Engineering Lead & Decomposer** | **Matcha** (Eng Lead) | Deconstructs complex feature epics into atomic task trees. Orchestrates parallel worker agents and coordinates verification. Never writes raw code directly. |
-| **Whis**<br>`The Attendant & CoS` | **Chief of Staff & Routine Dispatcher** | **Walter** (Chief of Staff) | Triage, background routine scheduling (cron/timers), resource allocation, and developer communication. |
-| **Trunks**<br>`The Timeline Sentinel` | **Verification Gatekeeper** | **Self-Testing Eng Bot** | The quality gate. Runs test suites, linters, and typecheckers before code is accepted. Guarantees zero regressions. |
-| **Goku**<br>`The Code Artisan` | **Focused Implementation Worker** | **Worker Swarms / Executors** | Surgical code implementation with Ultra Instinct focus and high bias to act. Zero speculative dependencies or conversational filler. |
-| **Android 18**<br>`Refactoring Specialist` | **Precision Refactoring Worker** | **Specialist Worker** | Eliminates dead code, cleans technical debt, and extracts components with zero regression. |
+| **Dr. Gero**<br>`The Android Architect` | **Meta-Agent Architect & Auditor** | System Scaffolding & Evals | Designs, scaffolds, audits, and prunes other agents and skills. Audits conversation transcripts to eliminate friction and tool bloat. |
+| **Piccolo**<br>`The Tactical Lead` | **Engineering Lead & Decomposer** | Strategy & Orchestration | Deconstructs complex feature epics into atomic task trees. Orchestrates parallel worker agents and coordinates verification. Never writes raw code directly. |
+| **Whis**<br>`The Attendant & CoS` | **Chief of Staff & Routine Dispatcher** | Triage & Automation | Request triage, background routine scheduling (cron/timers), resource allocation, and developer communication. |
+| **Trunks**<br>`The Timeline Sentinel` | **Verification Gatekeeper** | Zero-Regression Quality Gate | The quality gate. Runs test suites, linters, and typecheckers before code is accepted. Guarantees zero regressions. |
+| **Goku**<br>`The Code Artisan` | **Frontline Implementation Worker** | Ultra Instinct Execution | Surgical code implementation with Ultra Instinct focus and high bias to act. Zero speculative dependencies or conversational filler. |
+| **Android 18**<br>`Refactoring Specialist` | **Precision Refactoring Worker** | Dead Code & Tech Debt | Eliminates dead code, cleans technical debt, and extracts components with zero regression. |
 
 ---
 
 ## 2. Universal Multi-AI Connection Architecture
 
-Capsule Corp is not locked into Gemini. It is connected globally to every AI tool installed on your machine through automated bridges:
+Capsule Corp connects globally to every AI tool on your machine through automated bridges:
 
 ```mermaid
 flowchart TD
@@ -121,7 +123,7 @@ capsule test
 
 ---
 
-## 5. Lauren Tan's 3-Stage Trust Ladder
+## 5. The 3-Stage Trust Engine
 
 Whenever you build a new agentic workflow, follow this 3-step ladder:
 

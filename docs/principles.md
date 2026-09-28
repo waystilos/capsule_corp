@@ -1,5 +1,5 @@
 # The 23 Capsule Corp Principles
-Adapted from Lauren Tan's (@poteto) `pstack` at SpaceXAI / Cursor.
+*Inspired by Lauren Tan's engineering concepts.*
 
 These 23 principles govern all engineering and agent design across the Capsule Corp cohort.
 

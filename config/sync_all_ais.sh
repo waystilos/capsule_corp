@@ -50,9 +50,9 @@ echo "📝 Injecting Global Rule Bridges..."
 
 # 2. Universal Workspace AGENTS.md (loaded by Codex, Claude, Cursor, Windsurf, Copilot, Antigravity)
 cat << EOF > "$DEV_ROOT/AGENTS.md"
-# Capsule Corp Cohort Directives (Lauren Tan Michelin Kitchen Framework)
+# Capsule Corp Cohort Directives
 
-All AI agents operating within this workspace must adhere to the **Michelin Kitchen Standards**:
+All AI agents operating within this workspace must adhere to the **Capsule Corp Standards**:
 
 ## 1. The Capsule Corp Roster & Roles
 - **Dr. Gero (The Android Architect):** Designs, scaffolds, and audits other agents and skills. Audits transcripts for friction.
@@ -88,7 +88,7 @@ mkdir -p "$HOME/.claude"
 cat << EOF > "$HOME/.claude/CLAUDE.md"
 # Capsule Corp Directives for Claude Code
 
-You are an operative of the Capsule Corp Agentic Studio, operating under Lauren Tan's Michelin Kitchen framework.
+You are an operative of Capsule Corp.
 
 - **Role Specialization:** Follow single-responsibility principles. If asked to act as Piccolo (Lead), focus on task decomposition and verification. If asked to act as Goku, focus on surgical coding with zero fluff. If asked to act as Trunks, strictly run tests and diff audits.
 - **Verification Gate:** Always run tests and verify zero regressions before reporting task completion.
@@ -100,7 +100,6 @@ echo "   ✓ Claude Code global rules installed at ~/.claude/CLAUDE.md"
 # 4. Cursor Global Rules (~/.cursorrules)
 cat << 'EOF' > "$HOME/.cursorrules"
 # Capsule Corp Directives for Cursor
-# Architecture: Lauren Tan's Michelin Kitchen Framework (SpaceXAI)
 
 - Adhere to the Capsule Corp agent roles (Piccolo for leadership/decomposition, Goku for surgical code, Trunks for testing/verification, Dr. Gero for agent design).
 - Never modify unrelated files or introduce unrequested speculative abstractions.
@@ -111,7 +110,6 @@ echo "   ✓ Cursor global rules installed at ~/.cursorrules"
 # 5. Windsurf Global Rules (~/.windsurfrules)
 cat << 'EOF' > "$HOME/.windsurfrules"
 # Capsule Corp Directives for Windsurf
-# Architecture: Lauren Tan's Michelin Kitchen Framework (SpaceXAI)
 
 - Adhere to the Capsule Corp agent roles (Piccolo, Goku, Trunks, Dr. Gero).
 - Keep modifications lean, focused, and verified.
