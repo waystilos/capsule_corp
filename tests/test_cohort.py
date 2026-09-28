@@ -160,6 +160,28 @@ class TestProjectSafety(unittest.TestCase):
                 existing,
             )
 
+    def test_initializer_defaults_to_only_copilot(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            init_project(root)
+
+            self.assertTrue((root / ".github" / "copilot-instructions.md").exists())
+            self.assertFalse((root / "AGENTS.md").exists())
+            self.assertFalse((root / ".cursorrules").exists())
+            self.assertFalse((root / ".windsurfrules").exists())
+
+    def test_initializer_installs_only_explicit_tools(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            init_project(root, tools={"copilot", "cursor"})
+
+            self.assertTrue((root / ".github" / "copilot-instructions.md").exists())
+            self.assertTrue((root / ".cursorrules").exists())
+            self.assertFalse((root / "AGENTS.md").exists())
+            self.assertFalse((root / ".windsurfrules").exists())
+
 
 class TestAndroid17Security(unittest.TestCase):
     def test_security_patterns_detect_eval_and_injection(self):

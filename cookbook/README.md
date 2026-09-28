@@ -23,12 +23,12 @@ If `capsule` is already on your `PATH`, omit `./bin/`.
 To wire a project into the cohort:
 
 ```bash
-capsule init /path/to/your-project
+capsule init --tool copilot /path/to/your-project
 capsule verify /path/to/your-project
 capsule security /path/to/your-project
 ```
 
-The initializer preserves existing AI instructions. Use `--force` only when replacing them is intentional.
+The initializer installs only the selected integration and preserves existing AI instructions. Use `--tools` for intentional multi-tool setup and `--force` only when replacing selected files is intentional.
 
 ## The standard working loop
 
