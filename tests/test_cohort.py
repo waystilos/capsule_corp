@@ -39,13 +39,11 @@ class TestDrGeroScaffolder(unittest.TestCase):
             name="test-bot",
             alias="Test Bot",
             role="Testing Specialist",
-            inspiration="Lauren Tan Spec",
             description="A test bot",
             jtbd="Run automated checks",
             boundaries="- Do not write production code.",
             tools=["run_command", "view_file"],
-            verification="exit code 0",
-            creed="Testing is life."
+            verification="exit code 0"
         )
         self.assertIn("# Test Bot: Testing Specialist", md)
         self.assertIn("## 1. Job To Be Done (JTBD)", md)
