@@ -130,6 +130,8 @@ capsule sync --force
 capsule test
 ```
 
+For a guided, situation-based walkthrough, start with the [Capsule Corp Cookbook](cookbook/README.md).
+
 ---
 
 ## 5. Startup Project Workflow (From Idea to Shipped Feature)
@@ -180,6 +182,9 @@ capsule-corp/
 ├── config/
 │   ├── sync_all_ais.sh       # Multi-AI sync script (Copilot, Codex, Claude, Gemini, Cursor)
 │   └── sync_to_gemini.sh     # Gemini-specific sync script
+├── cookbook/                  # Getting-started guide and situation recipes
+│   ├── README.md
+│   └── situations/
 ├── registry.yaml             # Master cohort manifest & tool allowlists
 └── README.md                 # This documentation guide
 ```
