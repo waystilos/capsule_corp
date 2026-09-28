@@ -113,19 +113,12 @@ def scan_code_vulnerabilities(root_dir: Path) -> List[Dict[str, Any]]:
 
 
 def run_dependency_audit(root_dir: Path) -> Tuple[int, str]:
+    """Audit every detected ecosystem; 2 means the audit is incomplete/unavailable."""
+    commands = []
     if (root_dir / "package.json").exists():
-        try:
-            res = subprocess.run(["npm", "audit", "--audit-level=high"], cwd=str(root_dir), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
-            return res.returncode, res.stdout or res.stderr
-        except (OSError, subprocess.TimeoutExpired) as e:
-            return 1, f"npm audit could not run: {e}"
-
+        commands.append(("npm", ["npm", "audit", "--audit-level=high"]))
     if (root_dir / "Cargo.toml").exists():
-        try:
-            res = subprocess.run(["cargo", "audit"], cwd=str(root_dir), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
-            return res.returncode, res.stdout or res.stderr
-        except (OSError, subprocess.TimeoutExpired) as e:
-            return 1, f"cargo audit could not run: {e}"
+        commands.append(("cargo", ["cargo", "audit"]))
 
     python_manifests = [
         root_dir / "pyproject.toml",
@@ -135,15 +128,40 @@ def run_dependency_audit(root_dir: Path) -> Tuple[int, str]:
         root_dir / "setup.py",
     ]
     if any(path.exists() for path in python_manifests):
-        if shutil.which("pip-audit") is None:
-            return 1, "pip-audit is required for Python dependency auditing but is not installed"
-        try:
-            res = subprocess.run(["pip-audit"], cwd=str(root_dir), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
-            return res.returncode, res.stdout or res.stderr
-        except (OSError, subprocess.TimeoutExpired) as e:
-            return 1, f"pip-audit could not run: {e}"
+        requirements = [path for path in python_manifests if path.name.startswith("requirements") and path.exists()]
+        if requirements:
+            commands.extend((f"pip-audit {path.name}", ["pip-audit", "-r", str(path)]) for path in requirements)
+        else:
+            commands.append(("pip-audit environment", ["pip-audit"]))
 
-    return 0, "No supported dependency manifest found for vulnerability audit"
+    if not commands:
+        return 0, "No supported dependency manifest found for vulnerability audit"
+
+    unavailable = []
+    results = []
+    for label, command in commands:
+        executable = command[0]
+        if shutil.which(executable) is None:
+            unavailable.append(f"{label}: {executable} is not installed")
+            continue
+        try:
+            res = subprocess.run(
+                command,
+                cwd=str(root_dir),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                timeout=60,
+            )
+            output = res.stdout or res.stderr or "(no output)"
+            results.append(f"[{label}] exit {res.returncode}\n{output}")
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            unavailable.append(f"{label}: {exc}")
+
+    if unavailable:
+        results.append("INCOMPLETE: " + "; ".join(unavailable))
+        return 2, "\n".join(results)
+    return (1 if any("exit 0" not in result.splitlines()[0] for result in results) else 0), "\n".join(results)
 
 
 def main():
@@ -163,11 +181,12 @@ def main():
 
     all_findings = secret_findings + code_findings
     passed = (len(all_findings) == 0) and (dep_exit == 0)
+    incomplete = dep_exit == 2 and not all_findings
 
     if args.json:
         import json
         payload = {
-            "verdict": "PASS" if passed else "FAIL",
+            "verdict": "PASS" if passed else ("INCOMPLETE" if incomplete else "FAIL"),
             "findings": all_findings,
             "dependency_audit_exit": dep_exit,
             "dependency_output": dep_output[:500]
@@ -194,14 +213,20 @@ def main():
     print(f"Dependency Vulnerability Audit:")
     if dep_exit == 0:
         print("  ✓ Dependency audit: CLEAN")
+    elif dep_exit == 2:
+        print(f"  ! Dependency audit: INCOMPLETE\n{dep_output[:300]}")
     else:
-        print(f"  ✗ Vulnerabilities detected:\n{dep_output[:300]}")
+        print(f"  ✗ Dependency audit reported failures:\n{dep_output[:300]}")
 
     print("==================================================================")
     if passed:
         print(" VERDICT: GREEN (Security barrier holds. Zero critical flaws.)")
         print("==================================================================")
         sys.exit(0)
+    elif incomplete:
+        print(" VERDICT: INCOMPLETE (Required dependency checks could not be completed.)")
+        print("==================================================================")
+        sys.exit(2)
     else:
         print(" VERDICT: RED (Security perimeter breached. Fix issues before deploy.)")
         print("==================================================================")

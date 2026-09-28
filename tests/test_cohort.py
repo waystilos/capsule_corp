@@ -10,16 +10,20 @@ import subprocess
 import yaml
 import sys
 import tempfile
+from unittest.mock import patch
 
 CAPSULE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(CAPSULE_ROOT / "scripts"))
+sys.path.insert(0, str(CAPSULE_ROOT / "src"))
 
 from init_project import init_project
 from scaffold_bot import generate_bot_markdown, update_registry_yaml, validate_bot_name
 from audit_transcripts import analyze_transcript
 from security_audit import scan_for_secrets
+from security_audit import run_dependency_audit
 from verify_project import SUSPICIOUS_DIFF_PATTERNS, audit_git_diff
 from route_request import route_request
+from capsule.cli import _installed_resource_candidates, cmd_list
 
 
 class TestCapsuleCorpRegistry(unittest.TestCase):
@@ -45,6 +49,26 @@ class TestCapsuleCorpRegistry(unittest.TestCase):
         ambiguous = route_request("help me with this project")
         self.assertEqual(ambiguous["owner"], "whis")
         self.assertEqual(ambiguous["status"], "needs_clarification")
+
+    def test_user_install_resource_path_is_checked(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            userbase = Path(temp_dir) / "Roaming" / "Python"
+            expected = userbase / "share" / "capsule-corp"
+            expected.mkdir(parents=True)
+            (expected / "registry.yaml").write_text("bots: {}\n", encoding="utf-8")
+            with patch("capsule.cli.sysconfig.get_path") as get_path, patch(
+                "capsule.cli.sysconfig.get_config_var", return_value=str(userbase)
+            ):
+                get_path.side_effect = lambda key: str(Path(temp_dir) / ("system" if key == "data" else "site-packages"))
+                candidates = _installed_resource_candidates()
+            self.assertIn(expected.resolve(), candidates)
+
+    def test_malformed_registry_does_not_raise_traceback(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "registry.yaml").write_text("bots: [\n", encoding="utf-8")
+            with patch("capsule.cli.resource_root", return_value=root):
+                self.assertEqual(cmd_list(), 1)
 
 
 class TestDrGeroScaffolder(unittest.TestCase):
@@ -206,6 +230,33 @@ class TestAndroid17Security(unittest.TestCase):
                 detected.append(desc)
         self.assertIn("Dangerous dynamic code execution (eval)", detected)
         self.assertIn("Possible SQL injection in formatted string query", detected)
+
+    def test_missing_dependency_audit_is_incomplete_not_vulnerability(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "requirements.txt").write_text("example-package==1.0\n", encoding="utf-8")
+            with patch("security_audit.shutil.which", return_value=None):
+                exit_code, output = run_dependency_audit(root)
+            self.assertEqual(exit_code, 2)
+            self.assertIn("INCOMPLETE", output)
+
+    def test_dependency_audit_does_not_skip_multiple_ecosystems(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "package.json").write_text("{}\n", encoding="utf-8")
+            (root / "requirements.txt").write_text("example-package==1.0\n", encoding="utf-8")
+            calls = []
+
+            def fake_run(command, **kwargs):
+                calls.append(command)
+                return subprocess.CompletedProcess(command, 0, stdout="clean", stderr="")
+
+            with patch("security_audit.shutil.which", return_value="available"), patch(
+                "security_audit.subprocess.run", side_effect=fake_run
+            ):
+                exit_code, _ = run_dependency_audit(root)
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(calls, [["npm", "audit", "--audit-level=high"], ["pip-audit", "-r", str(root / "requirements.txt")]])
 
 
 if __name__ == "__main__":

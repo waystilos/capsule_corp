@@ -12,6 +12,9 @@ dependencies = [
   "PyYAML>=6.0",
 ]
 
+[project.optional-dependencies]
+security = ["pip-audit>=2.7"]
+
 [project.scripts]
 capsule = "capsule.cli:main"
 
