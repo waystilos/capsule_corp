@@ -2,6 +2,10 @@
 
 This is the practical starting point for using Capsule Corp with a project and an AI coding tool. Each recipe explains what situation it covers, which operative to involve, the commands to run, and what “done” looks like.
 
+For the next planned improvement to the installation and first-run flow, see the [Whis DX brief](dx-installation-brief.md).
+
+For the exact root README onboarding handoff, see the [Bulma README brief](readme-onboarding-brief.md).
+
 ## The five-minute start
 
 From this repository:
@@ -63,4 +67,3 @@ Verification: <exact command or check>
 - Forced sync creates timestamped backups next to replaced files.
 - Never put API keys, tokens, private keys, or production credentials in prompts, bot files, or committed fixtures.
 - Treat a green result as evidence from a command, not as a substitute for checking the actual behavior.
-
