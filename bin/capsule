@@ -15,6 +15,7 @@ Usage:
   capsule test              Run unit tests for Capsule Corp scripts
 """
 
+import os
 import sys
 import subprocess
 from pathlib import Path
@@ -23,6 +24,16 @@ CAPSULE_ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = CAPSULE_ROOT / "scripts"
 CONFIG_DIR = CAPSULE_ROOT / "config"
 REGISTRY_FILE = CAPSULE_ROOT / "registry.yaml"
+
+
+def configure_utf8_stdio():
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
+
+configure_utf8_stdio()
 
 
 def cmd_list():
@@ -78,7 +89,9 @@ def cmd_route(args):
 
 def run_child(command):
     """Run a delegated command and preserve its exit status."""
-    return subprocess.run(command).returncode
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    return subprocess.run(command, env=env).returncode
 
 
 def cmd_scaffold(args):

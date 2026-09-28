@@ -110,6 +110,8 @@ py -c "import sysconfig; print(sysconfig.get_path('scripts', scheme='nt_user'))"
 
 Alternatively, use the full path printed by that command or install with `pipx`, which manages the executable location.
 
+If `where.exe capsule` shows `capsule` from the repository's `bin` directory before the Python user `Scripts` directory, the repository launcher is shadowing the installed command. Remove the repository `bin` entry from PATH or move the user `Scripts` directory ahead of it, then open a new terminal. An installer cannot safely change PATH ordering for you.
+
 For dependency auditing, install Capsule's optional security tools:
 
 ```bash

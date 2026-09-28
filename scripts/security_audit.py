@@ -17,6 +17,13 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Tuple, Any
 
+try:
+    from .runtime import configure_utf8_stdio
+except ImportError:
+    from runtime import configure_utf8_stdio
+
+configure_utf8_stdio()
+
 SECRET_REGEXES = [
     (re.compile(r"sk-[a-zA-Z0-9]{20,}", re.IGNORECASE), "OpenAI / Service Secret Key"),
     (re.compile(r"ghp_[a-zA-Z0-9]{36}", re.IGNORECASE), "GitHub Personal Access Token"),

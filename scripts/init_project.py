@@ -17,6 +17,13 @@ import sys
 import shutil
 from pathlib import Path
 
+try:
+    from .runtime import configure_utf8_stdio
+except ImportError:
+    from runtime import configure_utf8_stdio
+
+configure_utf8_stdio()
+
 CAPSULE_ROOT = Path(os.environ.get("CAPSULE_RESOURCE_ROOT", Path(__file__).resolve().parent.parent)).resolve()
 SUPPORTED_TOOLS = {"copilot", "agents", "codex", "cursor", "windsurf"}
 ALL_TOOLS = {"copilot", "agents", "cursor", "windsurf"}

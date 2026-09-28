@@ -15,6 +15,13 @@ import sys
 from pathlib import Path
 from typing import List
 
+try:
+    from .runtime import configure_utf8_stdio
+except ImportError:
+    from runtime import configure_utf8_stdio
+
+configure_utf8_stdio()
+
 DBZ_RESERVE_ARCHETYPES = {
     "gohan": {
         "alias": "Gohan (Deep Analytics & Diagnostics)",
