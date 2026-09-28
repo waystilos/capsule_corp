@@ -26,7 +26,7 @@ Create the file under `bots/<character_name>.md` and register it in `registry.ya
 name: <name>
 alias: <DBZ Character Alias>
 role: <Title>
-inspiration: <SpaceXAI / Lauren Tan equivalent>
+principles: Capsule Corp operating principles
 description: <Short discovery string>
 ---
 

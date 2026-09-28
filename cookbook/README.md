@@ -6,6 +6,8 @@ For the next planned improvement to the installation and first-run flow, see the
 
 For the exact root README onboarding handoff, see the [Bulma README brief](readme-onboarding-brief.md).
 
+For the terminology cleanup and crew ownership, see the [crew terminology brief](crew-terminology-brief.md).
+
 ## The five-minute start
 
 From this repository:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Capsule Corp Cohort CLI (Unified Interface)
-Built for Capsule Corp (Inspired by Lauren Tan's agent engineering)
+Built for Capsule Corp's own agent engineering system
 
 Usage:
   capsule list              List all registered cohort bots and their specs

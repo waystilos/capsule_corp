@@ -2,7 +2,7 @@
 
 A specialized cohort of autonomous AI agents modeled on **Dragon Ball Z** archetypes, engineered for startups and unified across all development tools (**GitHub Copilot**, **OpenAI Codex**, **Anthropic Claude Code**, **Google Antigravity / Gemini**, **Cursor**, and **Windsurf**).
 
-*Inspired by Lauren Tan's agentic engineering concepts.*
+*Built around Capsule Corp's own agentic engineering principles.*
 
 > *"Build warriors, not generic chatbots. Single-purpose operatives, ruthless verification, and relentless execution."*
 

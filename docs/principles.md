@@ -1,5 +1,5 @@
 # The 23 Capsule Corp Principles
-*Inspired by Lauren Tan's engineering concepts.*
+*Our operating system for focused agents, safe automation, and verifiable work.*
 
 These 23 principles govern all engineering and agent design across the Capsule Corp cohort.
 
