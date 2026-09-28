@@ -40,6 +40,25 @@ Project-specific tools such as `pytest`, `npm`, `cargo`, or `go` are only needed
 
 All three commands should exit with code 0 before treating the local setup as ready.
 
+### Windows quick start
+
+From PowerShell or Command Prompt, use the Windows launcher:
+
+```powershell
+.\bin\capsule.cmd list
+.\bin\capsule.cmd test
+.\bin\capsule.cmd verify .
+.\bin\capsule.cmd security .
+```
+
+The launcher uses `py` when available and falls back to `python`. You can also invoke the Python script directly:
+
+```powershell
+py .\bin\capsule list
+```
+
+The `config/*.sh` synchronization scripts require Git Bash, WSL, or another Bash environment on Windows. Do not use the Unix `export PATH=...` command in PowerShell; configure Windows PATH through the environment-variable settings or use `.\bin\capsule.cmd` directly.
+
 ### Make `capsule` available in your shell
 
 For the current shell session:
@@ -229,7 +248,8 @@ flowchart TD
 ```
 capsule-corp/
 ├── bin/
-│   └── capsule               # Unified CLI tool (in PATH)
+│   ├── capsule               # Unix/macOS unified CLI tool
+│   └── capsule.cmd           # Windows launcher
 ├── .github/
 │   └── copilot-instructions.md # GitHub Copilot directives
 ├── bots/                     # Persona specifications (One Job, One Voice)
