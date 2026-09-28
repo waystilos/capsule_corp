@@ -11,6 +11,7 @@ Automated startup security scanner:
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -36,6 +37,11 @@ CODE_VULN_PATTERNS = [
 IGNORED_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build", ".next", ".cache"}
 
 
+def is_test_path(path: Path) -> bool:
+    """Return whether a path is an explicit test fixture/source path."""
+    return "tests" in path.parts or "test" in path.parts or path.name.startswith("test_")
+
+
 def scan_for_secrets(root_dir: Path) -> List[Dict[str, Any]]:
     findings = []
     for path in root_dir.rglob("*"):
@@ -48,9 +54,6 @@ def scan_for_secrets(root_dir: Path) -> List[Dict[str, Any]]:
                 content = path.read_text(encoding="utf-8", errors="ignore")
                 for pattern, desc in SECRET_REGEXES:
                     for line_idx, line in enumerate(content.splitlines(), 1):
-                        # Skip tests directory mock lines or self
-                        if "test" in path.name.lower() or "security_audit.py" in path.name:
-                            continue
                         if pattern.search(line):
                             findings.append({
                                 "type": "SECRET_LEAK",
@@ -60,8 +63,15 @@ def scan_for_secrets(root_dir: Path) -> List[Dict[str, Any]]:
                                 "description": desc,
                                 "snippet": line[:80].strip()
                             })
-            except Exception:
-                continue
+            except OSError as exc:
+                findings.append({
+                    "type": "SCAN_ERROR",
+                    "severity": "HIGH",
+                    "file": str(path.relative_to(root_dir)),
+                    "line": 0,
+                    "description": "Unable to read file during secret scan",
+                    "snippet": str(exc)[:80]
+                })
     return findings
 
 
@@ -69,6 +79,10 @@ def scan_code_vulnerabilities(root_dir: Path) -> List[Dict[str, Any]]:
     findings = []
     for path in root_dir.rglob("*"):
         if path.is_file():
+            # Test fixtures intentionally contain examples of vulnerable code.
+            # Secret scanning still includes these files.
+            if is_test_path(path):
+                continue
             if any(part in IGNORED_DIRS for part in path.parts):
                 continue
             if path.suffix not in [".py", ".ts", ".js", ".tsx", ".jsx", ".go", ".rs"]:
@@ -77,8 +91,6 @@ def scan_code_vulnerabilities(root_dir: Path) -> List[Dict[str, Any]]:
                 content = path.read_text(encoding="utf-8", errors="ignore")
                 for pattern, desc in CODE_VULN_PATTERNS:
                     for line_idx, line in enumerate(content.splitlines(), 1):
-                        if "test" in path.name.lower() or "security_audit.py" in path.name:
-                            continue
                         if pattern.search(line):
                             findings.append({
                                 "type": "CODE_VULN",
@@ -88,8 +100,15 @@ def scan_code_vulnerabilities(root_dir: Path) -> List[Dict[str, Any]]:
                                 "description": desc,
                                 "snippet": line[:80].strip()
                             })
-            except Exception:
-                continue
+            except OSError as exc:
+                findings.append({
+                    "type": "SCAN_ERROR",
+                    "severity": "HIGH",
+                    "file": str(path.relative_to(root_dir)),
+                    "line": 0,
+                    "description": "Unable to read file during code scan",
+                    "snippet": str(exc)[:80]
+                })
     return findings
 
 
@@ -98,15 +117,31 @@ def run_dependency_audit(root_dir: Path) -> Tuple[int, str]:
         try:
             res = subprocess.run(["npm", "audit", "--audit-level=high"], cwd=str(root_dir), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
             return res.returncode, res.stdout or res.stderr
-        except Exception as e:
-            return 0, f"npm audit skipped: {e}"
+        except (OSError, subprocess.TimeoutExpired) as e:
+            return 1, f"npm audit could not run: {e}"
 
     if (root_dir / "Cargo.toml").exists():
         try:
             res = subprocess.run(["cargo", "audit"], cwd=str(root_dir), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
             return res.returncode, res.stdout or res.stderr
-        except Exception:
-            return 0, "cargo audit not installed, skipped"
+        except (OSError, subprocess.TimeoutExpired) as e:
+            return 1, f"cargo audit could not run: {e}"
+
+    python_manifests = [
+        root_dir / "pyproject.toml",
+        root_dir / "requirements.txt",
+        root_dir / "requirements-dev.txt",
+        root_dir / "Pipfile",
+        root_dir / "setup.py",
+    ]
+    if any(path.exists() for path in python_manifests):
+        if shutil.which("pip-audit") is None:
+            return 1, "pip-audit is required for Python dependency auditing but is not installed"
+        try:
+            res = subprocess.run(["pip-audit"], cwd=str(root_dir), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
+            return res.returncode, res.stdout or res.stderr
+        except (OSError, subprocess.TimeoutExpired) as e:
+            return 1, f"pip-audit could not run: {e}"
 
     return 0, "No supported dependency manifest found for vulnerability audit"
 

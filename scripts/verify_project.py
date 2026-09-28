@@ -13,8 +13,10 @@ Automated verification harness:
 import argparse
 import os
 import re
+import shlex
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any
 
@@ -32,7 +34,7 @@ SUSPICIOUS_DIFF_PATTERNS = [
 def detect_test_command(root_dir: Path) -> Optional[List[str]]:
     # Capsule Corp Project
     if (root_dir / "bin" / "capsule").exists():
-        return [str(root_dir / "bin" / "capsule"), "test"]
+        return [sys.executable, str(root_dir / "bin" / "capsule"), "test"]
 
     # Rust
     if (root_dir / "Cargo.toml").exists():
@@ -59,11 +61,14 @@ def detect_test_command(root_dir: Path) -> Optional[List[str]]:
     if tests_dir.exists() or test_dir.exists():
         # Check if pytest is available or fallback to standard library unittest
         try:
-            subprocess.run(["pytest", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return ["pytest", "-v"]
+            probe = subprocess.run(["pytest", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if probe.returncode == 0:
+                return ["pytest", "-v"]
         except Exception:
-            active_dir = tests_dir if tests_dir.exists() else test_dir
-            return [sys.executable, "-m", "unittest", "discover", "-s", str(active_dir), "-p", "test_*.py"]
+            pass
+
+        active_dir = tests_dir if tests_dir.exists() else test_dir
+        return [sys.executable, "-m", "unittest", "discover", "-s", str(active_dir), "-p", "test_*.py"]
 
     # Dart / Flutter
     if (root_dir / "pubspec.yaml").exists():
@@ -91,26 +96,74 @@ def run_tests(cmd: List[str], cwd: Path, timeout: int = 180) -> Tuple[int, str, 
 
 def audit_git_diff(root_dir: Path) -> List[Dict[str, str]]:
     issues = []
-    try:
-        res = subprocess.run(
-            ["git", "diff", "HEAD"],
-            cwd=str(root_dir),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        diff_text = res.stdout
-    except Exception:
-        return issues
+    diff_parts = []
+    for diff_command in (
+        ["git", "diff", "--no-ext-diff", "--"],
+        ["git", "diff", "--no-ext-diff", "--cached", "--"],
+    ):
+        try:
+            res = subprocess.run(
+                diff_command,
+                cwd=str(root_dir),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+        except OSError as exc:
+            return [{
+                "severity": "HIGH",
+                "description": "Unable to inspect git diff",
+                "snippet": str(exc)[:120]
+            }]
+        if res.returncode != 0:
+            return [{
+                "severity": "HIGH",
+                "description": "Unable to inspect git diff",
+                "snippet": res.stderr.strip()[:120] or "git diff failed"
+            }]
+        diff_parts.append(res.stdout)
 
-    for pattern, description in SUSPICIOUS_DIFF_PATTERNS:
-        match = pattern.search(diff_text)
-        if match:
-            issues.append({
-                "severity": "CRITICAL",
-                "description": description,
-                "snippet": match.group(0)[:120]
-            })
+    def scan_text(text: str):
+        for pattern, description in SUSPICIOUS_DIFF_PATTERNS:
+            match = pattern.search(text)
+            if match:
+                issues.append({
+                    "severity": "CRITICAL",
+                    "description": description,
+                    "snippet": match.group(0)[:120]
+                })
+
+    scan_text("\n".join(diff_parts))
+
+    # Git diffs do not include untracked files. Scan those files as additions
+    # so a new secret cannot bypass the verification gate.
+    untracked = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+        cwd=str(root_dir),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    if untracked.returncode != 0:
+        issues.append({
+            "severity": "HIGH",
+            "description": "Unable to inspect untracked files",
+            "snippet": untracked.stderr.decode(errors="replace")[:120] or "git ls-files failed"
+        })
+    else:
+        for raw_path in untracked.stdout.split(b"\0"):
+            if not raw_path:
+                continue
+            path = root_dir / os.fsdecode(raw_path)
+            try:
+                content = path.read_text(encoding="utf-8", errors="ignore")
+            except OSError as exc:
+                issues.append({
+                    "severity": "HIGH",
+                    "description": "Unable to inspect untracked file",
+                    "snippet": f"{path.name}: {exc}"[:120]
+                })
+                continue
+            scan_text("\n".join(f"+{line}" for line in content.splitlines()))
 
     return issues
 
@@ -131,7 +184,10 @@ def main():
 
     test_cmd: Optional[List[str]] = None
     if args.test_cmd:
-        test_cmd = args.test_cmd.split()
+        try:
+            test_cmd = shlex.split(args.test_cmd)
+        except ValueError as exc:
+            parser.error(f"invalid --test-cmd: {exc}")
     elif not args.skip_tests:
         test_cmd = detect_test_command(project_dir)
 
@@ -143,6 +199,9 @@ def main():
 
     if test_cmd and not args.skip_tests:
         test_exit_code, test_stdout, test_stderr = run_tests(test_cmd, project_dir, args.timeout)
+    elif not args.skip_tests:
+        test_exit_code = 1
+        test_stderr = "No automated test runner detected. Pass --skip-tests to explicitly bypass test execution."
 
     passed = (test_exit_code == 0) and (len(diff_issues) == 0)
 
@@ -164,7 +223,7 @@ def main():
     print(" 🗡️  TRUNKS' TIMELINE SENTINEL REPORT (CAPSULE CORP)")
     print("==================================================================")
     print(f"Target Directory: {project_dir}")
-    print(f"Timestamp: {Path(sys.executable).stat().st_mtime}")
+    print(f"Timestamp: {datetime.now().isoformat(timespec='seconds')}")
     print("------------------------------------------------------------------")
 
     if test_cmd and not args.skip_tests:

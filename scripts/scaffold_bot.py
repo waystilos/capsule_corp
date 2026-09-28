@@ -9,6 +9,8 @@ Scaffolds a new specialized agent adhering strictly to the Capsule Corp DBZ Cont
 """
 
 import argparse
+import json
+import re
 import sys
 from pathlib import Path
 from typing import List
@@ -64,6 +66,13 @@ DBZ_RESERVE_ARCHETYPES = {
     },
 }
 
+BOT_NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
+def validate_bot_name(name: str) -> None:
+    if not BOT_NAME_PATTERN.fullmatch(name):
+        raise ValueError("name must contain only lowercase letters, numbers, and single hyphens")
+
 
 def generate_bot_markdown(
     name: str,
@@ -76,12 +85,16 @@ def generate_bot_markdown(
     verification: str
 ) -> str:
     tools_formatted = "\n".join([f"- `{t}`: Required for {t} operations." for t in tools])
+    yaml_name = json.dumps(name)
+    yaml_alias = json.dumps(alias)
+    yaml_role = json.dumps(role)
+    yaml_description = json.dumps(description)
 
     return f"""---
-name: {name}
-alias: {alias}
-role: {role}
-description: {description}
+name: {yaml_name}
+alias: {yaml_alias}
+role: {yaml_role}
+description: {yaml_description}
 ---
 
 # {alias}: {role}
@@ -125,20 +138,24 @@ def update_registry_yaml(
     verification: str,
     model_tier: str = "inherit"
 ):
+    validate_bot_name(name)
+    registry_key = name.replace('-', '_')
     entry_lines = [
-        f"\n  {name.replace('-', '_')}:",
-        f"    name: \"{name}\"",
-        f"    alias: \"{alias}\"",
-        f"    role: \"{role}\"",
-        f"    job_to_be_done: \"{jtbd}\"",
-        f"    model_tier: \"{model_tier}\"",
+        f"\n  {registry_key}:",
+        f"    name: {json.dumps(name)}",
+        f"    alias: {json.dumps(alias)}",
+        f"    role: {json.dumps(role)}",
+        f"    job_to_be_done: {json.dumps(jtbd)}",
+        f"    model_tier: {json.dumps(model_tier)}",
         f"    allowed_tools:",
     ]
     for t in tools:
-        entry_lines.append(f"      - \"{t}\"")
-    entry_lines.append(f"    verification_gate: \"{verification}\"")
+        entry_lines.append(f"      - {json.dumps(t)}")
+    entry_lines.append(f"    verification_gate: {json.dumps(verification)}")
 
     content = registry_path.read_text(encoding="utf-8")
+    if re.search(rf"^  {re.escape(registry_key)}:\s*$", content, re.MULTILINE):
+        raise ValueError(f"registry already contains bot '{name}'")
     content += "\n".join(entry_lines) + "\n"
     registry_path.write_text(content, encoding="utf-8")
 
@@ -202,6 +219,12 @@ def main():
         verification = args.verification
         model_tier = args.model_tier
 
+    try:
+        validate_bot_name(name)
+    except ValueError as exc:
+        print(f"Error: invalid bot name '{name}': {exc}", file=sys.stderr)
+        sys.exit(1)
+
     clean_filename = name.replace("-", "_") + ".md"
     bot_file = bots_dir / clean_filename
 
@@ -220,20 +243,29 @@ def main():
         verification=verification
     )
 
-    bot_file.write_text(markdown_content, encoding="utf-8")
+    try:
+        bot_file.write_text(markdown_content, encoding="utf-8")
+    except OSError as exc:
+        print(f"Error: could not write bot file: {exc}", file=sys.stderr)
+        sys.exit(1)
     print(f" Bot persona created at: {bot_file}")
 
     if registry_file.exists():
-        update_registry_yaml(
-            registry_path=registry_file,
-            name=name,
-            alias=alias,
-            role=role,
-            jtbd=jtbd,
-            tools=tools,
-            verification=verification,
-            model_tier=model_tier
-        )
+        try:
+            update_registry_yaml(
+                registry_path=registry_file,
+                name=name,
+                alias=alias,
+                role=role,
+                jtbd=jtbd,
+                tools=tools,
+                verification=verification,
+                model_tier=model_tier
+            )
+        except (OSError, ValueError) as exc:
+            bot_file.unlink(missing_ok=True)
+            print(f"Error: could not update registry: {exc}", file=sys.stderr)
+            sys.exit(1)
         print(f" Registered in {registry_file}")
 
 
