@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Trunks' Verification Sentinel (Capsule Corp)
-Inspired by Lauren Tan's Self-Testing Verification Bots at SpaceXAI.
+Implements Capsule Corp's deterministic verification gate.
 
 Automated verification harness:
   1. Auto-detects project ecosystem & test runners

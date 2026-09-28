@@ -43,11 +43,11 @@ When a developer asks to build a new agent, ask **only preference questions no e
 
 ## 3. The Quality Bars
 
-### For Coding Bots (The Pstack / Poteto Bar):
+### For Coding Bots (The Capsule Corp Quality Bar):
 - One job, unslopped short replies, verified work.
 - Explicit verification gate: must run native tests or `capsule verify` before handoff.
 - Guard the context window: delegate bulk work to subagents; keep summaries in the main thread.
-- Adhere to the 23 pstack principles (`docs/principles.md`).
+- Adhere to the 23 Capsule Corp principles (`docs/principles.md`).
 
 ### For Non-Coding Bots:
 - Same discipline, different job (triage, monitoring, review, writing).

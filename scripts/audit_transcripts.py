@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Dr. Gero's Transcript & Routine Healthcheck (Capsule Corp)
-Faithfully implements Lauren Tan's Dr. Eggbot template & pstack methodology.
+Implements Capsule Corp's transcript healthcheck methodology.
 
 Audits conversation transcripts (transcript.jsonl) from Antigravity/Gemini/Codex sessions.
 Detects:
@@ -155,11 +155,11 @@ def analyze_transcript(steps: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def generate_eggbot_report(convo_id: str, analysis: Dict[str, Any]) -> str:
+def generate_healthcheck_report(convo_id: str, analysis: Dict[str, Any]) -> str:
     report = []
     report.append(f"# Dr. Gero's Transcript Healthcheck")
     report.append(f"**Session:** `{convo_id}` | **Timestamp:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`")
-    report.append(f"**Standard:** Dr. Eggbot & pstack Rubric (Lauren Tan / SpaceXAI)")
+    report.append(f"**Standard:** Capsule Corp Transcript Healthcheck")
     report.append("")
 
     # 1. Executive Capsule (at most 5 bullets)
@@ -203,7 +203,7 @@ def main():
     parser.add_argument("--conversation-id", "-c", help="Conversation ID to audit")
     parser.add_argument("--latest", "-l", action="store_true", help="Audit the most recent conversation")
     parser.add_argument("--output", "-o", help="Path to save markdown audit report")
-    parser.add_argument("--quiet", "-q", action="store_true", help="Stay quiet when there are zero proposals (Dr. Eggbot rule)")
+    parser.add_argument("--quiet", "-q", action="store_true", help="Stay quiet when there are zero proposals")
     parser.add_argument("--json", action="store_true", help="Output raw JSON instead of markdown")
     args = parser.parse_args()
 
@@ -232,13 +232,13 @@ def main():
     analysis = analyze_transcript(steps)
 
     if args.quiet and len(analysis["proposals"]) == 0:
-        # Dr. Eggbot rule: stay quiet when nothing to report
+        # Capsule Corp rule: stay quiet when nothing to report
         sys.exit(0)
 
     if args.json:
         output_text = json.dumps({"conversation_id": convo_id, "analysis": analysis}, indent=2)
     else:
-        output_text = generate_eggbot_report(convo_id, analysis)
+        output_text = generate_healthcheck_report(convo_id, analysis)
 
     if args.output:
         out_path = Path(args.output)
