@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
 Capsule Corp Cohort CLI (Unified Interface)
-Built with Lauren Tan's Michelin Kitchen Framework (SpaceXAI)
+Built for Capsule Corp (Inspired by Lauren Tan's agent engineering)
 
 Usage:
   capsule list              List all registered cohort bots and their specs
   capsule scaffold ...      Dr. Gero's tool to create a new specialized agent
   capsule audit [--latest]  Dr. Gero's transcript auditor to detect friction & patch prompts
   capsule verify [dir]      Trunks' verification gate (tests + diff integrity check)
-  capsule sync              Sync skills and rules globally to ~/.gemini/config/
+  capsule sync              Sync skills and rules globally across all AIs
   capsule test              Run unit tests for Capsule Corp scripts
 """
 
@@ -40,7 +40,7 @@ def cmd_list():
 
     bots = data.get("bots", {})
     print("==========================================================================================")
-    print(" 🚀 CAPSULE CORP AGENT COHORT ROSTER (Michelin Kitchen Architecture)")
+    print(" 🚀 CAPSULE CORP AGENT COHORT ROSTER")
     print("==========================================================================================")
     print(f"{'BOT ID':<16} | {'ALIAS':<32} | {'MODEL TIER':<10} | {'PRIMARY ROLE'}")
     print("-----------------+----------------------------------+------------+------------------------")

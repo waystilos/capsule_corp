@@ -1,6 +1,6 @@
 ---
 name: scaffold-agent
-description: Runbook for Dr. Gero to design, interview, and scaffold high-precision, single-responsibility agents following Lauren Tan's Michelin Kitchen framework.
+description: Runbook for Dr. Gero to design, interview, and scaffold high-precision, single-responsibility agents for Capsule Corp.
 ---
 
 # Scaffold Agent Skill (Dr. Gero Runbook)
