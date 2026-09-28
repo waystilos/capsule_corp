@@ -20,6 +20,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any
 
+try:
+    from .runtime import configure_utf8_stdio
+except ImportError:
+    from runtime import configure_utf8_stdio
+
+configure_utf8_stdio()
+
 SUSPICIOUS_DIFF_PATTERNS = [
     (re.compile(r"^[+]\s*<{7}(?:\s+.*)?$", re.MULTILINE), "Git merge conflict marker (start)"),
     (re.compile(r"^[+]\s*={7}\s*$", re.MULTILINE), "Git merge conflict marker (mid)"),

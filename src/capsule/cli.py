@@ -10,6 +10,17 @@ from pathlib import Path
 from typing import List, Optional
 
 
+def _configure_utf8_stdio() -> None:
+    """Keep CLI output safe when Windows redirects stdout through cp1252."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
+
+_configure_utf8_stdio()
+
+
 def _installed_resource_candidates() -> List[Path]:
     """Return data-file locations used by system, virtualenv, and --user installs."""
     data = Path(sysconfig.get_path("data"))
@@ -53,6 +64,7 @@ def resource_root() -> Path:
 def run_module(module: str, args: List[str]) -> int:
     env = os.environ.copy()
     env["CAPSULE_RESOURCE_ROOT"] = str(resource_root())
+    env["PYTHONIOENCODING"] = "utf-8"
     return subprocess.run(
         [sys.executable, "-m", module, *args],
         env=env,

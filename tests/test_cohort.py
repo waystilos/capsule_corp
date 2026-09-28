@@ -5,6 +5,7 @@ Verifies registry schema, Dr. Gero's auditor, Trunks' sentinel, and bot scaffold
 """
 
 import unittest
+import os
 from pathlib import Path
 import subprocess
 import yaml
@@ -154,6 +155,20 @@ class TestTrunksSentinel(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result.returncode, 1)
+
+    def test_cli_output_is_utf8_when_stdout_is_redirected(self):
+        env = dict(os.environ)
+        env["PYTHONIOENCODING"] = "cp1252"
+        result = subprocess.run(
+            [sys.executable, str(CAPSULE_ROOT / "bin" / "capsule"), "list"],
+            cwd=CAPSULE_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+        )
+        self.assertEqual(result.returncode, 0)
+        output = result.stdout.decode("utf-8")
+        self.assertIn("🚀 CAPSULE CORP AGENT COHORT ROSTER", output)
 
     def test_verifier_scans_untracked_files_in_fresh_repositories(self):
         with tempfile.TemporaryDirectory() as temp_dir:
