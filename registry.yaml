@@ -81,3 +81,40 @@ bots:
       - "replace_file_content"
       - "run_command"
     verification_gate: "Linter and existing test suites pass with exit code 0."
+
+  android_17:
+    name: "android-17"
+    alias: "Android 17 (The Security Sentinel)"
+    role: "Security & Compliance Sentinel"
+    job_to_be_done: "Inspects codebases and PRs for exposed secrets, OWASP vulnerabilities, injection risks, and dependency flaws."
+    model_tier: "pro"
+    allowed_tools:
+      - "view_file"
+      - "run_command"
+      - "replace_file_content"
+    verification_gate: "Zero secrets in diff and zero high/critical dependency CVEs."
+
+  bulma:
+    name: "bulma"
+    alias: "Bulma (Chief Product Architect)"
+    role: "Product Architect & Rapid Prototyper"
+    job_to_be_done: "Transforms founder ideas into concrete PRDs, MVP scopes, user state machines, and API contracts."
+    model_tier: "pro"
+    allowed_tools:
+      - "view_file"
+      - "write_to_file"
+      - "replace_file_content"
+    verification_gate: "PRD has explicit acceptance criteria and API schemas with zero scope creep."
+
+  vegeta:
+    name: "vegeta"
+    alias: "Vegeta (DevOps Commander)"
+    role: "Infrastructure, Database & Performance Commander"
+    job_to_be_done: "Builds Dockerfiles, CI/CD pipelines, database migrations, connection pooling, and deployment manifests."
+    model_tier: "inherit"
+    allowed_tools:
+      - "view_file"
+      - "run_command"
+      - "write_to_file"
+      - "replace_file_content"
+    verification_gate: "Container builds, DB migration rolls up/down, and CI YAML passes linting."
