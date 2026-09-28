@@ -25,6 +25,21 @@ Run the binary directly:
 
 Then add `capsule-corp/bin` to your shell `PATH` if that is appropriate for your machine.
 
+On Windows, use the checked-in launcher from PowerShell or Command Prompt:
+
+```powershell
+.\bin\capsule.cmd list
+```
+
+If that fails, confirm that `py` or `python` is installed:
+
+```powershell
+py --version
+python --version
+```
+
+The `config/*.sh` synchronization scripts require Git Bash, WSL, or another Bash environment on Windows.
+
 ### `capsule verify` says no test runner was found
 
 Add or configure the project’s native test runner. If this is a deliberate documentation/configuration-only check, use:
@@ -44,4 +59,3 @@ Install the scanner required by the project’s manifest. Do not reinterpret “
 ### A generated bot is rejected
 
 Use lowercase kebab-case for `--name`, such as `api-sentinel`. Do not use slashes, `..`, spaces, or uppercase characters.
-
