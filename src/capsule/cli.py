@@ -10,6 +10,29 @@ from pathlib import Path
 from typing import List, Optional
 
 
+def _installed_resource_candidates() -> List[Path]:
+    """Return data-file locations used by system, virtualenv, and --user installs."""
+    data = Path(sysconfig.get_path("data"))
+    purelib = Path(sysconfig.get_path("purelib"))
+    userbase = sysconfig.get_config_var("userbase")
+    candidates = [data / "share" / "capsule-corp"]
+    if userbase:
+        candidates.append(Path(userbase) / "share" / "capsule-corp")
+    candidates.extend(
+        [
+            purelib.parent / "share" / "capsule-corp",
+            purelib.parent.parent / "share" / "capsule-corp",
+        ]
+    )
+
+    unique = []
+    for candidate in candidates:
+        candidate = candidate.resolve()
+        if candidate not in unique:
+            unique.append(candidate)
+    return unique
+
+
 def resource_root() -> Path:
     """Find bundled resources in a checkout or an installed environment."""
     override = os.environ.get("CAPSULE_RESOURCE_ROOT")
@@ -20,7 +43,11 @@ def resource_root() -> Path:
     if (checkout / "registry.yaml").exists():
         return checkout
 
-    return Path(sysconfig.get_path("data")) / "share" / "capsule-corp"
+    candidates = _installed_resource_candidates()
+    for candidate in candidates:
+        if (candidate / "registry.yaml").exists():
+            return candidate
+    return candidates[0]
 
 
 def run_module(module: str, args: List[str]) -> int:
@@ -40,13 +67,23 @@ def cmd_list() -> int:
 
     try:
         import yaml
-
+    except ImportError:
+        print("Capsule Corp Cohort Registry:")
+        try:
+            print(registry.read_text(encoding="utf-8"))
+        except OSError as exc:
+            print(f"Error: unable to read bundled registry: {exc}", file=sys.stderr)
+            return 1
+        return 0
+    try:
         data = yaml.safe_load(registry.read_text(encoding="utf-8"))
         bots = data.get("bots", {}) if isinstance(data, dict) else {}
-    except (OSError, ImportError, ValueError):
-        print("Capsule Corp Cohort Registry:")
-        print(registry.read_text(encoding="utf-8"))
-        return 0
+    except OSError as exc:
+        print(f"Error: unable to read bundled registry: {exc}", file=sys.stderr)
+        return 1
+    except yaml.YAMLError as exc:
+        print(f"Error: bundled registry is invalid YAML: {exc}", file=sys.stderr)
+        return 1
 
     print("=" * 90)
     print(" 🚀 CAPSULE CORP AGENT COHORT ROSTER")

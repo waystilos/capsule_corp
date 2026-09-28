@@ -33,6 +33,7 @@ py .\bin\capsule list
 - Show both PowerShell/Command Prompt syntax and Unix syntax.
 - Explain that `config/*.sh` sync scripts require Git Bash, WSL, or another Bash environment on Windows.
 - Do not tell Windows users to run `export PATH=...`; show the PowerShell session equivalent or point them to the Windows PATH settings.
+- After `py -m pip install --user ...`, verify the user Scripts location with `py -c "import sysconfig; print(sysconfig.get_path('scripts', scheme='nt_user'))"` and add that directory to PATH if `capsule` is not recognized.
 - Keep the local launcher path available; do not require global installation for first use.
 
 ## Acceptance criteria
@@ -43,4 +44,3 @@ py .\bin\capsule list
 4. The root README has a Windows quick start before the general shell setup.
 5. The cookbook has a Windows troubleshooting path.
 6. All Python tests and verification checks remain green.
-

@@ -102,6 +102,20 @@ py -m pip install --user C:\path\to\capsule-corp
 capsule list
 ```
 
+If PowerShell says `capsule` is not recognized after a `--user` install, add Python's user `Scripts` directory to PATH. Print the exact directory for the active Python installation with:
+
+```powershell
+py -c "import sysconfig; print(sysconfig.get_path('scripts', scheme='nt_user'))"
+```
+
+Alternatively, use the full path printed by that command or install with `pipx`, which manages the executable location.
+
+For dependency auditing, install Capsule's optional security tools:
+
+```bash
+python3 -m pip install "/path/to/capsule-corp[security]"
+```
+
 The package provides the same `capsule init --tool ...` behavior on macOS, Windows, and Linux. The source checkout and `./bin/capsule`/`bin\capsule.cmd` launchers remain supported.
 
 ### Connect a project to Copilot

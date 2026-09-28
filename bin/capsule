@@ -41,12 +41,18 @@ def cmd_list():
         data = yaml.safe_load(REGISTRY_FILE.read_text(encoding="utf-8"))
         if not isinstance(data, dict):
             raise ValueError("registry root must be a mapping")
-    except (ImportError, OSError, ValueError) + ((yaml.YAMLError,) if yaml is not None else ()):
+    except ImportError:
         # Fallback simple line parser if pyyaml not installed
         print("Capsule Corp Cohort Registry:")
         for line in REGISTRY_FILE.read_text(encoding="utf-8").splitlines():
             print(f"  {line}")
         return 0
+    except OSError as exc:
+        print(f"Error: unable to read registry: {exc}", file=sys.stderr)
+        return 1
+    except (ValueError, yaml.YAMLError) as exc:
+        print(f"Error: registry is invalid YAML: {exc}", file=sys.stderr)
+        return 1
 
     bots = data.get("bots", {})
     print("==========================================================================================")

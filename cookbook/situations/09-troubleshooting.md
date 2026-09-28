@@ -48,6 +48,17 @@ Add or configure the project’s native test runner. If this is a deliberate doc
 capsule verify --skip-tests /path/to/project
 ```
 
+### `capsule security` says the dependency audit is incomplete
+
+Install Capsule's optional audit tooling and rerun the command:
+
+```bash
+python3 -m pip install "/path/to/capsule-corp[security]"
+capsule security /path/to/project
+```
+
+An incomplete audit is reported separately from confirmed vulnerabilities; do not treat it as a clean security result.
+
 ### Sync refuses to replace a target
 
 This is a safety stop. Inspect the target, run `capsule sync --dry-run`, then use `capsule sync --force` only if replacement is intended.
