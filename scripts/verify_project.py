@@ -19,9 +19,9 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any
 
 SUSPICIOUS_DIFF_PATTERNS = [
-    (re.compile(r"^[+].*<{7}.*", re.MULTILINE), "Git merge conflict marker (start)"),
-    (re.compile(r"^[+].*={7}.*", re.MULTILINE), "Git merge conflict marker (mid)"),
-    (re.compile(r"^[+].*>{7}.*", re.MULTILINE), "Git merge conflict marker (end)"),
+    (re.compile(r"^[+]\s*<{7}(?:\s+.*)?$", re.MULTILINE), "Git merge conflict marker (start)"),
+    (re.compile(r"^[+]\s*={7}\s*$", re.MULTILINE), "Git merge conflict marker (mid)"),
+    (re.compile(r"^[+]\s*>{7}(?:\s+.*)?$", re.MULTILINE), "Git merge conflict marker (end)"),
     (re.compile(r"^[+].*AIza[0-9A-Za-z-_]{35}.*", re.MULTILINE), "Exposed Google API Key"),
     (re.compile(r"^[+].*sk-[a-zA-Z0-9]{20,}.*", re.MULTILINE), "Exposed OpenAI / Service Secret Key"),
     (re.compile(r"^[+].*ghp_[a-zA-Z0-9]{36}.*", re.MULTILINE), "Exposed GitHub Personal Access Token"),

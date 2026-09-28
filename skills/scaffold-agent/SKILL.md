@@ -9,8 +9,8 @@ Use this skill when designing a new agent or upgrading an existing agent in the 
 
 ## Phase 1: The Scoping Interview
 Before writing any code or system prompt, answer these five questions:
-1. **The Single JTBD:** What is the single outcome this agent is held accountable for? (If it has "and" in the purpose, split it).
-2. **The Voice/Archetype:** What DBZ persona best fits this operational mode?
+1. **Mandatory DBZ Name & Persona:** What Dragon Ball Z character represents this operational mode? (Rule: Every bot in Capsule Corp MUST bear a Dragon Ball Z name, e.g. Gohan, Krillin, Roshi, Tien, Korin, Shenron).
+2. **The Single JTBD:** What is the single outcome this agent is held accountable for? (If it has "and" in the purpose, split it).
 3. **The Minimal Toolset:** What is the absolute minimum list of tools it needs?
 4. **The Deterministic Verification:** How does the agent or system objectively verify success (e.g. CLI exit code, schema check)?
 5. **Autonomy Stage:** Where is it on the ladder?
