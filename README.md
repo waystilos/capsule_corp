@@ -8,6 +8,81 @@ A specialized cohort of autonomous AI agents modeled on **Dragon Ball Z** archet
 
 ---
 
+## Getting Started
+
+Capsule Corp does not require a system-wide installation. Clone the repository and run the local executable:
+
+```bash
+git clone <repository-url>
+cd capsule-corp
+./bin/capsule list
+```
+
+### Prerequisites
+
+- Python 3.8 or newer
+- Git, for change and diff verification
+- PyYAML, required by the full test suite and formatted registry output:
+
+  ```bash
+  python3 -m pip install PyYAML
+  ```
+
+Project-specific tools such as `pytest`, `npm`, `cargo`, or `go` are only needed when verifying a project that uses them.
+
+### Run the built-in checks
+
+```bash
+./bin/capsule test
+./bin/capsule verify .
+./bin/capsule security .
+```
+
+All three commands should exit with code 0 before treating the local setup as ready.
+
+### Make `capsule` available in your shell
+
+For the current shell session:
+
+```bash
+export PATH="$PWD/bin:$PATH"
+capsule list
+```
+
+To make that permanent, add the equivalent `export PATH=...` line to your shell startup file. The local `./bin/capsule` path always remains available.
+
+### Connect a project
+
+```bash
+./bin/capsule init /path/to/project
+./bin/capsule verify /path/to/project
+./bin/capsule security /path/to/project
+```
+
+`init` creates missing project guidance and preserves existing instruction files. Replacing existing guidance requires an explicit choice:
+
+```bash
+./bin/capsule init --force /path/to/project
+```
+
+### Sync AI-tool skills and rules safely
+
+Preview global changes before applying them:
+
+```bash
+./bin/capsule sync --dry-run
+```
+
+Apply the changes only after reviewing the preview:
+
+```bash
+./bin/capsule sync --force
+```
+
+Forced replacements create timestamped backups. Do not run global sync on a shared machine without checking the target paths.
+
+For detailed situation-based workflows, see the [Capsule Corp Cookbook](cookbook/README.md).
+
 ## 1. The Startup Cohort Roster
 
 | Character | Role | Operational Focus | Primary Job To Be Done (JTBD) |
