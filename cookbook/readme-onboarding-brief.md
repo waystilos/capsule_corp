@@ -52,15 +52,15 @@ To make that permanent, add the equivalent `export PATH=...` line to the shell s
 #### Connect a project
 
 ```bash
-./bin/capsule init /path/to/project
+./bin/capsule init --tool copilot /path/to/project
 ./bin/capsule verify /path/to/project
 ./bin/capsule security /path/to/project
 ```
 
-`init` creates missing project guidance and preserves existing instruction files. Replacing existing guidance requires an explicit choice:
+`init` installs only the selected integration and preserves unrelated instruction files. Configure several tools explicitly with `--tools`. Replacing selected guidance requires an explicit choice:
 
 ```bash
-./bin/capsule init --force /path/to/project
+./bin/capsule init --tool copilot --force /path/to/project
 ```
 
 #### Sync AI-tool skills and rules safely
@@ -118,4 +118,3 @@ Implement the README section above and make the documented future path true.
 - Do not redesign the agent roster.
 - Do not make global sync automatic during installation.
 - Do not silently modify `.zshrc`, `.bashrc`, or other shell startup files.
-

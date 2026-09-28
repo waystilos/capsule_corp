@@ -13,10 +13,14 @@ capsule sync --dry-run
 Initialize the project:
 
 ```bash
-capsule init /path/to/project
+capsule init --tool copilot /path/to/project
 ```
 
-This creates missing project-level guidance such as `AGENTS.md`, `.cursorrules`, `.windsurfrules`, and GitHub Copilot instructions. Existing files are preserved.
+This creates only `.github/copilot-instructions.md` and preserves existing files. Add integrations explicitly when needed:
+
+```bash
+capsule init --tools copilot,codex,cursor /path/to/project
+```
 
 Validate the result:
 
@@ -30,7 +34,7 @@ capsule security /path/to/project
 Read them first. Keep the project’s conventions, then merge the useful Capsule Corp guidance manually. Use this only when you explicitly want Capsule Corp to replace those files:
 
 ```bash
-capsule init --force /path/to/project
+capsule init --tool copilot --force /path/to/project
 ```
 
 ## You are ready when
@@ -38,4 +42,3 @@ capsule init --force /path/to/project
 - The project has a clear owner for product, implementation, security, and verification work.
 - Its native tests run through `capsule verify`.
 - The project’s existing AI instructions were preserved or intentionally replaced.
-

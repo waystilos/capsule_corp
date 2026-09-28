@@ -22,7 +22,7 @@ This must always work after cloning:
 cd capsule-corp
 ./bin/capsule doctor
 ./bin/capsule test
-./bin/capsule init /path/to/project
+./bin/capsule init --tool copilot /path/to/project
 ./bin/capsule verify /path/to/project
 ```
 
@@ -101,4 +101,3 @@ Implement in this order:
 - No interactive wizard that edits shell configuration automatically.
 - No mandatory cloud account, plugin, or AI provider connection.
 - No redesign of the bot roster or agent responsibilities.
-

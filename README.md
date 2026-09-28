@@ -70,18 +70,24 @@ capsule list
 
 To make that permanent, add the equivalent `export PATH=...` line to your shell startup file. The local `./bin/capsule` path always remains available.
 
-### Connect a project
+### Connect a project to Copilot
 
 ```bash
-./bin/capsule init /path/to/project
+./bin/capsule init --tool copilot /path/to/project
 ./bin/capsule verify /path/to/project
 ./bin/capsule security /path/to/project
 ```
 
-`init` creates missing project guidance and preserves existing instruction files. Replacing existing guidance requires an explicit choice:
+By default, `init` installs only the integration you select and preserves unrelated tool files. To configure several tools intentionally:
 
 ```bash
-./bin/capsule init --force /path/to/project
+./bin/capsule init --tools copilot,codex,cursor /path/to/project
+```
+
+`init` preserves existing instruction files. Replacing selected guidance requires an explicit choice:
+
+```bash
+./bin/capsule init --tool copilot --force /path/to/project
 ```
 
 ### Sync AI-tool skills and rules safely
@@ -202,10 +208,12 @@ The CLI is in your system PATH (`~/.zshrc`). You can run `capsule` from any term
 # 1. List all agents in the cohort with roles and model tiers
 capsule list
 
-# 2. Bootstrap ANY new startup repo with Copilot, Codex, Cursor, and Windsurf configs
-capsule init /path/to/startup-project
+# 2. Configure only the AI integration you are using
+capsule init --tool copilot /path/to/startup-project
 # Use --force only when replacing existing directive files is intentional
-capsule init --force /path/to/startup-project
+capsule init --tool copilot --force /path/to/startup-project
+# Explicit multi-tool setup is available when required
+capsule init --tools copilot,codex,cursor /path/to/startup-project
 
 # 3. Run Android 17's Security Sentinel (secret leaks, OWASP patterns, dependency CVEs)
 capsule security [project_dir]
