@@ -36,9 +36,23 @@ capsule init --tools copilot,claude,codex,cursor,gemini /path/to/project
 Validate the result:
 
 ```bash
-capsule verify /path/to/project
-capsule security /path/to/project
+capsule check /path/to/project       # Everyday check: tests, lint, typecheck, secrets
+capsule verify /path/to/project      # Strict verification gate
+capsule security /path/to/project    # Security and CVE scan
 ```
+
+### Project-Specific Configuration (`capsule.json`)
+Rather than relying on build manifest heuristics, you can explicitly configure check commands in `capsule.json`, `.capsulerc.json`, or `pyproject.toml`:
+
+```json
+{
+  "test": "npm test",
+  "lint": "npm run lint",
+  "typecheck": "tsc --noEmit"
+}
+```
+
+When present, `capsule check` executes these commands directly and reports factual `[PASS]`, `[FAIL]`, and `[SKIP]` statuses with durations.
 
 ## If the project already has instructions
 
@@ -50,6 +64,6 @@ capsule init --tool copilot --force /path/to/project
 
 ## You are ready when
 
-- The project has a clear owner for product, implementation, security, and verification work.
-- Its native tests run through `capsule verify`.
+- The project has configured directives (`AGENTS.md`, `.github/copilot-instructions.md`, `CLAUDE.md`, or `GEMINI.md`).
+- `capsule check` runs and passes tests, linters, and diff audit.
 - The project’s existing AI instructions were preserved or intentionally replaced.

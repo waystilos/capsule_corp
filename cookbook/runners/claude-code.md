@@ -54,22 +54,28 @@ This allows Claude to execute `capsule verify`, `capsule security`, and `capsule
 ### B. Invoking Specialist Subagents
 Claude Code supports specialized subagents defined in `.claude/agents/`:
 - Type `/agents` in Claude Code to view registered cohort operatives.
-- Delegate explicit tasks to specialists:
-  - **`@piccolo`**: Deconstruct complex epics into atomic tasks.
-  - **`@goku`**: Surgical implementation with minimal conversational filler.
+- Core 4 Default Roles:
+  - **`@bulma`**: MVP scoping, PRDs, API specs, and acceptance criteria.
+  - **`@goku`**: Frontline implementation with Ultra Instinct focus.
+  - **`@trunks`**: Verification gatekeeper: tests, linters, typechecks, diff audit.
+  - **`@piccolo`** / **`@whis`**: Deconstruct complex epics into atomic tasks.
+- Optional Specialists (on demand):
   - **`@android-17`**: Security audit for secrets, CORS, and dependency CVEs.
-  - **`@trunks`**: Test execution and diff verification.
   - **`@android-18`**: Refactoring and dead code cleanup.
+  - **`@videl`**: UX, accessibility, and user flows.
+  - **`@vegeta`**: Docker, CI/CD, and database migrations.
 
-### C. Standard Claude Code Prompting Pattern
-When starting a feature with Claude Code, follow this format:
+### C. Standard Task Brief Handoff
+Pass tasks to Claude Code using the standard Task Brief envelope:
 
-```text
-As @Whis, route this request and assign the proper specialist:
-"We need to implement email OTP authentication with rate limiting."
+```markdown
+### Task Brief
+- **Goal:** Implement email OTP authentication with rate limiting
+- **Scope:** src/auth/otp.py, tests/test_otp.py
+- **Constraints:** Python 3.8+ compatible, zero new external dependencies
+- **Acceptance Criteria:** Rate limit rejects 5+ requests/min; token expires after 5 mins
+- **Verification:** capsule check .
 ```
-
-Claude will route the request, assume the specialist role, and follow the handoff chain through verification.
 
 ---
 
@@ -78,8 +84,9 @@ Claude will route the request, assume the specialist role, and follow the handof
 Before ending your Claude Code session or accepting code changes, ensure Claude executes:
 
 ```bash
-capsule verify .
-capsule security .
+capsule check .      # Everyday factual checks (tests, lint, typecheck, secrets)
+capsule verify .     # Strict verification gate
+capsule security .   # Security scanner
 ```
 
-Both must report `VERDICT: GREEN` with exit code 0.
+All must report green with exit code 0.

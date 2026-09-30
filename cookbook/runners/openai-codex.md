@@ -46,11 +46,23 @@ codex "As @Goku, implement unit tests for authService.ts adhering to AGENTS.md. 
 ### B. Enforcing Trunks' Verification Gate
 Codex should always be instructed to end its execution block with verification:
 
-```text
-Run tests and verify exit code 0 using `capsule verify .`. If any test fails, fix root causes before exiting.
+```bash
+capsule check .      # Everyday factual checks (tests, lint, typecheck, secrets)
+capsule verify .     # Strict verification gate
 ```
 
-### C. Zero Conversational Filler
+### C. Standard Task Brief Envelope
+Pipe structured task briefs to Codex rather than conversational introductions:
+
+```text
+Goal: Implement unit tests for authService.ts adhering to AGENTS.md
+Scope: src/authService.ts, tests/authService.test.ts
+Constraints: Zero external dependencies, minimal diff footprint
+Acceptance Criteria: Covers invalid tokens, expiration, and rate-limiting
+Verification: capsule check .
+```
+
+### D. Zero Conversational Filler
 Codex should follow Goku's Ultra Instinct directive:
 - Modify only the files directly specified.
 - Do not add unrequested comments or speculative dependencies.

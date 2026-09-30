@@ -2,7 +2,7 @@
 
 Start with **Whis** when the request is unclear. Whis is the front door for routing and is responsible for clarifying ownership instead of guessing.
 
-## Use the deterministic router
+## Use the Router for Suggestions
 
 From the Capsule Corp repository or an installed package:
 
@@ -10,26 +10,52 @@ From the Capsule Corp repository or an installed package:
 capsule route "I need an accessible onboarding flow with clear error states"
 ```
 
-The command returns the owner, intent, reason, and expected handoff chain. For example:
+The router treats classification as a **heuristic suggestion**, giving host AIs and developers the freedom to choose the right workflow scale:
 
 ```text
-Owner: videl
+Status: routed
+Owner: videl (UX Specialist) [Suggestion]
+Workflow Tier: standard_feature
+Suggested Workflow: Product (@Bulma) -> Builder (@Goku) -> Reviewer (@Trunks) -> Verification (capsule check)
+Intent: user_experience
+Reason: Matched: onboarding.
 Handoff: videl -> bulma -> piccolo
 ```
 
-## Routing rules
+Or for a small fix:
 
-- Product scope, MVP, requirements, or API contracts → **Bulma**
-- UX, accessibility, onboarding, journeys, or interaction states → **Videl**
-- Task decomposition and orchestration → **Piccolo**
-- Focused implementation or bug fix → **Goku**
-- Tests, linting, type checks, or release verification → **Trunks**
-- Security, secrets, vulnerabilities, or auth review → **Android 17**
-- Behavior-preserving cleanup → **Android 18**
-- Deployment, CI/CD, databases, or performance → **Vegeta**
-- New bots, skills, prompts, or transcript audits → **Dr. Gero**
+```bash
+capsule route "fix button alignment bug in login view"
+```
 
-If the router reports `needs_clarification`, ask Whis to clarify the desired outcome before dispatching. Do not choose between tied specialists by guesswork.
+Output:
+```text
+Status: routed
+Owner: goku (Builder) [Suggestion]
+Workflow Tier: small_fix
+Suggested Workflow: Builder (@Goku) -> Verification (capsule check)
+Intent: implementation
+Reason: Matched: fix, bug.
+Handoff: goku -> trunks
+```
+
+## Routing Heuristics
+
+### Core 4 Default Roles
+- **Product (`@Bulma`):** Product scope, MVP, requirements, API contracts, acceptance criteria.
+- **Builder (`@Goku`):** Implementation, bugfixes, code edits with Ultra Instinct focus.
+- **Reviewer (`@Trunks`):** Tests, linters, typechecks, diff integrity.
+- **Coordinator (`@Piccolo` / `@Whis`):** Task decomposition, epic orchestration, request triage.
+
+### Optional Specialists (Called On-Demand Only)
+- **UX (`@Videl`):** Accessibility, user journey, interaction and error states.
+- **Security (`@Android-17`):** Auth, secrets, CVEs, OWASP patterns.
+- **Refactoring (`@Android-18`):** Dead code cleanup, technical debt.
+- **Infra (`@Vegeta`):** Docker, CI/CD, database migrations, connection pooling.
+- **Game (`@Roshi`):** Game loops, canvas mechanics, sprite math.
+- **Meta (`@Dr-Gero`):** Scaffolding bots and skills, transcript friction auditing.
+
+If the router reports `needs_clarification`, Whis will triage and ask for clarification rather than making a random guess between tied specialists. Host AIs may also override routing based on the developer's instructions.
 
 ## You are ready when
 
