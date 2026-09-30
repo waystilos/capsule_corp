@@ -1,6 +1,6 @@
 # ==============================================================================
 # CAPSULE CORP AGENT COHORT REGISTRY
-# Capsule Corp's own agentic engineering principles
+# Capsule Corp's agentic engineering principles, adapted from Lauren's original framing
 # Theme: Dragon Ball Z
 # ==============================================================================
 
@@ -130,3 +130,27 @@ bots:
       - "write_to_file"
       - "replace_file_content"
     verification_gate: "Container builds, DB migration rolls up/down, and CI YAML passes linting."
+
+  goten:
+    name: "goten"
+    alias: "Goten (The Sprite Animation Specialist)"
+    role: "Articulated Sprite Animation Specialist"
+    job_to_be_done: "Deliver a verified volleyball character animation sequence whose anticipation, contact, recovery, success, miss, pause, and replay frames read clearly at gameplay size."
+    model_tier: "pro"
+    allowed_tools:
+      - "view_image"
+      - "rg"
+      - "apply_patch"
+    verification_gate: "Run the volleyball frame audit and npm test -- --run src/test/volleyEngine.test.ts src/test/volleyGame.test.tsx; all checks must pass."
+
+  android_16:
+    name: "android-16"
+    alias: "Android 16 (The Rive Rig Inspector)"
+    role: "Rive Rig Integration Specialist"
+    job_to_be_done: "Validate and integrate a delivered Rive volleyball character rig without inventing artboard names, state-machine inputs, or unsupported runtime behavior."
+    model_tier: "pro"
+    allowed_tools:
+      - "rg"
+      - "view_image"
+      - "apply_patch"
+    verification_gate: "If a .riv exists, inspect its delivered artboard and state-machine contract; otherwise report the missing asset and preserve the fallback. Run npm run build and npm run verify."

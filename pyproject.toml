@@ -24,7 +24,7 @@ packages = ["capsule", "scripts"]
 include-package-data = true
 
 [tool.setuptools.data-files]
-"share/capsule-corp" = ["registry.yaml"]
+"share/capsule-corp" = ["registry.yaml", "CLAUDE.md"]
 "share/capsule-corp/config" = ["config/routing.yaml"]
 "share/capsule-corp/.github" = [".github/copilot-instructions.md"]
 "share/capsule-corp/bots" = ["bots/*.md"]

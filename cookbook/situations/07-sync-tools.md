@@ -21,7 +21,7 @@ Forced replacement moves existing targets to timestamped `.capsule-backup-*` fil
 The sync affects global locations such as:
 
 - `~/.codex/skills/`
-- `~/.claude/skills/` and `~/.claude/CLAUDE.md`
+- `~/.claude/agents/`, `~/.claude/skills/`, `~/.claude/CLAUDE.md`, and `~/.claude/settings.json`
 - `~/.gemini/config/skills/`
 - `~/.agents/skills/`
 - `~/.cursorrules` and `~/.windsurfrules`

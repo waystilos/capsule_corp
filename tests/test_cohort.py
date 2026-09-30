@@ -17,13 +17,14 @@ CAPSULE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(CAPSULE_ROOT / "scripts"))
 sys.path.insert(0, str(CAPSULE_ROOT / "src"))
 
-from init_project import init_project
+from init_project import ALL_TOOLS, init_project
 from scaffold_bot import generate_bot_markdown, update_registry_yaml, validate_bot_name
 from audit_transcripts import analyze_transcript
 from security_audit import scan_for_secrets
 from security_audit import run_dependency_audit
 from verify_project import SUSPICIOUS_DIFF_PATTERNS, audit_git_diff
 from route_request import route_request
+from doctor import run_doctor
 from capsule.cli import _installed_resource_candidates, cmd_list
 
 
@@ -128,6 +129,7 @@ class TestDrGeroAuditor(unittest.TestCase):
 class TestTrunksSentinel(unittest.TestCase):
     def test_diff_detects_merge_conflicts_and_secrets(self):
         dummy_key = "sk-" + "testdummykey" * 3
+        dummy_ant = "sk-" + "ant-api03-" + "1" * 85
         dirty_diff = f"""
 +<<<<<<< HEAD
 +print("conflict")
@@ -135,6 +137,7 @@ class TestTrunksSentinel(unittest.TestCase):
 +print("resolved")
 +>>>>>>> branch
 +const apiKey = "{dummy_key}";
++const antKey = "{dummy_ant}";
 """
         detected_issues = []
         for pattern, desc in SUSPICIOUS_DIFF_PATTERNS:
@@ -145,6 +148,12 @@ class TestTrunksSentinel(unittest.TestCase):
         self.assertIn("Git merge conflict marker (mid)", detected_issues)
         self.assertIn("Git merge conflict marker (end)", detected_issues)
         self.assertIn("Exposed OpenAI / Service Secret Key", detected_issues)
+        self.assertIn("Exposed Anthropic API Key", detected_issues)
+
+    def test_doctor_inspects_environment_health(self):
+        report = run_doctor(CAPSULE_ROOT)
+        self.assertIn(report["status"], ("HEALTHY", "WARN"))
+        self.assertGreaterEqual(len(report["categories"]), 3)
 
     def test_cli_propagates_failed_child_exit_code(self):
         result = subprocess.run(
@@ -219,6 +228,9 @@ class TestProjectSafety(unittest.TestCase):
             self.assertFalse((root / "AGENTS.md").exists())
             self.assertFalse((root / ".cursorrules").exists())
             self.assertFalse((root / ".windsurfrules").exists())
+            self.assertFalse((root / "GEMINI.md").exists())
+            self.assertFalse((root / "CLAUDE.md").exists())
+            self.assertFalse((root / ".claude").exists())
 
     def test_initializer_installs_only_explicit_tools(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -230,6 +242,110 @@ class TestProjectSafety(unittest.TestCase):
             self.assertTrue((root / ".cursorrules").exists())
             self.assertFalse((root / "AGENTS.md").exists())
             self.assertFalse((root / ".windsurfrules").exists())
+            self.assertFalse((root / "GEMINI.md").exists())
+            self.assertFalse((root / "CLAUDE.md").exists())
+
+    def test_initializer_installs_gemini_and_agy(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            init_project(root, tools={"gemini"})
+            self.assertTrue((root / "GEMINI.md").exists())
+            self.assertIn("Capsule Corp Directives", (root / "GEMINI.md").read_text(encoding="utf-8"))
+            self.assertFalse((root / "AGENTS.md").exists())
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            init_project(root, tools={"agy"})
+            self.assertTrue((root / "GEMINI.md").exists())
+            self.assertIn("Capsule Corp Directives", (root / "GEMINI.md").read_text(encoding="utf-8"))
+
+    def test_initializer_installs_claude_and_claudecode(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            init_project(root, tools={"claude"})
+            self.assertTrue((root / "CLAUDE.md").exists())
+            self.assertTrue((root / ".claude" / "settings.json").exists())
+            self.assertIn("Capsule Corp Directives for Claude Code", (root / "CLAUDE.md").read_text(encoding="utf-8"))
+            self.assertIn("capsule", (root / ".claude" / "settings.json").read_text(encoding="utf-8"))
+            self.assertFalse((root / "AGENTS.md").exists())
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            init_project(root, tools={"claudecode"})
+            self.assertTrue((root / "CLAUDE.md").exists())
+            self.assertTrue((root / ".claude" / "settings.json").exists())
+            self.assertIn("Capsule Corp Directives for Claude Code", (root / "CLAUDE.md").read_text(encoding="utf-8"))
+
+    def test_initializer_all_tools_includes_gemini_and_claude(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            init_project(root, tools=ALL_TOOLS)
+            self.assertTrue((root / ".github" / "copilot-instructions.md").exists())
+            self.assertTrue((root / "AGENTS.md").exists())
+            self.assertTrue((root / ".cursorrules").exists())
+            self.assertTrue((root / ".windsurfrules").exists())
+            self.assertTrue((root / "GEMINI.md").exists())
+            self.assertTrue((root / "CLAUDE.md").exists())
+            self.assertTrue((root / ".claude" / "settings.json").exists())
+
+    def test_initializer_preserves_existing_gemini(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            existing = "custom gemini rules\n"
+            (root / "GEMINI.md").write_text(existing, encoding="utf-8")
+
+            init_project(root, tools={"gemini"})
+            self.assertEqual((root / "GEMINI.md").read_text(encoding="utf-8"), existing)
+
+            init_project(root, force=True, tools={"gemini"})
+            self.assertIn("Capsule Corp Directives", (root / "GEMINI.md").read_text(encoding="utf-8"))
+
+    def test_initializer_preserves_existing_claude(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            existing_claude = "custom claude rules\n"
+            (root / "CLAUDE.md").write_text(existing_claude, encoding="utf-8")
+            claude_dir = root / ".claude"
+            claude_dir.mkdir()
+            existing_settings = '{"custom": true}\n'
+            (claude_dir / "settings.json").write_text(existing_settings, encoding="utf-8")
+
+            init_project(root, tools={"claude"})
+            self.assertEqual((root / "CLAUDE.md").read_text(encoding="utf-8"), existing_claude)
+            self.assertEqual((claude_dir / "settings.json").read_text(encoding="utf-8"), existing_settings)
+
+            init_project(root, force=True, tools={"claude"})
+            self.assertIn("Capsule Corp Directives for Claude Code", (root / "CLAUDE.md").read_text(encoding="utf-8"))
+            self.assertIn("Bash(capsule *)", (claude_dir / "settings.json").read_text(encoding="utf-8"))
+
+    def test_initializer_includes_self_provisioning_directive(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            init_project(root, tools={"copilot", "agents", "claude", "gemini"})
+            self.assertIn("Agent Self-Provisioning", (root / ".github" / "copilot-instructions.md").read_text(encoding="utf-8"))
+            self.assertIn("Agent Self-Provisioning", (root / "AGENTS.md").read_text(encoding="utf-8"))
+            self.assertIn("Agent Self-Provisioning", (root / "CLAUDE.md").read_text(encoding="utf-8"))
+            self.assertIn("Agent Self-Provisioning", (root / "GEMINI.md").read_text(encoding="utf-8"))
+
+    def test_initializer_auto_detects_claude_environment(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            with patch.dict(os.environ, {"CLAUDE_CODE": "1"}):
+                init_project(root, tools={"auto"})
+            self.assertTrue((root / "CLAUDE.md").exists())
+            self.assertTrue((root / ".claude" / "settings.json").exists())
+
+    def test_initializer_auto_detects_gemini_environment(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            with patch.dict(os.environ, {"GEMINI_CLI": "1"}):
+                init_project(root, tools={"auto"})
+            self.assertTrue((root / "GEMINI.md").exists())
 
 
 class TestAndroid17Security(unittest.TestCase):

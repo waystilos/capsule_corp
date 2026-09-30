@@ -13,13 +13,24 @@ capsule sync --dry-run
 Initialize the project:
 
 ```bash
-capsule init --tool copilot /path/to/project
+capsule init /path/to/project
 ```
 
-This creates only `.github/copilot-instructions.md` and preserves existing files. Add integrations explicitly when needed:
+This creates `.github/copilot-instructions.md` containing the **Agent Self-Provisioning Rule**.
+
+### Autonomous Agent Self-Provisioning
+Whenever ANY AI agent (Claude Code, Google Antigravity/Gemini, Cursor, Windsurf, Codex) connects to an initialized project, the agent detects the Capsule Corp directives and **autonomously executes `capsule init --tool <agent> .` on its own**—installing its directive files (`CLAUDE.md`, `GEMINI.md`, `.cursorrules`, etc.) without you needing to remember or pick which tool flag to pass.
+
+You can also auto-detect and initialize all active or installed tools upfront:
 
 ```bash
-capsule init --tools copilot,codex,cursor /path/to/project
+capsule init --auto /path/to/project
+```
+
+Or add specific integrations explicitly when desired:
+
+```bash
+capsule init --tools copilot,claude,codex,cursor,gemini /path/to/project
 ```
 
 Validate the result:
