@@ -4,6 +4,7 @@ Capsule Corp Cohort CLI (Unified Interface)
 Built for Capsule Corp's own agent engineering system
 
 Usage:
+  capsule check [dir]       Run project checks (tests, linter, typechecker, secrets)
   capsule list              List all registered cohort bots and their specs
   capsule route "request"   Route a request safely through the cohort
   capsule doctor [dir]      Run environment diagnostics and multi-AI healthcheck
@@ -110,6 +111,11 @@ def cmd_audit(args):
     return run_child([sys.executable, str(script)] + args)
 
 
+def cmd_check(args):
+    script = SCRIPTS_DIR / "check_project.py"
+    return run_child([sys.executable, str(script)] + args)
+
+
 def cmd_verify(args):
     script = SCRIPTS_DIR / "verify_project.py"
     return run_child([sys.executable, str(script)] + args)
@@ -146,7 +152,9 @@ def main():
     subcommand = sys.argv[1]
     extra_args = sys.argv[2:]
 
-    if subcommand == "list":
+    if subcommand == "check":
+        exit_code = cmd_check(extra_args)
+    elif subcommand == "list":
         exit_code = cmd_list()
     elif subcommand == "route":
         exit_code = cmd_route(extra_args)

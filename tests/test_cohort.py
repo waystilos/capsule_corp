@@ -22,9 +22,10 @@ from scaffold_bot import generate_bot_markdown, update_registry_yaml, validate_b
 from audit_transcripts import analyze_transcript
 from security_audit import scan_for_secrets
 from security_audit import run_dependency_audit
-from verify_project import SUSPICIOUS_DIFF_PATTERNS, audit_git_diff
+from verify_project import SUSPICIOUS_DIFF_PATTERNS, audit_git_diff, load_project_config
 from route_request import route_request
 from doctor import run_doctor
+from check_project import run_project_checks, format_check_report
 from capsule.cli import _installed_resource_candidates, cmd_list
 
 
@@ -388,6 +389,65 @@ class TestAndroid17Security(unittest.TestCase):
                 exit_code, _ = run_dependency_audit(root)
             self.assertEqual(exit_code, 0)
             self.assertEqual(calls, [["npm", "audit", "--audit-level=high"], ["pip-audit", "-r", str(root / "requirements.txt")]])
+
+
+class TestCapsuleCheck(unittest.TestCase):
+    def test_load_project_config_json(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "capsule.json").write_text('{"test": "pytest -v", "lint": "flake8"}\n', encoding="utf-8")
+            cfg = load_project_config(root)
+            self.assertEqual(cfg.get("test"), "pytest -v")
+            self.assertEqual(cfg.get("lint"), "flake8")
+
+    def test_load_project_config_pyproject(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "pyproject.toml").write_text('[tool.capsule]\ntest = "pytest"\nlint = "ruff check"\n', encoding="utf-8")
+            cfg = load_project_config(root)
+            self.assertEqual(cfg.get("test"), "pytest")
+            self.assertEqual(cfg.get("lint"), "ruff check")
+
+    def test_run_project_checks_reports_factual_results(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            pass_cmd = f"{sys.executable} -c 'import sys; sys.exit(0)'"
+            res = run_project_checks(
+                root,
+                test_cmd_override=pass_cmd,
+                skip_secrets=True
+            )
+            self.assertEqual(res["verdict"], "PASS")
+            tests_check = next((c for c in res["checks"] if c["name"] == "Tests"), None)
+            self.assertIsNotNone(tests_check)
+            self.assertEqual(tests_check["status"], "PASSED")
+            lint_check = next((c for c in res["checks"] if c["name"] == "Lint"), None)
+            self.assertIsNotNone(lint_check)
+            self.assertEqual(lint_check["status"], "SKIPPED")
+
+    def test_run_project_checks_fails_on_nonzero_exit(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            fail_cmd = f"{sys.executable} -c 'import sys; sys.exit(1)'"
+            res = run_project_checks(
+                root,
+                test_cmd_override=fail_cmd,
+                skip_secrets=True
+            )
+            self.assertEqual(res["verdict"], "FAIL")
+            tests_check = next((c for c in res["checks"] if c["name"] == "Tests"), None)
+            self.assertIsNotNone(tests_check)
+            self.assertEqual(tests_check["status"], "FAILED")
+
+    def test_route_request_suggests_workflow_tiers(self):
+        small = route_request("fix typo in button class")
+        self.assertEqual(small["workflow_tier"], "small_fix")
+        self.assertIn("Builder", small["suggested_workflow"][0])
+        self.assertTrue(small.get("is_suggestion"))
+
+        epic = route_request("deconstruct epic architecture for multi-agent system")
+        self.assertEqual(epic["workflow_tier"], "complex_epic")
+        self.assertIn("Coordinator", epic["suggested_workflow"][0])
 
 
 if __name__ == "__main__":

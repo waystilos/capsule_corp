@@ -11,9 +11,11 @@ Automated verification harness:
 """
 
 import argparse
+import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 from datetime import datetime
@@ -42,7 +44,52 @@ SUSPICIOUS_DIFF_PATTERNS = [
 ]
 
 
+def load_project_config(root_dir: Path) -> Dict[str, Any]:
+    """Load explicit check/verification commands from capsule.json, .capsulerc.json, or pyproject.toml."""
+    # 1. capsule.json or .capsulerc.json
+    for candidate in ("capsule.json", ".capsulerc.json", ".capsule.json"):
+        cfg_file = root_dir / candidate
+        if cfg_file.exists():
+            try:
+                data = json.loads(cfg_file.read_text(encoding="utf-8"))
+                if isinstance(data, dict):
+                    return data
+            except Exception:
+                pass
+
+    # 2. pyproject.toml [tool.capsule]
+    pyproject = root_dir / "pyproject.toml"
+    if pyproject.exists():
+        try:
+            content = pyproject.read_text(encoding="utf-8")
+            in_section = False
+            data = {}
+            for line in content.splitlines():
+                line = line.strip()
+                if line.startswith("[") and line.endswith("]"):
+                    in_section = (line == "[tool.capsule]")
+                    continue
+                if in_section and "=" in line and not line.startswith("#"):
+                    k, v = line.split("=", 1)
+                    k = k.strip()
+                    v = v.strip().strip('"').strip("'")
+                    data[k] = v
+            if data:
+                return data
+        except Exception:
+            pass
+
+    return {}
+
+
 def detect_test_command(root_dir: Path) -> Optional[List[str]]:
+    # Project config override (capsule.json, pyproject.toml)
+    cfg = load_project_config(root_dir)
+    if "test" in cfg and cfg["test"]:
+        return shlex.split(cfg["test"])
+    if "test_cmd" in cfg and cfg["test_cmd"]:
+        return shlex.split(cfg["test_cmd"])
+
     # Capsule Corp Project
     if (root_dir / "bin" / "capsule").exists():
         return [sys.executable, str(root_dir / "bin" / "capsule"), "test"]

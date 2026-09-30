@@ -130,10 +130,12 @@ def cmd_test() -> int:
 def main(argv: Optional[List[str]] = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args or args[0] in {"-h", "--help"}:
-        print("Usage: capsule {list|route|doctor|test|scaffold|audit|verify|security|init|sync} [options]")
+        print("Usage: capsule {check|list|route|doctor|test|scaffold|audit|verify|security|init|sync} [options]")
         return 0
 
     command, extra = args[0], args[1:]
+    if command == "check":
+        return run_module("scripts.check_project", extra)
     if command == "list":
         return cmd_list()
     if command == "route":
