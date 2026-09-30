@@ -349,6 +349,17 @@ class TestProjectSafety(unittest.TestCase):
                 init_project(root, tools={"auto"})
             self.assertTrue((root / "GEMINI.md").exists())
 
+    def test_initializer_appends_capsule_to_gitignore(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            gi = root / ".gitignore"
+            gi.write_text("node_modules/\n.env\n", encoding="utf-8")
+
+            init_project(root, tools={"copilot"})
+            content = gi.read_text(encoding="utf-8")
+            self.assertIn(".capsule/", content)
+            self.assertIn("node_modules/", content)
+
 
 class TestAndroid17Security(unittest.TestCase):
     def test_security_patterns_detect_eval_and_injection(self):

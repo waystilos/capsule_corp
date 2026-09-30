@@ -344,6 +344,17 @@ When operating in this or any project initialized with Capsule Corp:
         else:
             print("  · Preserved existing .claude/settings.json")
 
+    # 7. Add .capsule/ to .gitignore if present in project
+    gitignore_file = target_dir / ".gitignore"
+    if gitignore_file.exists():
+        try:
+            gi_content = gitignore_file.read_text(encoding="utf-8")
+            if ".capsule/" not in gi_content:
+                gitignore_file.write_text(gi_content.rstrip() + "\n\n# Capsule Corp check-in room state\n.capsule/\n", encoding="utf-8")
+                print("  ✓ Added .capsule/ to .gitignore")
+        except Exception:
+            pass
+
     configured = ", ".join(sorted(selected_tools))
     print(f"\n🎉 Capsule Corp configured for: {configured}")
 
