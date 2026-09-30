@@ -208,41 +208,41 @@ Call specialists only when strictly required:
 
 ## 5. Mandatory Verification Gate (Trunks' Rule)
 Before declaring any task complete or submitting code changes:
-- Run project checks: `capsule check [project_dir]` (or native test runner).
-- Run strict gate before PRs: `capsule verify [project_dir]` and `capsule security [project_dir]`.
+- Run project checks: \`capsule check [project_dir]\` (or native test runner).
+- Run strict gate before PRs: \`capsule verify [project_dir]\` and \`capsule security [project_dir]\`.
 - Verify exit code is 0 and no exposed secrets or merge conflicts are in the diff.
 
 ## 6. Check-In Room Protocol (Multi-AI Coordination)
 When multiple AI agents or models operate in the same repository:
-- Run `capsule room` to inspect active shifts and claimed files.
-- Clock in before editing: `capsule clock-in --task "..." --files "..."`
-- Verify with `capsule check .` and clock out: `capsule clock-out --summary "..."`
+- Run \`capsule room\` to inspect active shifts and claimed files.
+- Clock in before editing: \`capsule clock-in --task "..." --files "..."\`
+- Verify with \`capsule check .\` and clock out: \`capsule clock-out --summary "..."\`
 
 ## 7. Cohort CLI
-Universal CLI available at: `$CAPSULE_DIR/bin/capsule`
-- `capsule check [dir]`
-- `capsule room [dir]`
-- `capsule clock-in --task "..." [--files "..."]`
-- `capsule clock-out --summary "..."`
-- `capsule list`
-- `capsule route "request text"`
-- `capsule doctor [dir]`
-- `capsule verify [dir]`
-- `capsule security [dir]`
-- `capsule audit --latest`
-- `capsule scaffold`
-- `capsule init [dir]`
-- `capsule sync`
+Universal CLI available at: \`$CAPSULE_DIR/bin/capsule\`
+- \`capsule check [dir]\`
+- \`capsule room [dir]\`
+- \`capsule clock-in --task "..." [--files "..."]\`
+- \`capsule clock-out --summary "..."\`
+- \`capsule list\`
+- \`capsule route "request text"\`
+- \`capsule doctor [dir]\`
+- \`capsule verify [dir]\`
+- \`capsule security [dir]\`
+- \`capsule audit --latest\`
+- \`capsule scaffold\`
+- \`capsule init [dir]\`
+- \`capsule sync\`
 
 ## 8. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 Whenever an AI agent connects to a project initialized with Capsule Corp:
 - Check if your tool's specific configuration exists in the project root:
-  - Claude Code: `CLAUDE.md` and `.claude/settings.json` -> run `capsule init --tool claude .`
-  - Google Antigravity / Gemini: `GEMINI.md` -> run `capsule init --tool gemini .`
-  - Cursor: `.cursorrules` -> run `capsule init --tool cursor .`
-  - Windsurf: `.windsurfrules` -> run `capsule init --tool windsurf .`
-  - OpenAI Codex: `AGENTS.md` -> run `capsule init --tool codex .`
-  - GitHub Copilot: `.github/copilot-instructions.md` -> run `capsule init --tool copilot .`
+  - Claude Code: \`CLAUDE.md\` and \`.claude/settings.json\` -> run \`capsule init --tool claude .\`
+  - Google Antigravity / Gemini: \`GEMINI.md\` -> run \`capsule init --tool gemini .\`
+  - Cursor: \`.cursorrules\` -> run \`capsule init --tool cursor .\`
+  - Windsurf: \`.windsurfrules\` -> run \`capsule init --tool windsurf .\`
+  - OpenAI Codex: \`AGENTS.md\` -> run \`capsule init --tool codex .\`
+  - GitHub Copilot: \`.github/copilot-instructions.md\` -> run \`capsule init --tool copilot .\`
 - Execute your setup command autonomously on connection without requiring the developer to choose.
 EOF
 if [[ "$MANAGED_FILE_CHANGED" -eq 1 ]]; then
