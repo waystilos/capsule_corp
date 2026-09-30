@@ -54,8 +54,9 @@ def load_project_config(root_dir: Path) -> Dict[str, Any]:
                 data = json.loads(cfg_file.read_text(encoding="utf-8"))
                 if isinstance(data, dict):
                     return data
-            except Exception:
-                pass
+                return {"_error": f"Config {candidate} must be a JSON object, got {type(data).__name__}"}
+            except Exception as exc:
+                return {"_error": f"Malformed {candidate}: {exc}"}
 
     # 2. pyproject.toml [tool.capsule]
     pyproject = root_dir / "pyproject.toml"
@@ -76,8 +77,8 @@ def load_project_config(root_dir: Path) -> Dict[str, Any]:
                     data[k] = v
             if data:
                 return data
-        except Exception:
-            pass
+        except Exception as exc:
+            return {"_error": f"Malformed pyproject.toml [tool.capsule]: {exc}"}
 
     return {}
 
@@ -248,39 +249,25 @@ def main():
         print(f"Error: Target directory {project_dir} does not exist", file=sys.stderr)
         sys.exit(1)
 
-    test_cmd: Optional[List[str]] = None
-    if args.test_cmd:
-        try:
-            test_cmd = shlex.split(args.test_cmd)
-        except ValueError as exc:
-            parser.error(f"invalid --test-cmd: {exc}")
-    elif not args.skip_tests:
-        test_cmd = detect_test_command(project_dir)
+    try:
+        from .check_project import run_project_checks
+    except ImportError:
+        from check_project import run_project_checks
 
-    diff_issues = audit_git_diff(project_dir)
+    check_report = run_project_checks(
+        project_dir,
+        test_cmd_override=args.test_cmd,
+        skip_secrets=args.skip_tests,
+    )
 
-    test_exit_code = 0
-    test_stdout = ""
-    test_stderr = ""
-
-    if test_cmd and not args.skip_tests:
-        test_exit_code, test_stdout, test_stderr = run_tests(test_cmd, project_dir, args.timeout)
-    elif not args.skip_tests:
-        test_exit_code = 1
-        test_stderr = "No automated test runner detected. Pass --skip-tests to explicitly bypass test execution."
-
-    passed = (test_exit_code == 0) and (len(diff_issues) == 0)
+    verdict = check_report["verdict"]
+    passed = (verdict == "PASS")
 
     if args.json:
-        import json
         payload = {
-            "verdict": "PASS" if passed else "FAIL",
+            "verdict": "PASS" if passed else ("INCOMPLETE" if verdict == "INCOMPLETE" else "FAIL"),
             "project_dir": str(project_dir),
-            "test_command": " ".join(test_cmd) if test_cmd else None,
-            "test_exit_code": test_exit_code,
-            "test_stdout": test_stdout[-1000:],
-            "test_stderr": test_stderr[-1000:],
-            "diff_issues": diff_issues
+            "checks": check_report["checks"],
         }
         print(json.dumps(payload, indent=2))
         sys.exit(0 if passed else 1)
@@ -291,35 +278,28 @@ def main():
     print(f"Target Directory: {project_dir}")
     print(f"Timestamp: {datetime.now().isoformat(timespec='seconds')}")
     print("------------------------------------------------------------------")
-
-    if test_cmd and not args.skip_tests:
-        cmd_str = " ".join(test_cmd)
-        print(f"Test Suite Command: {cmd_str}")
-        if test_exit_code == 0:
-            print(" Test Execution: PASSED (Exit code 0)")
-        else:
-            print(f" Test Execution: FAILED (Exit code {test_exit_code})")
-            if test_stdout:
-                print("\n--- STDOUT Tail ---")
-                print("\n".join(test_stdout.strip().splitlines()[-15:]))
-            if test_stderr:
-                print("\n--- STDERR Tail ---")
-                print("\n".join(test_stderr.strip().splitlines()[-15:]))
-    else:
-        print("Test Execution: SKIPPED (No automated test runner detected or --skip-tests flag passed)")
-
-    print("------------------------------------------------------------------")
-    print(f"Diff Security & Integrity Audit: {len(diff_issues)} issue(s) detected")
-    for issue in diff_issues:
-        print(f"  [{issue['severity']}] {issue['description']}: {issue['snippet']}")
+    print("Verification Checks:")
+    for check in check_report["checks"]:
+        name = check["name"]
+        status = check["status"]
+        summary = check["summary"]
+        badge = "[PASS]" if status == "PASSED" else ("[SKIP]" if status == "SKIPPED" else "[FAIL]")
+        print(f"  {badge:<7} {name:<16} {summary}")
+        if status == "FAILED" and check.get("output"):
+            for l in check["output"].strip().splitlines()[-10:]:
+                print(f"         | {l}")
 
     print("==================================================================")
-    if passed:
+    if verdict == "PASS":
         print(" VERDICT: GREEN (Approved for merge/handoff. Zero regressions.)")
         print("==================================================================")
         sys.exit(0)
+    elif verdict == "INCOMPLETE":
+        print(" VERDICT: INCOMPLETE (Zero test suites or checks configured/detected. Cannot verify without test evidence.)")
+        print("==================================================================")
+        sys.exit(1)
     else:
-        print(" VERDICT: RED (Rejected. Timeline anomalies detected. Fix before handoff.)")
+        print(" VERDICT: RED (Rejected. Verification checks failed. Fix before handoff.)")
         print("==================================================================")
         sys.exit(1)
 

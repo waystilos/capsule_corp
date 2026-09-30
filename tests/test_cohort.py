@@ -6,6 +6,8 @@ Verifies registry schema, Dr. Gero's auditor, Trunks' sentinel, and bot scaffold
 
 import unittest
 import os
+import json
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import subprocess
 import yaml
@@ -26,7 +28,7 @@ from verify_project import SUSPICIOUS_DIFF_PATTERNS, audit_git_diff, load_projec
 from route_request import route_request
 from doctor import run_doctor
 from check_project import run_project_checks, format_check_report
-from room import clock_in, clock_out, clear_room, detect_environment, load_room_data, prune_stale_shifts
+from room import clock_in, clock_out, clear_room, detect_environment, load_room_data, prune_stale_shifts, heartbeat
 from capsule.cli import _installed_resource_candidates, cmd_list
 
 
@@ -180,6 +182,32 @@ class TestTrunksSentinel(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         output = result.stdout.decode("utf-8")
         self.assertIn("🚀 CAPSULE CORP AGENT COHORT ROSTER", output)
+
+    def test_verify_fails_when_configured_lint_fails(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "capsule.json").write_text('{"test": "true", "lint": "false"}', encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(CAPSULE_ROOT / "scripts" / "verify_project.py"), str(root)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("RED", result.stdout)
+
+    def test_verify_fails_on_empty_project_incomplete(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            result = subprocess.run(
+                [sys.executable, str(CAPSULE_ROOT / "scripts" / "verify_project.py"), str(root)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("INCOMPLETE", result.stdout)
 
     def test_verifier_scans_untracked_files_in_fresh_repositories(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -451,6 +479,24 @@ class TestCapsuleCheck(unittest.TestCase):
             self.assertIsNotNone(tests_check)
             self.assertEqual(tests_check["status"], "FAILED")
 
+    def test_run_project_checks_empty_project_incomplete(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            res = run_project_checks(root, skip_secrets=True)
+            self.assertEqual(res["verdict"], "INCOMPLETE")
+
+    def test_run_project_checks_malformed_config_fails(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            (root / "capsule.json").write_text("{malformed json...", encoding="utf-8")
+            res = run_project_checks(root, skip_secrets=True)
+            self.assertEqual(res["verdict"], "FAIL")
+            cfg_check = next((c for c in res["checks"] if c["name"] == "Configuration"), None)
+            self.assertIsNotNone(cfg_check)
+            self.assertEqual(cfg_check["status"], "FAILED")
+
     def test_route_request_suggests_workflow_tiers(self):
         small = route_request("fix typo in button class")
         self.assertEqual(small["workflow_tier"], "small_fix")
@@ -472,26 +518,31 @@ class TestCapsuleRoom(unittest.TestCase):
             detected = detect_environment()
             self.assertEqual(detected["agent_id"], "claude")
             self.assertEqual(detected["provider"], "Anthropic")
+            self.assertEqual(detected["model"], "claude-3-7-sonnet")
 
         with patch.dict(os.environ, {"GEMINI_CLI": "1"}):
             detected = detect_environment()
             self.assertEqual(detected["agent_id"], "gemini")
             self.assertEqual(detected["provider"], "Google")
+            self.assertEqual(detected["model"], "Unknown")
 
         with patch.dict(os.environ, {"CODEX": "1"}):
             detected = detect_environment()
             self.assertEqual(detected["agent_id"], "codex")
             self.assertEqual(detected["provider"], "OpenAI")
+            self.assertEqual(detected["model"], "Unknown")
 
         with patch.dict(os.environ, {"CURSOR_AGENT": "1"}):
             detected = detect_environment()
             self.assertEqual(detected["agent_id"], "cursor")
             self.assertEqual(detected["provider"], "Cursor")
+            self.assertEqual(detected["model"], "Unknown")
 
         with patch.dict(os.environ, {"WINDSURF_AGENT": "1"}):
             detected = detect_environment()
             self.assertEqual(detected["agent_id"], "windsurf")
             self.assertEqual(detected["provider"], "Codeium")
+            self.assertEqual(detected["model"], "Unknown")
 
     def test_clock_in_and_out(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -515,7 +566,7 @@ class TestCapsuleRoom(unittest.TestCase):
             self.assertTrue(conf_md.exists())
 
             data = load_room_data(room_json)
-            self.assertIn("claude", data["active_shifts"])
+            self.assertIn(shift["shift_id"], data["active_shifts"])
             self.assertIn("Refactor test runner", conf_md.read_text(encoding="utf-8"))
 
             # Clock out
@@ -528,33 +579,107 @@ class TestCapsuleRoom(unittest.TestCase):
             self.assertEqual(out_shift["summary"], "Refactoring completed and verified")
 
             data = load_room_data(room_json)
-            self.assertNotIn("claude", data["active_shifts"])
+            self.assertNotIn(shift["shift_id"], data["active_shifts"])
             self.assertEqual(len(data["history"]), 1)
             self.assertEqual(data["history"][0]["agent_id"], "claude")
 
-    def test_clock_out_single_active_inference(self):
+    def test_unrelated_agent_cannot_clock_out_another_shift(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            clock_in(root, agent="codex", task="Fix bug")
-            out_shift = clock_out(root, summary="Bug fixed")
+            shift = clock_in(root, agent="codex", task="Fix bug")
+            # Unrelated agent attempts clock out
+            out_unrelated = clock_out(root, agent="claude", summary="Unrelated attempt")
+            self.assertIsNone(out_unrelated)
+
+            room_json = root / ".capsule" / "room.json"
+            data = load_room_data(room_json)
+            self.assertIn(shift["shift_id"], data["active_shifts"])
+
+            # Correct agent clocks out
+            out_shift = clock_out(root, agent="codex", summary="Bug fixed")
             self.assertIsNotNone(out_shift)
             self.assertEqual(out_shift["agent_id"], "codex")
+
+    def test_duplicate_provider_sessions(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            shift1 = clock_in(root, agent="codex", task="Session 1", files=["file1.py"])
+            shift2 = clock_in(root, agent="codex", task="Session 2", files=["file2.py"])
+
+            self.assertNotEqual(shift1["shift_id"], shift2["shift_id"])
+            data = load_room_data(root / ".capsule" / "room.json")
+            self.assertEqual(len(data["active_shifts"]), 2)
+            self.assertIn(shift1["shift_id"], data["active_shifts"])
+            self.assertIn(shift2["shift_id"], data["active_shifts"])
+
+            ambig = clock_out(root, agent="codex", summary="Done")
+            self.assertIsInstance(ambig, dict)
+            self.assertEqual(ambig.get("error"), "ambiguous_session")
+
+            out1 = clock_out(root, session=shift1["shift_id"], summary="Session 1 done")
+            self.assertIsNotNone(out1)
+            self.assertEqual(out1["shift_id"], shift1["shift_id"])
+
+            data = load_room_data(root / ".capsule" / "room.json")
+            self.assertNotIn(shift1["shift_id"], data["active_shifts"])
+            self.assertIn(shift2["shift_id"], data["active_shifts"])
+
+    def test_conflicting_file_claims_and_override(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            shift1 = clock_in(root, agent="goku", files=["src/auth.py", "src/models.py"])
+            self.assertNotIn("error", shift1)
+
+            conflict = clock_in(root, agent="vegeta", files=["src/auth.py"])
+            self.assertEqual(conflict.get("error"), "file_conflict")
+            self.assertEqual(conflict["conflicts"][0]["owner_agent"], "goku")
+
+            override = clock_in(root, agent="vegeta", files=["src/auth.py"], force=True)
+            self.assertNotIn("error", override)
+            self.assertTrue(override.get("forced_override"))
+
+    def test_heartbeat_updates_last_seen_and_prevents_expiration(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            shift = clock_in(root, agent="gemini", task="Long task")
+
+            # Simulate shift active 90 minutes ago (within 2h window)
+            past_iso = (datetime.now(timezone.utc) - timedelta(minutes=90)).isoformat()
+            room_json = root / ".capsule" / "room.json"
+            data = load_room_data(room_json)
+            data["active_shifts"][shift["shift_id"]]["last_seen_at"] = past_iso
+            data["active_shifts"][shift["shift_id"]]["clocked_in_at"] = past_iso
+            (root / ".capsule" / "room.json").write_text(json.dumps(data), encoding="utf-8")
+
+            hb = heartbeat(root, session=shift["shift_id"])
+            self.assertIsNotNone(hb)
+            self.assertTrue(hb.get("ok"))
+            self.assertNotEqual(hb["last_seen_at"], past_iso)
+
+            data = load_room_data(room_json)
+            changed = prune_stale_shifts(data)
+            self.assertFalse(changed)
+            self.assertIn(shift["shift_id"], data["active_shifts"])
 
     def test_prune_stale_shifts_and_cap_history(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             data = {
                 "active_shifts": {
-                    "stale_agent": {
+                    "stale_shift": {
+                        "shift_id": "stale_shift",
                         "agent_id": "stale_agent",
                         "agent_name": "Stale Agent",
                         "clocked_in_at": "2020-01-01T00:00:00+00:00",
+                        "last_seen_at": "2020-01-01T00:00:00+00:00",
                         "task": "Old task",
                     },
-                    "fresh_agent": {
+                    "fresh_shift": {
+                        "shift_id": "fresh_shift",
                         "agent_id": "fresh_agent",
                         "agent_name": "Fresh Agent",
                         "clocked_in_at": "2099-01-01T00:00:00+00:00",
+                        "last_seen_at": "2099-01-01T00:00:00+00:00",
                         "task": "Future task",
                     },
                 },
@@ -562,10 +687,32 @@ class TestCapsuleRoom(unittest.TestCase):
             }
             changed = prune_stale_shifts(data)
             self.assertTrue(changed)
-            self.assertNotIn("stale_agent", data["active_shifts"])
-            self.assertIn("fresh_agent", data["active_shifts"])
+            self.assertNotIn("stale_shift", data["active_shifts"])
+            self.assertIn("fresh_shift", data["active_shifts"])
             self.assertIn("[Auto-Expired]", data["history"][0]["summary"])
             self.assertEqual(len(data["history"]), 15)
+
+    def test_concurrent_registrations_preserve_all_shifts(self):
+        import concurrent.futures
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+
+            def do_clock_in(i):
+                return clock_in(
+                    target_dir=root,
+                    agent=f"agent_{i}",
+                    task=f"Task {i}",
+                    files=[f"file_{i}.py"],
+                )
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+                results = list(executor.map(do_clock_in, range(10)))
+
+            data = load_room_data(root / ".capsule" / "room.json")
+            self.assertEqual(len(data["active_shifts"]), 10)
+            for i, res in enumerate(results):
+                self.assertIn(res["shift_id"], data["active_shifts"])
+                self.assertEqual(data["active_shifts"][res["shift_id"]]["agent_id"], f"agent_{i}")
 
     def test_clear_room(self):
         with tempfile.TemporaryDirectory() as temp_dir:

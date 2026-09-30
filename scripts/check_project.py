@@ -129,6 +129,18 @@ def run_project_checks(
     results = []
     has_failure = False
 
+    # Configuration Error Check
+    if "_error" in config:
+        has_failure = True
+        results.append({
+            "name": "Configuration",
+            "status": "FAILED",
+            "command": "load_project_config",
+            "duration": 0.0,
+            "summary": config["_error"],
+            "output": config["_error"],
+        })
+
     # 1. Tests
     test_cmd_str = test_cmd_override or config.get("test")
     test_cmd = shlex.split(test_cmd_str) if test_cmd_str else detect_test_command(root_dir)
@@ -234,11 +246,18 @@ def run_project_checks(
                 "output": "",
             })
 
-    verdict = "FAIL" if has_failure else "PASS"
+    executed_checks = [c for c in results if c["name"] in ("Tests", "Lint", "Typecheck") and c["status"] in ("PASSED", "FAILED")]
+    if has_failure:
+        verdict = "FAIL"
+    elif not executed_checks:
+        verdict = "INCOMPLETE"
+    else:
+        verdict = "PASS"
+
     return {
         "target": str(root_dir),
         "target_name": root_dir.name,
-        "config_loaded": bool(config),
+        "config_loaded": bool(config and "_error" not in config),
         "verdict": verdict,
         "checks": results,
     }
@@ -275,6 +294,8 @@ def format_check_report(report: Dict[str, Any], verbose: bool = False) -> str:
     lines.append("-" * 72)
     if report["verdict"] == "PASS":
         lines.append(" VERDICT: PASS (All active project checks succeeded)")
+    elif report["verdict"] == "INCOMPLETE":
+        lines.append(" VERDICT: INCOMPLETE (Zero test suites or checks configured/detected)")
     else:
         lines.append(" VERDICT: FAIL (One or more active project checks failed)")
     lines.append("=" * 72)
