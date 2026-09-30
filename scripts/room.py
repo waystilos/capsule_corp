@@ -2,16 +2,23 @@
 """
 Capsule Corp Check-In Room & Timeclock Engine
 Manages multi-AI agent check-ins, active shift tracking, file collision warnings,
-and automatic log pruning.
+heartbeat tracking, concurrency locking, and automatic log pruning.
 """
 
 import argparse
+from contextlib import contextmanager
 from datetime import datetime, timezone, timedelta
 import json
 import os
 from pathlib import Path
 import sys
 from typing import Dict, List, Optional, Tuple, Any
+import uuid
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 try:
     from .runtime import configure_utf8_stdio
@@ -22,60 +29,90 @@ configure_utf8_stdio()
 
 # Max history entries retained to keep logs concise
 MAX_HISTORY_ENTRIES = 15
-# Shifts older than this are considered stale/abandoned and auto-expired
+# Shifts older than this without heartbeat or activity are considered stale and auto-expired
 STALE_SHIFT_HOURS = 2
 
 
+@contextmanager
+def room_lock(target_dir: Path):
+    """Acquire an exclusive cross-process file lock for room state changes."""
+    capsule_dir = target_dir / ".capsule"
+    capsule_dir.mkdir(parents=True, exist_ok=True)
+    lock_file = capsule_dir / "room.lock"
+    with open(lock_file, "a+") as f:
+        if fcntl:
+            try:
+                fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            except (AttributeError, OSError):
+                pass
+        try:
+            yield
+        finally:
+            if fcntl:
+                try:
+                    fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                except (AttributeError, OSError):
+                    pass
+
+
+def atomic_write_json(path: Path, data: Any) -> None:
+    """Write data to temporary file and atomically replace target."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = path.with_suffix(f".tmp.{os.getpid()}_{uuid.uuid4().hex[:6]}")
+    temp_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    os.replace(temp_path, path)
+
+
 def detect_environment() -> Dict[str, str]:
-    """Auto-detect the active AI agent, provider, and model from environment variables."""
+    """Auto-detect active AI agent and provider. Return 'Unknown' for model if unspecified."""
     env = os.environ
     if env.get("CLAUDE_CODE"):
         return {
             "agent_id": "claude",
             "agent_name": "Claude Code",
             "provider": "Anthropic",
-            "model": env.get("CLAUDE_MODEL", "Claude 3.7 Sonnet"),
+            "model": env.get("CLAUDE_MODEL", "Unknown"),
         }
     if env.get("GEMINI_CLI") or env.get("ANTIGRAVITY"):
         return {
             "agent_id": "gemini",
             "agent_name": "Antigravity / Gemini",
             "provider": "Google",
-            "model": env.get("GEMINI_MODEL", "Gemini 2.5 Pro"),
+            "model": env.get("GEMINI_MODEL") or env.get("ANTIGRAVITY_MODEL") or "Unknown",
         }
     if env.get("CODEX"):
         return {
             "agent_id": "codex",
             "agent_name": "OpenAI Codex",
             "provider": "OpenAI",
-            "model": env.get("CODEX_MODEL", "o3-mini / GPT-4o"),
+            "model": env.get("CODEX_MODEL", "Unknown"),
         }
     if env.get("CURSOR_AGENT") or env.get("CURSOR_VERSION"):
         return {
             "agent_id": "cursor",
             "agent_name": "Cursor IDE",
             "provider": "Cursor",
-            "model": "Composer Agent",
+            "model": env.get("CURSOR_MODEL", "Unknown"),
         }
     if env.get("WINDSURF_AGENT"):
         return {
             "agent_id": "windsurf",
             "agent_name": "Windsurf IDE",
             "provider": "Codeium",
-            "model": "Cascade Agent",
+            "model": env.get("WINDSURF_MODEL", "Unknown"),
         }
     return {
         "agent_id": env.get("USER", "developer"),
         "agent_name": env.get("USER", "Developer"),
         "provider": "Local",
-        "model": "Interactive Session",
+        "model": env.get("MODEL", "Interactive Session"),
     }
 
 
-def get_room_paths(target_dir: Path) -> Tuple[Path, Path]:
+def get_room_paths(target_dir: Path) -> Tuple[Path, Path, Path]:
     capsule_dir = target_dir / ".capsule"
     capsule_dir.mkdir(parents=True, exist_ok=True)
-    return capsule_dir / "room.json", capsule_dir / "CONFERENCE.md"
+    return capsule_dir / "room.json", capsule_dir / "CONFERENCE.md", capsule_dir / "session.json"
 
 
 def load_room_data(room_path: Path) -> Dict[str, Any]:
@@ -91,28 +128,57 @@ def load_room_data(room_path: Path) -> Dict[str, Any]:
     return {"active_shifts": {}, "history": []}
 
 
+def check_file_conflicts(
+    active_shifts: Dict[str, Any],
+    files: List[str],
+    current_shift_id: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """Detect if any requested files are already claimed by an active shift."""
+    conflicts = []
+    norm_files = {os.path.normpath(f.strip()) for f in files if f.strip()}
+    if not norm_files:
+        return []
+
+    for shift_id, shift in active_shifts.items():
+        if shift_id == current_shift_id:
+            continue
+        claimed_norm = {os.path.normpath(f.strip()) for f in shift.get("files", []) if f.strip()}
+        overlap = norm_files.intersection(claimed_norm)
+        if overlap:
+            conflicts.append({
+                "shift_id": shift_id,
+                "agent_id": shift.get("agent_id", "unknown"),
+                "owner_agent": shift.get("agent_id", "unknown"),
+                "agent_name": shift.get("agent_name", shift_id),
+                "role": shift.get("role", "Worker"),
+                "task": shift.get("task", ""),
+                "files": sorted(list(overlap)),
+            })
+    return conflicts
+
+
 def prune_stale_shifts(data: Dict[str, Any]) -> bool:
-    """Move shifts older than STALE_SHIFT_HOURS to history with auto-expired notice."""
+    """Move shifts inactive for STALE_SHIFT_HOURS to history with auto-expired notice."""
     now = datetime.now(timezone.utc)
     active = data.get("active_shifts", {})
     stale_keys = []
     changed = False
 
-    for agent_id, shift in active.items():
-        clocked_in_str = shift.get("clocked_in_at")
-        if not clocked_in_str:
+    for shift_id, shift in active.items():
+        last_active_str = shift.get("last_seen_at") or shift.get("clocked_in_at")
+        if not last_active_str:
             continue
         try:
-            clocked_in = datetime.fromisoformat(clocked_in_str.replace("Z", "+00:00"))
-            if now - clocked_in > timedelta(hours=STALE_SHIFT_HOURS):
-                stale_keys.append(agent_id)
+            last_active = datetime.fromisoformat(last_active_str.replace("Z", "+00:00"))
+            if now - last_active > timedelta(hours=STALE_SHIFT_HOURS):
+                stale_keys.append(shift_id)
         except Exception:
             pass
 
     for key in stale_keys:
         stale_shift = active.pop(key)
         stale_shift["clocked_out_at"] = now.isoformat()
-        stale_shift["summary"] = "[Auto-Expired] Shift exceeded 2-hour activity limit without clock-out."
+        stale_shift["summary"] = "[Auto-Expired] Inactivity exceeded 2 hours without heartbeat or clock-out."
         data.setdefault("history", []).insert(0, stale_shift)
         changed = True
 
@@ -137,14 +203,16 @@ def render_conference_markdown(data: Dict[str, Any], md_path: Path) -> None:
     if not active:
         lines.append("*(No active agents currently clocked in. The workspace is idle.)*")
     else:
-        for agent_id, shift in active.items():
-            lines.append(f"### {shift.get('agent_name', agent_id)} (`{shift.get('provider', 'Unknown')}` / `{shift.get('model', 'Unknown')}`)")
+        for shift_id, shift in active.items():
+            lines.append(f"### {shift.get('agent_name', shift_id)} (`{shift_id}`)")
+            lines.append(f"- **Company / Model:** {shift.get('provider', 'Unknown')} ({shift.get('model', 'Unknown')})")
             lines.append(f"- **Role:** {shift.get('role', 'Builder')}")
             lines.append(f"- **Task:** {shift.get('task', 'No task description')}")
             files = shift.get("files", [])
             if files:
-                lines.append(f"- **Active Files (Caution):** `{', '.join(files)}`")
+                lines.append(f"- **Active Files:** `{', '.join(files)}`")
             lines.append(f"- **Clocked In At:** {shift.get('clocked_in_at', 'Unknown')}")
+            lines.append(f"- **Last Seen:** {shift.get('last_seen_at', 'Unknown')}")
             lines.append("")
 
     lines.extend([
@@ -162,7 +230,8 @@ def render_conference_markdown(data: Dict[str, Any], md_path: Path) -> None:
             lines.append(f"  - **Time:** {entry.get('clocked_out_at', 'Unknown')}")
 
     lines.append("")
-    md_path.write_text("\n".join(lines), encoding="utf-8")
+    atomic_write_json(md_path.with_suffix(".tmp.md"), "\n".join(lines))
+    os.replace(md_path.with_suffix(".tmp.md"), md_path)
 
 
 def clock_in(
@@ -173,91 +242,199 @@ def clock_in(
     role: Optional[str] = None,
     task: Optional[str] = None,
     files: Optional[List[str]] = None,
+    session: Optional[str] = None,
+    force: bool = False,
 ) -> Dict[str, Any]:
-    """Clock in an agent to the check-in room."""
-    detected = detect_environment()
-    agent_id = (agent or detected["agent_id"]).lower()
-    agent_name = agent or detected["agent_name"]
-    provider_name = provider or detected["provider"]
-    model_name = model or detected["model"]
-    role_name = role or "Builder (@Goku)"
-    task_desc = task or "General task implementation"
-    files_list = files or []
+    """Clock in an agent session to the check-in room."""
+    with room_lock(target_dir):
+        detected = detect_environment()
+        agent_id = (agent or detected["agent_id"]).lower()
+        agent_name = agent or detected["agent_name"]
+        provider_name = provider or detected["provider"]
+        model_name = model or detected["model"]
+        role_name = role or "Builder (@Goku)"
+        task_desc = task or "General task implementation"
+        files_list = [f.strip() for f in files if f.strip()] if files else []
 
-    room_json, conf_md = get_room_paths(target_dir)
-    data = load_room_data(room_json)
-    prune_stale_shifts(data)
+        room_json, conf_md, session_file = get_room_paths(target_dir)
+        data = load_room_data(room_json)
+        prune_stale_shifts(data)
 
-    now_iso = datetime.now(timezone.utc).isoformat()
-    shift_info = {
-        "agent_id": agent_id,
-        "agent_name": agent_name,
-        "provider": provider_name,
-        "model": model_name,
-        "role": role_name,
-        "task": task_desc,
-        "files": files_list,
-        "clocked_in_at": now_iso,
-    }
+        # Check for conflicting file claims
+        conflicts = check_file_conflicts(data.get("active_shifts", {}), files_list)
+        if conflicts and not force:
+            return {
+                "error": "file_conflict",
+                "conflicts": conflicts,
+                "message": "One or more files are actively claimed by another shift. Use --force to override."
+            }
 
-    data["active_shifts"][agent_id] = shift_info
-    room_json.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    render_conference_markdown(data, conf_md)
-    return shift_info
+        shift_id = session or f"shift_{uuid.uuid4().hex[:8]}"
+        now_iso = datetime.now(timezone.utc).isoformat()
+        shift_info = {
+            "shift_id": shift_id,
+            "agent_id": agent_id,
+            "agent_name": agent_name,
+            "provider": provider_name,
+            "model": model_name,
+            "role": role_name,
+            "task": task_desc,
+            "files": files_list,
+            "clocked_in_at": now_iso,
+            "last_seen_at": now_iso,
+            "forced_override": bool(conflicts and force),
+        }
+
+        data["active_shifts"][shift_id] = shift_info
+        atomic_write_json(room_json, data)
+        render_conference_markdown(data, conf_md)
+
+        # Record active local session
+        try:
+            atomic_write_json(session_file, {"shift_id": shift_id, "agent_id": agent_id})
+        except Exception:
+            pass
+
+        return shift_info
 
 
 def clock_out(
     target_dir: Path,
+    session: Optional[str] = None,
     agent: Optional[str] = None,
     summary: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
-    """Clock out an agent from the check-in room."""
-    detected = detect_environment()
-    agent_id = (agent or detected["agent_id"]).lower()
-    summary_text = summary or "Task completed and verified."
+    """Clock out an agent from the check-in room requiring an exact session or agent match."""
+    with room_lock(target_dir):
+        detected = detect_environment()
+        target_agent_id = (agent or detected["agent_id"]).lower() if agent or not session else None
+        summary_text = summary or "Task completed and verified."
 
-    room_json, conf_md = get_room_paths(target_dir)
-    data = load_room_data(room_json)
-    prune_stale_shifts(data)
+        room_json, conf_md, session_file = get_room_paths(target_dir)
+        data = load_room_data(room_json)
+        prune_stale_shifts(data)
 
-    active = data.get("active_shifts", {})
-    if agent_id not in active:
-        # Check if there is only 1 active shift; clock it out
-        if len(active) == 1:
-            agent_id = next(iter(active.keys()))
+        active = data.get("active_shifts", {})
+        target_shift_id = None
+
+        session = session or os.environ.get("CAPSULE_SESSION")
+        if session:
+            if session in active:
+                target_shift_id = session
+            else:
+                return None
         else:
+            if target_agent_id:
+                # Find shifts matching agent_id
+                matching_shifts = [sid for sid, s in active.items() if s.get("agent_id") == target_agent_id]
+                if len(matching_shifts) == 1:
+                    target_shift_id = matching_shifts[0]
+                elif len(matching_shifts) > 1:
+                    return {
+                        "error": "ambiguous_session",
+                        "matches": matching_shifts,
+                        "message": f"Multiple active shifts for agent '{target_agent_id}'. Specify --session <id>."
+                    }
+            elif session_file.exists():
+                try:
+                    s_data = json.loads(session_file.read_text(encoding="utf-8"))
+                    cand_id = s_data.get("shift_id")
+                    if cand_id in active:
+                        target_shift_id = cand_id
+                except Exception:
+                    pass
+
+        if not target_shift_id:
+            # NO silent fallback to clocking out an unrelated agent!
             return None
 
-    shift = active.pop(agent_id)
-    shift["clocked_out_at"] = datetime.now(timezone.utc).isoformat()
-    shift["summary"] = summary_text
+        shift = active.pop(target_shift_id)
+        shift["clocked_out_at"] = datetime.now(timezone.utc).isoformat()
+        shift["summary"] = summary_text
 
-    data.setdefault("history", []).insert(0, shift)
-    if len(data["history"]) > MAX_HISTORY_ENTRIES:
-        data["history"] = data["history"][:MAX_HISTORY_ENTRIES]
+        data.setdefault("history", []).insert(0, shift)
+        if len(data["history"]) > MAX_HISTORY_ENTRIES:
+            data["history"] = data["history"][:MAX_HISTORY_ENTRIES]
 
-    room_json.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    render_conference_markdown(data, conf_md)
-    return shift
+        atomic_write_json(room_json, data)
+        render_conference_markdown(data, conf_md)
+
+        # Clear session file if matching
+        if session_file.exists():
+            try:
+                s_data = json.loads(session_file.read_text(encoding="utf-8"))
+                if s_data.get("shift_id") == target_shift_id:
+                    session_file.unlink(missing_ok=True)
+            except Exception:
+                pass
+
+        return shift
+
+
+def heartbeat(
+    target_dir: Path,
+    session: Optional[str] = None,
+    agent: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    """Send a heartbeat to update the last_seen_at timestamp and prevent stale expiration."""
+    with room_lock(target_dir):
+        detected = detect_environment()
+        target_agent_id = (agent or detected["agent_id"]).lower() if agent or not session else None
+
+        room_json, conf_md, session_file = get_room_paths(target_dir)
+        data = load_room_data(room_json)
+        prune_stale_shifts(data)
+
+        active = data.get("active_shifts", {})
+        target_shift_id = None
+
+        if session and session in active:
+            target_shift_id = session
+        elif session_file.exists():
+            try:
+                s_data = json.loads(session_file.read_text(encoding="utf-8"))
+                cand_id = s_data.get("shift_id")
+                if cand_id in active:
+                    target_shift_id = cand_id
+            except Exception:
+                pass
+
+        if not target_shift_id and target_agent_id:
+            matching = [sid for sid, s in active.items() if s.get("agent_id") == target_agent_id]
+            if len(matching) == 1:
+                target_shift_id = matching[0]
+
+        if not target_shift_id or target_shift_id not in active:
+            return None
+
+        shift = active[target_shift_id]
+        shift["last_seen_at"] = datetime.now(timezone.utc).isoformat()
+        shift["ok"] = True
+        atomic_write_json(room_json, data)
+        render_conference_markdown(data, conf_md)
+        return shift
 
 
 def clear_room(target_dir: Path) -> None:
     """Clear all active shifts and reset the room."""
-    room_json, conf_md = get_room_paths(target_dir)
-    data = load_room_data(room_json)
-    data["active_shifts"] = {}
-    room_json.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    render_conference_markdown(data, conf_md)
+    with room_lock(target_dir):
+        room_json, conf_md, session_file = get_room_paths(target_dir)
+        data = load_room_data(room_json)
+        data["active_shifts"] = {}
+        atomic_write_json(room_json, data)
+        render_conference_markdown(data, conf_md)
+        session_file.unlink(missing_ok=True)
 
 
 def print_room(target_dir: Path, as_json: bool = False) -> int:
     """Display the Check-In Room status."""
-    room_json, conf_md = get_room_paths(target_dir)
-    data = load_room_data(room_json)
-    pruned = prune_stale_shifts(data)
-    if pruned:
-        room_json.write_text(json.dumps(data, indent=2), encoding="utf-8")
-        render_conference_markdown(data, conf_md)
+    with room_lock(target_dir):
+        room_json, conf_md, _ = get_room_paths(target_dir)
+        data = load_room_data(room_json)
+        pruned = prune_stale_shifts(data)
+        if pruned:
+            atomic_write_json(room_json, data)
+            render_conference_markdown(data, conf_md)
 
     if as_json:
         print(json.dumps(data, indent=2))
@@ -271,9 +448,9 @@ def print_room(target_dir: Path, as_json: bool = False) -> int:
     if not active:
         print(" ON SHIFT: None (Workspace is idle)")
     else:
-        print(f" ON SHIFT ({len(active)} active agent{'s' if len(active) > 1 else ''}):")
-        for agent_id, shift in active.items():
-            print(f"   🟢 {shift.get('agent_name', agent_id)}")
+        print(f" ON SHIFT ({len(active)} active session{'s' if len(active) > 1 else ''}):")
+        for shift_id, shift in active.items():
+            print(f"   🟢 {shift.get('agent_name', shift_id)} (Session: {shift_id})")
             print(f"      • Company / Model: {shift.get('provider')} ({shift.get('model')})")
             print(f"      • Role:            {shift.get('role')}")
             print(f"      • Task:            {shift.get('task')}")
@@ -281,15 +458,30 @@ def print_room(target_dir: Path, as_json: bool = False) -> int:
             if files:
                 print(f"      • Active Files:    {', '.join(files)}")
             print(f"      • Clocked In At:   {shift.get('clocked_in_at')}")
+            print(f"      • Last Activity:   {shift.get('last_seen_at')}")
 
-    # File collision warning
-    hot_files = []
-    for shift in active.values():
-        hot_files.extend(shift.get("files", []))
-    if hot_files:
+    # File collision analysis
+    all_claimed = {}
+    collisions = []
+    for shift_id, shift in active.items():
+        for f in shift.get("files", []):
+            norm = os.path.normpath(f.strip())
+            all_claimed.setdefault(norm, []).append((shift_id, shift.get("agent_name", shift_id)))
+
+    for f, claimers in all_claimed.items():
+        if len(claimers) > 1:
+            collisions.append((f, claimers))
+
+    if collisions:
         print("-" * 72)
-        print(" ⚠️  ACTIVE FILE CAUTION:")
-        print(f"   Currently modified by active shift: {', '.join(set(hot_files))}")
+        print(" ⚠️  FILE COLLISION ALERT:")
+        for f, claimers in collisions:
+            holder_str = ", ".join(f"{name} ({sid})" for sid, name in claimers)
+            print(f"   Conflict on: {f}")
+            print(f"      Overlapping owners: {holder_str}")
+    elif all_claimed:
+        print("-" * 72)
+        print(f" 📂 Claimed Active Files ({len(all_claimed)}): {', '.join(sorted(all_claimed.keys()))}")
 
     # History
     history = data.get("history", [])
@@ -318,18 +510,26 @@ def main(argv=None) -> int:
     # clock-in
     in_parser = subparsers.add_parser("clock-in", help="Clock in to an active work shift")
     in_parser.add_argument("target_dir", nargs="?", default=".", help="Project directory")
+    in_parser.add_argument("--session", help="Session identifier (auto-generated if omitted)")
     in_parser.add_argument("--agent", help="Agent identifier (auto-detected if omitted)")
     in_parser.add_argument("--provider", help="AI provider / company (auto-detected if omitted)")
     in_parser.add_argument("--model", help="Model name (auto-detected if omitted)")
     in_parser.add_argument("--role", help="Assumed role (e.g. Builder, Product, Reviewer)")
     in_parser.add_argument("--task", required=True, help="Task description")
     in_parser.add_argument("--files", help="Comma-separated files or surfaces claimed")
+    in_parser.add_argument("--force", action="store_true", help="Override active file claim conflicts")
 
     # clock-out
     out_parser = subparsers.add_parser("clock-out", help="Clock out from active work shift")
     out_parser.add_argument("target_dir", nargs="?", default=".", help="Project directory")
+    out_parser.add_argument("--session", help="Session identifier to clock out")
     out_parser.add_argument("--agent", help="Agent identifier (auto-detected if omitted)")
     out_parser.add_argument("--summary", help="Summary of work completed and verification status")
+
+    # heartbeat
+    hb_parser = subparsers.add_parser("heartbeat", help="Send heartbeat to keep shift alive")
+    hb_parser.add_argument("target_dir", nargs="?", default=".", help="Project directory")
+    hb_parser.add_argument("--session", help="Session identifier")
 
     args = parser.parse_args(argv)
     action = args.action or "status"
@@ -344,7 +544,7 @@ def main(argv=None) -> int:
 
     if action == "clock-in":
         files_list = [f.strip() for f in args.files.split(",")] if args.files else []
-        shift = clock_in(
+        res = clock_in(
             target_dir=target_dir,
             agent=args.agent,
             provider=args.provider,
@@ -352,25 +552,51 @@ def main(argv=None) -> int:
             role=args.role,
             task=args.task,
             files=files_list,
+            session=args.session,
+            force=args.force,
         )
-        print(f"✓ Clocked in: {shift['agent_name']} ({shift['provider']} / {shift['model']})")
-        print(f"  Role: {shift['role']} | Task: {shift['task']}")
-        if shift["files"]:
-            print(f"  Claimed files: {', '.join(shift['files'])}")
+        if "error" in res and res["error"] == "file_conflict":
+            print("Error: Conflicting file claim(s) detected:", file=sys.stderr)
+            for c in res["conflicts"]:
+                print(f"  • {', '.join(c['files'])} claimed by {c['agent_name']} ({c['shift_id']})", file=sys.stderr)
+                print(f"    Role: {c['role']} | Task: {c['task']}", file=sys.stderr)
+            print("Pass --force to override ownership.", file=sys.stderr)
+            return 1
+
+        print(f"✓ Clocked in: {res['agent_name']} (Session: {res['shift_id']})")
+        print(f"  Company / Model: {res['provider']} ({res['model']})")
+        print(f"  Role: {res['role']} | Task: {res['task']}")
+        if res.get("files"):
+            print(f"  Claimed files: {', '.join(res['files'])}")
+        if res.get("forced_override"):
+            print("  ⚠️ Claimed with forced conflict override.")
         return 0
 
     if action == "clock-out":
-        shift = clock_out(
+        res = clock_out(
             target_dir=target_dir,
+            session=args.session,
             agent=args.agent,
             summary=args.summary,
         )
-        if shift:
-            print(f"✓ Clocked out: {shift['agent_name']} ({shift['provider']})")
-            print(f"  Summary: {shift.get('summary', 'Done')}")
+        if isinstance(res, dict) and "error" in res:
+            print(f"Error: {res['message']}", file=sys.stderr)
+            return 1
+        if res:
+            print(f"✓ Clocked out: {res['agent_name']} (Session: {res['shift_id']})")
+            print(f"  Summary: {res.get('summary', 'Done')}")
             return 0
         else:
             print("Notice: No matching active shift found to clock out.", file=sys.stderr)
+            return 1
+
+    if action == "heartbeat":
+        res = heartbeat(target_dir=target_dir, session=args.session)
+        if res:
+            print(f"✓ Heartbeat recorded: {res['agent_name']} (Session: {res['shift_id']}) at {res['last_seen_at']}")
+            return 0
+        else:
+            print("Notice: No active shift found for heartbeat.", file=sys.stderr)
             return 1
 
     return 0

@@ -142,6 +142,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return run_module("scripts.room", ["clock-in"] + extra)
     if command == "clock-out":
         return run_module("scripts.room", ["clock-out"] + extra)
+    if command in {"heartbeat", "touch"}:
+        return run_module("scripts.room", ["heartbeat"] + extra)
     if command == "list":
         return cmd_list()
     if command == "route":

@@ -8,6 +8,7 @@ Usage:
   capsule room [dir]        View Check-In Room (active agents, models, claimed files)
   capsule clock-in ...      Clock in to a work shift (auto-detects agent & claims files)
   capsule clock-out ...     Clock out of a work shift (summary & auto-prunes log)
+  capsule heartbeat ...     Send heartbeat to keep active shift alive
   capsule list              List all registered cohort bots and their specs
   capsule route "request"   Route a request safely through the cohort
   capsule doctor [dir]      Run environment diagnostics and multi-AI healthcheck
@@ -168,6 +169,8 @@ def main():
         exit_code = cmd_room("clock-in", extra_args)
     elif subcommand == "clock-out":
         exit_code = cmd_room("clock-out", extra_args)
+    elif subcommand in ("heartbeat", "touch"):
+        exit_code = cmd_room("heartbeat", extra_args)
     elif subcommand == "list":
         exit_code = cmd_list()
     elif subcommand == "route":
