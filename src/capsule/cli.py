@@ -130,7 +130,7 @@ def cmd_test() -> int:
 def main(argv: Optional[List[str]] = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args or args[0] in {"-h", "--help"}:
-        print("Usage: capsule {list|route|test|scaffold|audit|verify|security|init|sync} [options]")
+        print("Usage: capsule {list|route|doctor|test|scaffold|audit|verify|security|init|sync} [options]")
         return 0
 
     command, extra = args[0], args[1:]
@@ -138,6 +138,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return cmd_list()
     if command == "route":
         return run_module("scripts.route_request", extra)
+    if command == "doctor":
+        return run_module("scripts.doctor", extra)
     if command == "test":
         return cmd_test()
     if command == "scaffold":

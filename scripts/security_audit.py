@@ -26,11 +26,15 @@ configure_utf8_stdio()
 
 SECRET_REGEXES = [
     (re.compile(r"sk-[a-zA-Z0-9]{20,}", re.IGNORECASE), "OpenAI / Service Secret Key"),
+    (re.compile(r"sk-ant-api\d{2}-[a-zA-Z0-9_\-]{80,}", re.IGNORECASE), "Anthropic API Key"),
     (re.compile(r"ghp_[a-zA-Z0-9]{36}", re.IGNORECASE), "GitHub Personal Access Token"),
+    (re.compile(r"github_pat_[a-zA-Z0-9_]{82}", re.IGNORECASE), "GitHub Fine-Grained Personal Access Token"),
     (re.compile(r"AIza[0-9A-Za-z-_]{35}", re.IGNORECASE), "Google API Key"),
     (re.compile(r"AKIA[0-9A-Z]{16}", re.IGNORECASE), "AWS Access Key ID"),
     (re.compile(r"rk_live_[0-9a-zA-Z]{24}", re.IGNORECASE), "Stripe Restricted Live Key"),
     (re.compile(r"sk_live_[0-9a-zA-Z]{24}", re.IGNORECASE), "Stripe Secret Live Key"),
+    (re.compile(r"xox[baprs]-[0-9a-zA-Z]{10,48}", re.IGNORECASE), "Slack Token"),
+    (re.compile(r"hf_[a-zA-Z0-9]{34,}", re.IGNORECASE), "HuggingFace Access Token"),
     (re.compile(r"-----BEGIN (RSA|EC|OPENSSH|DSA|PGP) PRIVATE KEY-----"), "Private Key Block"),
 ]
 
@@ -138,6 +142,8 @@ def run_dependency_audit(root_dir: Path) -> Tuple[int, str]:
         requirements = [path for path in python_manifests if path.name.startswith("requirements") and path.exists()]
         if requirements:
             commands.extend((f"pip-audit {path.name}", ["pip-audit", "-r", str(path)]) for path in requirements)
+        elif (root_dir / "pyproject.toml").exists() or (root_dir / "setup.py").exists():
+            commands.append(("pip-audit project", ["pip-audit", str(root_dir)]))
         else:
             commands.append(("pip-audit environment", ["pip-audit"]))
 

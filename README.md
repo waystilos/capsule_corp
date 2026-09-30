@@ -2,9 +2,9 @@
 
 A specialized cohort of autonomous AI agents modeled on **Dragon Ball Z** archetypes, engineered for startups and unified across all development tools (**GitHub Copilot**, **OpenAI Codex**, **Anthropic Claude Code**, **Google Antigravity / Gemini**, **Cursor**, and **Windsurf**).
 
-*Inspired by an interview I saw with poteto and the way they structure their agents.*
+> *"I like to call it the Michelin kitchen… when you say software factory, it has this connotation of mass manufactured slop."* — **Lauren Tan** (@poteto, *Behind the Craft*)
 
-> *"Build warriors, not generic chatbots. Single-purpose operatives, ruthless verification, and relentless execution."*
+*Inspired by an interview with poteto (Lauren Tan) and the way they structure their agents: hearing Lauren describe her Michelin kitchen approach inspired me to build my own version—adapting her core agentic engineering principles into the Capsule Corp cohort.*
 
 ---
 
@@ -131,7 +131,7 @@ The package provides the same `capsule init --tool ...` behavior on macOS, Windo
 By default, `init` installs only the integration you select and preserves unrelated tool files. To configure several tools intentionally:
 
 ```bash
-./bin/capsule init --tools copilot,codex,cursor /path/to/project
+./bin/capsule init --tools copilot,codex,cursor,gemini /path/to/project
 ```
 
 `init` preserves existing instruction files. Replacing selected guidance requires an explicit choice:
@@ -185,7 +185,7 @@ flowchart TD
     
     Hub -->|"Directives & Context"| Copilot["GitHub Copilot\n(.github/copilot-instructions.md)"]
     Hub -->|"Skills & Execution Allow"| Codex["OpenAI Codex CLI\n(~/.codex/skills, default.rules)"]
-    Hub -->|"Skills & Global Rules"| Claude["Anthropic Claude Code\n(~/.claude/skills, CLAUDE.md)"]
+    Hub -->|"Skills, Agents & Permissions"| Claude["Anthropic Claude Code\n(~/.claude/agents, skills, CLAUDE.md)"]
     Hub -->|"Skills & GEMINI.md"| Gemini["Google Antigravity / Gemini\n(~/.gemini/config/skills, GEMINI.md)"]
     Hub -->|"Global Rules"| Cursor["Cursor IDE\n(~/.cursorrules)"]
     Hub -->|"Global Rules"| Windsurf["Windsurf IDE\n(~/.windsurfrules)"]
@@ -203,8 +203,10 @@ flowchart TD
    - Skills linked to `~/.codex/skills/`
    - Permissions configured in `~/.codex/rules/default.rules` so Codex can run `capsule verify` and `capsule security` without prompting.
 4. **Claude Code:**
-   - Skills linked to `~/.claude/skills/`
-   - Global rules configured in `~/.claude/CLAUDE.md`.
+   - Subagents linked to `~/.claude/agents/` (and `.claude/agents/` locally) for native task delegation (`@bulma`, `@goku`, `@piccolo`, `@android-17`, `@trunks`, etc.).
+   - Skills linked to `~/.claude/skills/` as slash commands (`/verification-gate`, `/audit-transcripts`, `/scaffold-agent`).
+   - Project and user directives in `CLAUDE.md` and `~/.claude/CLAUDE.md`.
+   - Automated execution permissions configured in `~/.claude/settings.json` and `.claude/settings.json`.
 5. **Google Antigravity / Gemini:**
    - Skills linked to `~/.gemini/config/skills/`
    - Global rules in `~/.gemini/GEMINI.md`.
@@ -239,15 +241,23 @@ Launch Claude Code in any project:
 ```bash
 claude
 ```
-Then prompt Claude:
-* *"Act as Bulma: outline the MVP schema and API endpoints for our onboarding flow."*
-* *"Act as Android 17: inspect our dependencies and auth middleware for security risks."*
-* *"Act as Goku: implement the database query in models.py with zero fluff, and write unit tests for it."*
+Then leverage the native cohort integration:
+* **Custom Subagents:** Use `/agents` to view active specialists, or prompt directly:
+  * *"Bulma, outline the MVP schema and API endpoints for our onboarding flow."*
+  * *"Goku, implement the database query in models.py with zero fluff and add unit tests."*
+  * *"Android 17, scan this repository and dependencies for security risks."*
+  * *"Trunks, run the verification gate and inspect our diff."*
+* **Slash Commands:** Execute cohort skills directly:
+  * `/verification-gate` - Run Trunks' verification matrix and diff audit.
+  * `/audit-transcripts` - Audit session transcripts for friction and prompt patches.
+  * `/scaffold-agent` - Interactively scaffold a new single-responsibility agent.
+* **Project Bootstrap:** Initialize any repository with `capsule init --tool claude /path/to/project` to generate `CLAUDE.md` and `.claude/settings.json`.
 
 ### D. In Google Antigravity / Gemini
 In your chat or CLI session:
 * The subagents `bulma`, `videl`, `piccolo`, `goku`, `android-17`, `trunks`, `vegeta`, `android-18`, `dr-gero`, and `whis` are natively registered.
 * Simply say: *"Bulma, scope this feature"* or *"Android 17, audit this codebase for security"*.
+* Initialize projects with `capsule init --tool gemini /path/to/project` (or `--tool agy`) to generate `GEMINI.md`.
 
 ---
 
@@ -260,26 +270,30 @@ The CLI is in your system PATH (`~/.zshrc`). You can run `capsule` from any term
 capsule list
 
 # 2. Configure only the AI integration you are using
+capsule init --tool claude /path/to/startup-project
 capsule init --tool copilot /path/to/startup-project
 # Use --force only when replacing existing directive files is intentional
-capsule init --tool copilot --force /path/to/startup-project
+capsule init --tool claude --force /path/to/startup-project
 # Explicit multi-tool setup is available when required
-capsule init --tools copilot,codex,cursor /path/to/startup-project
+capsule init --tools copilot,claude,codex,cursor,gemini /path/to/startup-project
 
-# 3. Run Android 17's Security Sentinel (secret leaks, OWASP patterns, dependency CVEs)
+# 3. Multi-AI Environment & Health Diagnostics
+capsule doctor [project_dir]
+
+# 4. Run Android 17's Security Sentinel (secret leaks, OWASP patterns, dependency CVEs)
 capsule security [project_dir]
 
-# 4. Run Trunks' Verification Gate (auto-detects pytest, npm, cargo, go, etc.)
+# 5. Run Trunks' Verification Gate (auto-detects pytest, npm, pnpm, bun, cargo, go, etc.)
 capsule verify [project_dir]
 
-# 5. Run Dr. Gero's transcript auditor to identify friction & patch prompts
+# 6. Run Dr. Gero's transcript auditor to identify friction & patch prompts
 capsule audit --latest
 
-# 6. Synchronize all skills, rules, and permissions across all AIs
+# 7. Synchronize all skills, rules, and permissions across all AIs
 capsule sync --dry-run
 capsule sync --force
 
-# 7. Run the cohort's internal unit tests
+# 8. Run the cohort's internal unit tests
 capsule test
 ```
 

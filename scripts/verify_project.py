@@ -33,7 +33,11 @@ SUSPICIOUS_DIFF_PATTERNS = [
     (re.compile(r"^[+]\s*>{7}(?:\s+.*)?$", re.MULTILINE), "Git merge conflict marker (end)"),
     (re.compile(r"^[+].*AIza[0-9A-Za-z-_]{35}.*", re.MULTILINE), "Exposed Google API Key"),
     (re.compile(r"^[+].*sk-[a-zA-Z0-9]{20,}.*", re.MULTILINE), "Exposed OpenAI / Service Secret Key"),
+    (re.compile(r"^[+].*sk-ant-api\d{2}-[a-zA-Z0-9_\-]{80,}.*", re.MULTILINE), "Exposed Anthropic API Key"),
     (re.compile(r"^[+].*ghp_[a-zA-Z0-9]{36}.*", re.MULTILINE), "Exposed GitHub Personal Access Token"),
+    (re.compile(r"^[+].*github_pat_[a-zA-Z0-9_]{82}.*", re.MULTILINE), "Exposed GitHub Fine-Grained Personal Access Token"),
+    (re.compile(r"^[+].*xox[baprs]-[0-9a-zA-Z]{10,48}.*", re.MULTILINE), "Exposed Slack Token"),
+    (re.compile(r"^[+].*hf_[a-zA-Z0-9]{34,}.*", re.MULTILINE), "Exposed HuggingFace Access Token"),
     (re.compile(r"^[+].*-----BEGIN (RSA|EC|OPENSSH|DSA|PGP) PRIVATE KEY-----.*", re.MULTILINE), "Private Key block"),
 ]
 
@@ -58,6 +62,12 @@ def detect_test_command(root_dir: Path) -> Optional[List[str]]:
             pkg = json.loads((root_dir / "package.json").read_text(encoding="utf-8"))
             scripts = pkg.get("scripts", {})
             if "test" in scripts and "no test specified" not in scripts["test"]:
+                if (root_dir / "pnpm-lock.yaml").exists() and shutil.which("pnpm"):
+                    return ["pnpm", "test"]
+                if ((root_dir / "bun.lockb").exists() or (root_dir / "bun.lock").exists()) and shutil.which("bun"):
+                    return ["bun", "test"]
+                if (root_dir / "yarn.lock").exists() and shutil.which("yarn"):
+                    return ["yarn", "test"]
                 return ["npm", "test"]
         except Exception:
             pass
@@ -65,8 +75,7 @@ def detect_test_command(root_dir: Path) -> Optional[List[str]]:
     # Python (pytest or unittest discovery)
     tests_dir = root_dir / "tests"
     test_dir = root_dir / "test"
-    if tests_dir.exists() or test_dir.exists():
-        # Check if pytest is available or fallback to standard library unittest
+    if tests_dir.exists() or test_dir.exists() or (root_dir / "pytest.ini").exists():
         try:
             probe = subprocess.run(["pytest", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             if probe.returncode == 0:
@@ -75,7 +84,8 @@ def detect_test_command(root_dir: Path) -> Optional[List[str]]:
             pass
 
         active_dir = tests_dir if tests_dir.exists() else test_dir
-        return [sys.executable, "-m", "unittest", "discover", "-s", str(active_dir), "-p", "test_*.py"]
+        if active_dir.exists():
+            return [sys.executable, "-m", "unittest", "discover", "-s", str(active_dir), "-p", "test_*.py"]
 
     # Dart / Flutter
     if (root_dir / "pubspec.yaml").exists():
@@ -161,6 +171,8 @@ def audit_git_diff(root_dir: Path) -> List[Dict[str, str]]:
             if not raw_path:
                 continue
             path = root_dir / os.fsdecode(raw_path)
+            if path.is_dir():
+                continue
             try:
                 content = path.read_text(encoding="utf-8", errors="ignore")
             except OSError as exc:

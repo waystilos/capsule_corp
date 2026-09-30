@@ -1,0 +1,1 @@
+../../bots/goku.md

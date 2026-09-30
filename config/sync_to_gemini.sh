@@ -70,6 +70,52 @@ for skill_path in "$CAPSULE_DIR"/skills/*; do
   fi
 done
 
+# Sync global GEMINI.md
+GLOBAL_GEMINI_FILE="$HOME/.gemini/GEMINI.md"
 echo ""
-echo " Capsule Corp cohort skills successfully linked to $GLOBAL_SKILLS_DIR!"
+echo " Capsule Corp Centralizer: Syncing global rules to $GLOBAL_GEMINI_FILE..."
+if [ -L "$GLOBAL_GEMINI_FILE" ] || [ -e "$GLOBAL_GEMINI_FILE" ]; then
+  if [ "$FORCE" -ne 1 ]; then
+    echo "  Preserved existing rule: $GLOBAL_GEMINI_FILE (use --force to replace)"
+  else
+    if [ "$DRY_RUN" -eq 1 ]; then
+      echo "  Would replace rule: $GLOBAL_GEMINI_FILE"
+    else
+      backup_target "$GLOBAL_GEMINI_FILE"
+      cat > "$GLOBAL_GEMINI_FILE" << 'EOF'
+# Global Agentic Engineering Guidelines (Capsule Corp)
+
+Whenever building or refactoring agentic workflows, adhere to the **Capsule Corp Standards** (inspired by Lauren Tan):
+
+- **Specialization over Monoliths:** Prefer dedicated, single-responsibility agents over bloated prompts.
+- **Verification Gates:** Enforce automated test execution and diff audits before accepting code changes.
+- **Capsule Corp Studio:** Cohort registry, bot definitions, and skills are centralized at:
+  `~/Documents/dev/agents/capsule-corp`
+  CLI tool: `capsule` (available in PATH)
+EOF
+      echo "  Updated global rules at $GLOBAL_GEMINI_FILE"
+    fi
+  fi
+else
+  if [ "$DRY_RUN" -eq 1 ]; then
+    echo "  Would write rule: $GLOBAL_GEMINI_FILE"
+  else
+    mkdir -p "$HOME/.gemini"
+    cat > "$GLOBAL_GEMINI_FILE" << 'EOF'
+# Global Agentic Engineering Guidelines (Capsule Corp)
+
+Whenever building or refactoring agentic workflows, adhere to the **Capsule Corp Standards** (inspired by Lauren Tan):
+
+- **Specialization over Monoliths:** Prefer dedicated, single-responsibility agents over bloated prompts.
+- **Verification Gates:** Enforce automated test execution and diff audits before accepting code changes.
+- **Capsule Corp Studio:** Cohort registry, bot definitions, and skills are centralized at:
+  `~/Documents/dev/agents/capsule-corp`
+  CLI tool: `capsule` (available in PATH)
+EOF
+    echo "  Installed global rules at $GLOBAL_GEMINI_FILE"
+  fi
+fi
+
+echo ""
+echo " Capsule Corp cohort skills and rules successfully linked to $GLOBAL_CONFIG_DIR and $GLOBAL_GEMINI_FILE!"
 echo "All projects on this machine can now discover these skills globally."

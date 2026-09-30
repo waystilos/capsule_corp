@@ -73,20 +73,28 @@ def route_request(request: str) -> Dict:
 
 
 def main(argv=None) -> int:
+    import json
     parser = argparse.ArgumentParser(description="Route a request to the safest Capsule Corp owner")
     parser.add_argument("request", nargs="+", help="Request text to classify")
+    parser.add_argument("--json", action="store_true", help="Output JSON results")
     args = parser.parse_args(argv)
     try:
         result = route_request(" ".join(args.request))
     except (OSError, RuntimeError, ValueError) as exc:
-        print(f"Routing error: {exc}", file=sys.stderr)
+        if args.json:
+            print(json.dumps({"status": "error", "error": str(exc)}))
+        else:
+            print(f"Routing error: {exc}", file=sys.stderr)
         return 1
 
-    print(f"Status: {result['status']}")
-    print(f"Owner: {result['owner']}")
-    print(f"Intent: {result['intent']}")
-    print(f"Reason: {result['reason']}")
-    print(f"Handoff: {' -> '.join(result['handoff'])}")
+    if args.json:
+        print(json.dumps(result, indent=2))
+    else:
+        print(f"Status: {result['status']}")
+        print(f"Owner: {result['owner']}")
+        print(f"Intent: {result['intent']}")
+        print(f"Reason: {result['reason']}")
+        print(f"Handoff: {' -> '.join(result['handoff'])}")
     return 0 if result["status"] == "routed" else 2
 
 

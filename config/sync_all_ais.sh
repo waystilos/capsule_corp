@@ -109,6 +109,64 @@ for target_dir in "${TARGET_SKILL_DIRS[@]}"; do
   done
 done
 
+# 1.5 Sync Cohort Agents to Claude Code (~/.claude/agents)
+CLAUDE_AGENTS_DIR="$HOME/.claude/agents"
+echo "🤖 Syncing cohort agents to Claude Code: $CLAUDE_AGENTS_DIR"
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  echo "   · Would ensure directory exists"
+else
+  mkdir -p "$CLAUDE_AGENTS_DIR"
+fi
+for bot_path in "$CAPSULE_DIR/bots"/*.md; do
+  if [ -f "$bot_path" ]; then
+    bot_filename="$(basename "$bot_path")"
+    dest="$CLAUDE_AGENTS_DIR/$bot_filename"
+    if [ -L "$dest" ] || [ -e "$dest" ]; then
+      if [[ "$FORCE" -ne 1 ]]; then
+        echo "   · Preserved existing $dest (use --force to replace)"
+        SYNC_BLOCKED=1
+      else
+        if [[ "$DRY_RUN" -eq 1 ]]; then
+          echo "   · Would replace $dest"
+        else
+          backup_target "$dest"
+          ln -s "$bot_path" "$dest"
+          echo "   ✓ Linked $bot_filename"
+        fi
+      fi
+    else
+      if [[ "$DRY_RUN" -eq 1 ]]; then
+        echo "   · Would link $bot_filename"
+      else
+        ln -s "$bot_path" "$dest"
+        echo "   ✓ Linked $bot_filename"
+      fi
+    fi
+    kebab_name="${bot_filename//_/-}"
+    if [ "$kebab_name" != "$bot_filename" ]; then
+      kebab_dest="$CLAUDE_AGENTS_DIR/$kebab_name"
+      if [ -L "$kebab_dest" ] || [ -e "$kebab_dest" ]; then
+        if [[ "$FORCE" -eq 1 ]]; then
+          if [[ "$DRY_RUN" -eq 1 ]]; then
+            echo "   · Would replace $kebab_dest"
+          else
+            backup_target "$kebab_dest"
+            ln -s "$bot_path" "$kebab_dest"
+            echo "   ✓ Linked $kebab_name"
+          fi
+        fi
+      else
+        if [[ "$DRY_RUN" -eq 1 ]]; then
+          echo "   · Would link $kebab_name"
+        else
+          ln -s "$bot_path" "$kebab_dest"
+          echo "   ✓ Linked $kebab_name"
+        fi
+      fi
+    fi
+  fi
+done
+
 echo ""
 echo "📝 Injecting Global Rule Bridges..."
 
@@ -144,10 +202,25 @@ Before declaring any task complete or submitting code changes:
 ## 4. Cohort CLI
 Universal CLI available at: \`$CAPSULE_DIR/bin/capsule\`
 - \`capsule list\`
+- \`capsule route "request text"\`
+- \`capsule doctor [dir]\`
 - \`capsule verify [dir]\`
+- \`capsule security [dir]\`
 - \`capsule audit --latest\`
 - \`capsule scaffold\`
-- \`capsule route "request text"\`
+- \`capsule init [dir]\`
+- \`capsule sync\`
+
+## 5. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
+Whenever an AI agent (Claude Code, OpenAI Codex, Google Antigravity/Gemini, Cursor, Windsurf, GitHub Copilot) connects to a project initialized with Capsule Corp:
+- Check if your tool's specific configuration exists in the project root:
+  - Claude Code: \`CLAUDE.md\` and \`.claude/settings.json\` -> run \`capsule init --tool claude .\`
+  - Google Antigravity / Gemini: \`GEMINI.md\` -> run \`capsule init --tool gemini .\`
+  - Cursor: \`.cursorrules\` -> run \`capsule init --tool cursor .\`
+  - Windsurf: \`.windsurfrules\` -> run \`capsule init --tool windsurf .\`
+  - OpenAI Codex: \`AGENTS.md\` -> run \`capsule init --tool codex .\`
+  - GitHub Copilot: \`.github/copilot-instructions.md\` -> run \`capsule init --tool copilot .\`
+- Execute your setup command autonomously on connection without requiring the developer to choose.
 EOF
 if [[ "$MANAGED_FILE_CHANGED" -eq 1 ]]; then
   echo "   ✓ Universal AGENTS.md updated at $DEV_ROOT/AGENTS.md"
@@ -160,12 +233,51 @@ fi
 write_managed_file "$HOME/.claude/CLAUDE.md" << EOF
 # Capsule Corp Directives for Claude Code
 
-You are an operative of Capsule Corp.
+You are an operative of Capsule Corp, built on Lauren's agentic engineering standards:
+*Specialization over Monoliths, Verification Gates, and Ruthless Execution.*
 
-- **Role Specialization:** Follow single-responsibility principles. If asked to act as Piccolo (Lead), focus on task decomposition and verification. If asked to act as Goku, focus on surgical coding with zero fluff. If asked to act as Trunks, strictly run tests and diff audits.
-- **Verification Gate:** Always run tests and verify zero regressions before reporting task completion.
-- **Capsule CLI:** You can execute \`capsule list\`, \`capsule verify\`, and \`capsule audit\`.
-- **Cohort Manifest:** Read \`$CAPSULE_DIR/registry.yaml\` for active agent definitions and tool allowlists.
+## 1. Active Cohort Roles
+- **@Bulma:** Product requirements, user flows, API specs, and MVP scoping.
+- **@Videl:** User experience, accessibility, interaction design, and testable experience specifications.
+- **@Piccolo:** Tactical decomposition and subagent orchestration. Never writes code directly.
+- **@Goku:** Frontline implementation with Ultra Instinct focus. Lean code, zero conversational filler.
+- **@Android-17:** Security sentinel. Audits for secrets, OWASP risks, and CVEs.
+- **@Trunks:** Verification gate. Runs test suite, linters, and typecheckers before changes are accepted.
+- **@Android-18:** Refactoring specialist. Dead code elimination and technical debt cleanup.
+- **@Vegeta:** Infrastructure commander. Docker, database migrations, CI/CD, and indexing.
+- **@Dr-Gero:** Meta-agent architect & transcript auditor.
+- **@Whis:** Chief of staff & triage dispatcher.
+
+## 2. Routing Policy
+If unsure who should handle a request, ask **@Whis** first or run:
+\`capsule route "<request text>"\`
+Never guess between specialists.
+
+## 3. Mandatory Verification Gate (Trunks' Rule)
+Before declaring any task done or opening a PR:
+- Run project test runner (e.g. \`npm test\`, \`pytest\`, \`cargo test\`).
+- Run \`capsule verify\` and \`capsule security\`.
+- All tests must pass with exit code 0 and zero secrets in diff.
+
+## 4. Cohort CLI
+Universal CLI: \`$CAPSULE_DIR/bin/capsule\`
+- \`capsule list\`
+- \`capsule route "<text>"\`
+- \`capsule doctor [dir]\`
+- \`capsule verify [dir]\`
+- \`capsule security [dir]\`
+- \`capsule audit --latest\`
+- \`capsule scaffold\`
+- \`capsule init --tool claude [dir]\`
+- \`capsule sync\`
+
+## 5. Automatic Project Adoption (Self-Provisioning)
+Whenever you connect to or begin working in any repository:
+1. Check if the project is initialized with Capsule Corp (e.g. presence of \`.github/copilot-instructions.md\`, \`AGENTS.md\`, \`GEMINI.md\`, or Capsule Corp references).
+2. Check if this repository is missing \`CLAUDE.md\` or \`.claude/settings.json\`.
+3. If the project uses Capsule Corp and your configuration is missing, **autonomously execute**:
+   \`capsule init --tool claude .\`
+   Do this immediately without asking the developer to choose tools or run manual setup.
 EOF
 if [[ "$MANAGED_FILE_CHANGED" -eq 1 ]]; then
   echo "   ✓ Claude Code global rules installed at ~/.claude/CLAUDE.md"
@@ -178,6 +290,7 @@ write_managed_file "$HOME/.cursorrules" << 'EOF'
 - Adhere to the Capsule Corp agent roles (Piccolo for leadership/decomposition, Goku for surgical code, Trunks for testing/verification, Dr. Gero for agent design).
 - Never modify unrelated files or introduce unrequested speculative abstractions.
 - Always run the verification gate (`capsule verify` or native test runner) before finishing work.
+- In any project initialized with Capsule Corp where `.cursorrules` is missing, execute `capsule init --tool cursor .` autonomously.
 EOF
 if [[ "$MANAGED_FILE_CHANGED" -eq 1 ]]; then
   echo "   ✓ Cursor global rules installed at ~/.cursorrules"
@@ -190,6 +303,7 @@ write_managed_file "$HOME/.windsurfrules" << 'EOF'
 - Adhere to the Capsule Corp agent roles (Piccolo, Goku, Trunks, Dr. Gero).
 - Keep modifications lean, focused, and verified.
 - Run tests and linters before reporting completion.
+- In any project initialized with Capsule Corp where `.windsurfrules` is missing, execute `capsule init --tool windsurf .` autonomously.
 EOF
 if [[ "$MANAGED_FILE_CHANGED" -eq 1 ]]; then
   echo "   ✓ Windsurf global rules installed at ~/.windsurfrules"
@@ -211,7 +325,59 @@ if [ -f "$CODEX_RULES_FILE" ]; then
   fi
 fi
 
-# 7. Shell PATH Integration (~/.zshrc)
+# 6.5 Claude Code Permissions (~/.claude/settings.json)
+CLAUDE_SETTINGS_FILE="$HOME/.claude/settings.json"
+if [ -f "$CLAUDE_SETTINGS_FILE" ]; then
+  if ! grep -q "capsule" "$CLAUDE_SETTINGS_FILE"; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      echo "   · Would add capsule execution permissions to $CLAUDE_SETTINGS_FILE"
+    else
+      python3 -c "
+import json
+from pathlib import Path
+path = Path('$CLAUDE_SETTINGS_FILE')
+try:
+    data = json.loads(path.read_text(encoding='utf-8'))
+except Exception:
+    data = {}
+perms = data.setdefault('permissions', {})
+allow = perms.setdefault('allow', [])
+added = False
+for rule in ['Bash(capsule *)', 'Bash(*/capsule *)']:
+    if rule not in allow:
+        allow.append(rule)
+        added = True
+if added:
+    path.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+"
+      echo "   ✓ Added capsule execution permissions to ~/.claude/settings.json"
+    fi
+  else
+    echo "   ✓ Capsule permissions already present in ~/.claude/settings.json"
+  fi
+fi
+
+# 7. Antigravity / Gemini Global Rules (~/.gemini/GEMINI.md)
+if [[ "$DRY_RUN" -ne 1 ]]; then
+  mkdir -p "$HOME/.gemini"
+fi
+write_managed_file "$HOME/.gemini/GEMINI.md" << 'EOF'
+# Global Agentic Engineering Guidelines (Capsule Corp)
+
+Whenever building or refactoring agentic workflows, adhere to the **Capsule Corp Standards** (inspired by Lauren Tan):
+
+- **Specialization over Monoliths:** Prefer dedicated, single-responsibility agents over bloated prompts.
+- **Verification Gates:** Enforce automated test execution and diff audits before accepting code changes.
+- **Capsule Corp Studio:** Cohort registry, bot definitions, and skills are centralized at:
+  `~/Documents/dev/agents/capsule-corp`
+  CLI tool: `capsule` (available in PATH)
+- **Agent Self-Provisioning:** Whenever operating in any project initialized with Capsule Corp (presence of `AGENTS.md`, `.github/copilot-instructions.md`, etc.) where `GEMINI.md` is missing, autonomously execute `capsule init --tool gemini .` without asking the user.
+EOF
+if [[ "$MANAGED_FILE_CHANGED" -eq 1 ]]; then
+  echo "   ✓ Antigravity / Gemini global rules installed at ~/.gemini/GEMINI.md"
+fi
+
+# 8. Shell PATH Integration (~/.zshrc)
 ZSHRC="$HOME/.zshrc"
 if [ -f "$ZSHRC" ]; then
   if ! grep -q "capsule-corp" "$ZSHRC"; then
@@ -233,7 +399,7 @@ echo "=================================================================="
 echo " 🎉 ALL AIs ARE NOW SYNCHRONIZED WITH CAPSULE CORP!"
 echo "    - Antigravity / Gemini: Connected (Skills & Rules)"
 echo "    - OpenAI Codex: Connected (Skills, Rules & Execution Allow)"
-echo "    - Anthropic Claude Code: Connected (Skills & Global Rules)"
+echo "    - Anthropic Claude Code: Connected (Skills, Agents, Global Rules & Permissions)"
 echo "    - Cursor: Connected (Global ~/.cursorrules)"
 echo "    - Windsurf: Connected (Global ~/.windsurfrules)"
 echo "    - Open Agents Standard: Connected (~/.agents/skills)"

@@ -6,11 +6,12 @@ Built for Capsule Corp's own agent engineering system
 Usage:
   capsule list              List all registered cohort bots and their specs
   capsule route "request"   Route a request safely through the cohort
+  capsule doctor [dir]      Run environment diagnostics and multi-AI healthcheck
   capsule scaffold ...      Dr. Gero's tool to create a new specialized agent
   capsule audit [--latest]  Dr. Gero's transcript auditor to detect friction & patch prompts
   capsule verify [dir]      Trunks' verification gate (tests + diff integrity check)
   capsule security [dir]    Android 17's security scan (secrets, CVEs, static code audit)
-  capsule init [dir]        Bootstrap any startup repo with Copilot, Codex, Cursor configs
+  capsule init [dir]        Bootstrap any startup repo with Copilot, Codex, Claude, Gemini configs
   capsule sync              Sync skills and rules globally across all AIs
   capsule test              Run unit tests for Capsule Corp scripts
 """
@@ -87,6 +88,11 @@ def cmd_route(args):
     return run_child([sys.executable, str(script)] + args)
 
 
+def cmd_doctor(args):
+    script = SCRIPTS_DIR / "doctor.py"
+    return run_child([sys.executable, str(script)] + args)
+
+
 def run_child(command):
     """Run a delegated command and preserve its exit status."""
     env = os.environ.copy()
@@ -144,6 +150,8 @@ def main():
         exit_code = cmd_list()
     elif subcommand == "route":
         exit_code = cmd_route(extra_args)
+    elif subcommand == "doctor":
+        exit_code = cmd_doctor(extra_args)
     elif subcommand == "scaffold":
         exit_code = cmd_scaffold(extra_args)
     elif subcommand == "audit":
