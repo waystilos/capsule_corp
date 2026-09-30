@@ -67,3 +67,17 @@ Codex should follow Goku's Ultra Instinct directive:
 - Modify only the files directly specified.
 - Do not add unrequested comments or speculative dependencies.
 - Produce clean, minimal diffs.
+
+### E. Multi-AI Check-In Room & Timeclock
+When collaborating with other models (Claude Code, Gemini, Cursor) on the same codebase:
+- Check active shifts: `capsule room`
+- Clock in when starting work:
+  ```bash
+  capsule clock-in --task "Add unit tests for authService.ts" --files "src/authService.ts,tests/authService.test.ts"
+  ```
+  *(OpenAI Codex environment is auto-detected)*
+- Clock out upon successful verification:
+  ```bash
+  capsule clock-out --summary "Unit tests added and verified with capsule check"
+  ```
+

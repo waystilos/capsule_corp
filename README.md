@@ -279,35 +279,41 @@ The CLI is available in PATH (`capsule`) and locally (`./bin/capsule`). Everyday
 capsule check [project_dir]
 capsule check --json [project_dir]
 
-# 2. Heuristic request routing & workflow tier suggestion
+# 2. Check-In Room & Timeclock (Multi-AI Coordination)
+capsule room [project_dir]                              # View active agents, models, and claimed files
+capsule clock-in --task "Add auth API" --files "auth.py" # Clock in to shift (auto-detects agent & model)
+capsule clock-out --summary "Auth added and verified"   # Clock out (auto-prunes logs to prevent bloat)
+capsule room --clean                                    # Reset/clear active shifts
+
+# 3. Heuristic request routing & workflow tier suggestion
 capsule route "fix typo in button class"
 capsule route "design an accessible onboarding flow"
 capsule route --json "deconstruct architecture into task tree"
 
-# 3. Multi-AI Environment & Health Diagnostics
+# 4. Multi-AI Environment & Health Diagnostics
 capsule doctor [project_dir]
 
-# 4. Strict verification gate (deterministic pass/fail for PRs and CI)
+# 5. Strict verification gate (deterministic pass/fail for PRs and CI)
 capsule verify [project_dir]
 capsule security [project_dir]
 
-# 5. Configure one AI tool by default (or multiple)
+# 6. Configure one AI tool by default (or multiple)
 capsule init --tool codex /path/to/project
 capsule init --tool claude /path/to/project
 capsule init --tool gemini /path/to/project
 capsule init --tools copilot,claude,cursor /path/to/project
 
-# 6. List all agents in the cohort with roles and model tiers
+# 7. List all agents in the cohort with roles and model tiers
 capsule list
 
-# 7. Dr. Gero's transcript friction auditor
+# 8. Dr. Gero's transcript friction auditor
 capsule audit --latest
 
-# 8. Synchronize skills, rules, and permissions across all AIs
+# 9. Synchronize skills, rules, and permissions across all AIs
 capsule sync --dry-run
 capsule sync --force
 
-# 9. Run the cohort's internal test suite
+# 10. Run the cohort's internal test suite
 capsule test
 ```
 
@@ -378,7 +384,36 @@ Every role and subagent communicates through a compact, structured envelope rath
 
 ---
 
-## 6. Directory Layout
+## 6. Multi-AI Check-In Room & Timeclock (Collision-Free Collaboration)
+
+When multiple autonomous agents (e.g. Claude Code, OpenAI Codex, Google Antigravity, Cursor, Windsurf) work concurrently in the same codebase, coordination is essential to prevent conflicting edits and overwritten files.
+
+Capsule Corp solves this with a lightweight, file-backed Check-In Room stored in `.capsule/room.json` and rendered into human-readable `.capsule/CONFERENCE.md`:
+
+```
+                 ┌────────────────────────────────────────────────┐
+                 │       🏛️  Capsule Corp Check-In Room            │
+                 │    (.capsule/room.json & CONFERENCE.md)        │
+                 └──────▲──────────────▲──────────────▲───────────┘
+                        │              │              │
+             ┌──────────┴──────┐ ┌─────┴───────┐ ┌────┴─────────┐
+             │   Claude Code   │ │    Codex    │ │ Antigravity  │
+             │ (Anthropic 3.7) │ │  (OpenAI)   │ │   (Google)   │
+             │  Clocked In:    │ │ Clocked In: │ │ Clocked In:  │
+             │  Builder role   │ │ Review role │ │ Product role │
+             └─────────────────┘ └─────────────┘ └──────────────┘
+```
+
+### How the Timeclock Works:
+1. **Auto-Detection:** When an agent runs `capsule clock-in`, Capsule auto-detects the agent provider and model from environment variables (`CLAUDE_CODE`, `CODEX`, `GEMINI_CLI`/`ANTIGRAVITY`, `CURSOR_AGENT`, `WINDSURF_AGENT`).
+2. **File Claiming & Conflict Warnings:** Passing `--files "src/auth.ts,src/db.ts"` registers active surfaces. If another agent inspects the room with `capsule room`, active file collision warnings are displayed immediately.
+3. **Automatic Log Pruning & Anti-Deadlock:**
+   - **Auto-Expiration:** Shifts older than 2 hours without a clock-out are automatically transitioned to history marked `[Auto-Expired]`. If an agent crashes or disconnects, files are never locked permanently.
+   - **Rolling History Buffer:** Shift history is strictly capped at 15 items on every invocation. The log never bloats the repository.
+
+---
+
+## 7. Directory Layout
 
 ```
 capsule-corp/

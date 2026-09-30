@@ -67,3 +67,17 @@ When Cursor finishes a batch of file edits:
 ### C. Guarding Against Hallucinated Dependencies
 Cursor may occasionally suggest installing new npm or pip packages. Enforce Goku's constraint:
 - *"Zero speculative dependencies without explicit approval."* Always verify with `capsule check .`.
+
+### D. Multi-AI Check-In Room & Timeclock
+When working with Cursor alongside other agents (Claude Code, Antigravity, Codex):
+- Run `capsule room` to inspect claimed files before launching Composer edits.
+- Clock in to claim your working files:
+  ```bash
+  capsule clock-in --task "Prisma migration" --files "prisma/schema.prisma"
+  ```
+  *(Cursor environment is auto-detected)*
+- Clock out once verified:
+  ```bash
+  capsule clock-out --summary "Prisma schema defined and verified with capsule check"
+  ```
+

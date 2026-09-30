@@ -62,6 +62,7 @@ Verification: <exact command or check, e.g. capsule check>
 - [I need to sync rules to my AI tools](situations/07-sync-tools.md)
 - [I need to audit an AI transcript](situations/08-transcript-audit.md)
 - [Something failed](situations/09-troubleshooting.md)
+- [I am coordinating multiple AI agents in one codebase](situations/11-multi-agent-conference.md)
 - [I am using Windows](windows-support-brief.md)
 
 ## Tool & Runner Guides

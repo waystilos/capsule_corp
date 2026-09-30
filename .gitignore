@@ -19,3 +19,7 @@ dist/
 .claude/file-history/
 .claude/sessions/
 .claude/todos/
+
+# Capsule Corp local check-in room state
+.capsule/
+
