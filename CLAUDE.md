@@ -83,13 +83,40 @@ Before declaring any task complete, submitting code, or opening a PR:
 
 ---
 
-## 5. Cohort CLI Reference
+## 5. Check-In Room Protocol (Multi-AI Coordination)
+
+When multiple agents or models work on the same repository:
+1. **Check Active Shifts:** Run `./bin/capsule room` before starting to see who is on shift and check for claimed files.
+2. **Clock In:** Claim your shift and target files before writing code:
+   ```bash
+   ./bin/capsule clock-in --task "Task description" --files "file1,file2"
+   ```
+   *(Provider and model are auto-detected from environment)*
+3. **Verify:** Run `./bin/capsule check .` after modifications.
+4. **Clock Out:** Conclude your shift with a completion summary once verified:
+   ```bash
+   ./bin/capsule clock-out --summary "Task completed and verified with exit code 0"
+   ```
+*(Stale shifts >2 hours auto-expire; history is capped at 15 entries in `.capsule/room.json` and `.capsule/CONFERENCE.md`.)*
+
+---
+
+## 6. Cohort CLI Reference
 
 The universal CLI is available at `./bin/capsule` (and in system PATH as `capsule`):
 
 ```bash
 # Run everyday project checks (tests, lint, typecheck, secrets)
 ./bin/capsule check [target_dir]
+
+# View Check-In Room status, active agents, and claimed files
+./bin/capsule room [target_dir]
+
+# Clock in to active work shift (claims files, auto-detects provider/model)
+./bin/capsule clock-in --task "Description" [--files "file1,file2"]
+
+# Clock out and record summary (auto-prunes logs)
+./bin/capsule clock-out --summary "Summary of completed work"
 
 # List cohort roster, aliases, and model tiers
 ./bin/capsule list
@@ -121,7 +148,7 @@ The universal CLI is available at `./bin/capsule` (and in system PATH as `capsul
 
 ---
 
-## 6. Development Guidelines for this Codebase
+## 7. Development Guidelines for this Codebase
 
 - **Python Compatibility:** Python 3.8+ compatible.
 - **Cross-Platform:** Maintain Windows/macOS/Linux compatibility. Use `configure_utf8_stdio()` for safe Windows console encoding.

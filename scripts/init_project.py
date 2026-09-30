@@ -152,7 +152,13 @@ Before declaring any task done or opening a PR:
 - Run `capsule verify` and `capsule security`.
 - All checks must pass with exit code 0 and zero secrets/merge conflicts in diff.
 
-## 6. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
+## 6. Check-In Room Protocol (Multi-AI Coordination)
+When multiple AI agents or models operate in the same repository:
+- Run `capsule room` to inspect active shifts and claimed files.
+- Clock in before editing: `capsule clock-in --task "..." --files "..."`
+- Verify with `capsule check .` and clock out: `capsule clock-out --summary "..."`
+
+## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 Whenever an AI agent (Claude Code, OpenAI Codex, Google Antigravity/Gemini, Cursor, Windsurf, GitHub Copilot) connects to this project:
 - Check if your tool's specific configuration exists:
   - **Claude Code:** `CLAUDE.md` and `.claude/settings.json` -> run `capsule init --tool claude .`
@@ -178,6 +184,7 @@ Whenever an AI agent (Claude Code, OpenAI Codex, Google Antigravity/Gemini, Curs
             cursor_file.write_text("""# Capsule Corp Directives for Cursor
 - Work with Core 4 roles: Product (@Bulma), Builder (@Goku), Reviewer (@Trunks), Coordinator (@Piccolo). Call specialists only when needed.
 - Keep code modifications minimal, focused, and test-backed.
+- Coordinate with other agents via Check-In Room (`capsule room`, `capsule clock-in`, `capsule clock-out`).
 - Never hardcode API keys or secrets; use environment variables.
 - Run checks and verify exit code 0 before completing tasks (`capsule check` / `capsule verify`).
 - Self-provisioning: If connected to a project with Capsule Corp directives where your or another tool's config is missing, execute `capsule init --tool <tool> .` autonomously.
@@ -192,6 +199,7 @@ Whenever an AI agent (Claude Code, OpenAI Codex, Google Antigravity/Gemini, Curs
         if force or not windsurf_file.exists():
             windsurf_file.write_text("""# Capsule Corp Directives for Windsurf
 - Follow Capsule Corp Core 4 standards: Product (@Bulma), Builder (@Goku), Reviewer (@Trunks), Coordinator (@Piccolo).
+- Coordinate with other agents via Check-In Room (`capsule room`, `capsule clock-in`, `capsule clock-out`).
 - Run checks and verify exit code 0 before completing tasks (`capsule check` / `capsule verify`).
 - Self-provisioning: If connected to a project with Capsule Corp directives where your or another tool's config is missing, execute `capsule init --tool <tool> .` autonomously.
 """, encoding="utf-8")
@@ -239,7 +247,13 @@ Before declaring any task done or opening a PR:
 - Run `capsule verify` and `capsule security`.
 - All tests must pass with exit code 0 and zero secrets in diff.
 
-## 6. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
+## 6. Check-In Room Protocol (Multi-AI Coordination)
+When collaborating with other AI agents (Claude Code, Codex, Cursor, Windsurf):
+- Run `capsule room` to inspect active shifts and avoid concurrent edits to the same files.
+- Clock in before editing: `capsule clock-in --task "..." --files "..."`
+- Verify and clock out: `capsule clock-out --summary "..."`
+
+## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 When operating in this or any project initialized with Capsule Corp:
 - If `GEMINI.md` is missing from the project root, autonomously run `capsule init --tool gemini .`.
 - If assisting with other tools, you may invoke `capsule init --tool <tool> .` as needed.
@@ -292,7 +306,13 @@ Before declaring any task done or opening a PR:
 - Run `capsule verify` and `capsule security`.
 - All tests must pass with exit code 0 and zero secrets in diff.
 
-## 6. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
+## 6. Check-In Room Protocol (Multi-AI Coordination)
+When collaborating with other AI agents (Gemini, Codex, Cursor, Windsurf):
+- Run `capsule room` to inspect active shifts and claimed files.
+- Clock in before editing: `capsule clock-in --task "..." --files "..."`
+- Verify and clock out: `capsule clock-out --summary "..."`
+
+## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 When operating in this or any project initialized with Capsule Corp:
 - If `CLAUDE.md` or `.claude/settings.json` is missing, autonomously run `capsule init --tool claude .`.
 - If assisting with other AI agents, you may invoke `capsule init --tool <tool> .` as needed.

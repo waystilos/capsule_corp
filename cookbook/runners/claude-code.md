@@ -77,6 +77,19 @@ Pass tasks to Claude Code using the standard Task Brief envelope:
 - **Verification:** capsule check .
 ```
 
+### D. Multi-AI Check-In Room & Timeclock
+When collaborating with other models (Codex, Gemini, Cursor) on the same codebase:
+- Check active shifts: `capsule room`
+- Clock in when starting work:
+  ```bash
+  capsule clock-in --task "Implement email OTP auth" --files "src/auth/otp.py,tests/test_otp.py"
+  ```
+  *(Claude Code environment is auto-detected as Anthropic / Claude 3.7 Sonnet)*
+- Clock out upon successful verification:
+  ```bash
+  capsule clock-out --summary "OTP auth implemented and verified with capsule check"
+  ```
+
 ---
 
 ## 4. The Verification Gate (Trunks' Rule)

@@ -56,6 +56,9 @@ When handing off tasks between roles or subagents, use this concrete schema:
 4. **Tool Commands:**
    - The user has the `capsule` CLI available:
      - `capsule check [dir]` (everyday tests, lint, typecheck, secrets)
+     - `capsule room [dir]` (view Check-In Room, active shifts, claimed files)
+     - `capsule clock-in --task "..." [--files "..."]` (clock in to shift)
+     - `capsule clock-out --summary "..."` (clock out with summary)
      - `capsule verify [dir]` (strict verification gate)
      - `capsule security [dir]` (secrets and CVE scanner)
      - `capsule doctor [dir]` (environment diagnostics)
@@ -64,7 +67,16 @@ When handing off tasks between roles or subagents, use this concrete schema:
 
 ---
 
-## 3. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
+## 4. Check-In Room Protocol (Multi-AI Coordination)
+
+When working alongside other models or agents in the same repository:
+- Run `capsule room` to inspect active shifts and avoid concurrent edits to the same files.
+- Clock in before non-trivial edits: `capsule clock-in --task "..." --files "..."`
+- Clock out upon successful verification: `capsule clock-out --summary "..."`
+
+---
+
+## 5. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 
 This repository is governed by Capsule Corp standards.
 Whenever ANY AI agent (Claude Code, OpenAI Codex, Google Antigravity/Gemini, Cursor, Windsurf) connects to this project:

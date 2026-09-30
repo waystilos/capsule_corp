@@ -55,3 +55,17 @@ capsule verify .     # Strict verification gate
 capsule security .   # Security scanner
 ```
 And verify that the checks pass with 0 secret patterns and 0 regressions.
+
+### D. Multi-AI Check-In Room & Timeclock
+When collaborating with other agents (Claude Code, Gemini, Codex):
+- Run `capsule room` to inspect active shifts and avoid concurrent file edits.
+- Clock in before modifying code:
+  ```bash
+  capsule clock-in --task "Implement payment webhook" --files "src/api/webhooks.ts"
+  ```
+  *(Windsurf environment is auto-detected)*
+- Clock out once verified:
+  ```bash
+  capsule clock-out --summary "Payment webhook implemented and verified with capsule check"
+  ```
+

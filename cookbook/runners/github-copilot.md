@@ -67,3 +67,16 @@ Copilot might autocomplete dummy secrets (e.g. `sk-test-...`).
   capsule verify .     # Strict verification gate
   capsule security .   # Security scanner
   ```
+
+### E. Multi-AI Check-In Room & Timeclock
+When collaborating with other agents (Claude Code, Gemini, Codex):
+- Run `capsule room` to inspect active shifts and avoided touched files.
+- Clock in before modifying code:
+  ```bash
+  capsule clock-in --task "Add rate-limiting middleware" --files "src/middleware/rateLimit.ts"
+  ```
+- Clock out once verified:
+  ```bash
+  capsule clock-out --summary "Rate limiting implemented and verified with capsule check"
+  ```
+

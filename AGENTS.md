@@ -40,7 +40,22 @@ Before declaring any task done or opening a PR:
 - Run `capsule verify` and `capsule security`.
 - All checks must pass with exit code 0 and zero secrets/merge conflicts in diff.
 
-## 6. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
+## 6. Check-In Room Protocol (Multi-AI Coordination)
+When multiple AI agents or models operate in the same repository:
+- **Inspect Active Shifts:** Run `capsule room` before beginning work to check which models are on duty and which files are currently claimed.
+- **Clock In:** Claim your active task and files before editing code:
+  ```bash
+  capsule clock-in --task "Brief description of work" --files "path/to/file1,path/to/file2"
+  ```
+  *(Provider and model are auto-detected from environment variables)*
+- **Verify:** Run `capsule check` to verify code correctness.
+- **Clock Out:** Conclude your shift with a completion summary once verification passes:
+  ```bash
+  capsule clock-out --summary "Task finished and verified with exit code 0"
+  ```
+*(Stale shifts >2 hours are automatically expired, and history is capped at 15 items to prevent log bloat in `.capsule/room.json` and `.capsule/CONFERENCE.md`.)*
+
+## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 Whenever an AI agent (Claude Code, OpenAI Codex, Google Antigravity/Gemini, Cursor, Windsurf, GitHub Copilot) connects to this project:
 - Check if your tool's specific configuration exists in this repository:
   - **Claude Code:** `CLAUDE.md` and `.claude/settings.json` -> run `capsule init --tool claude .`
@@ -50,3 +65,4 @@ Whenever an AI agent (Claude Code, OpenAI Codex, Google Antigravity/Gemini, Curs
   - **OpenAI Codex:** `AGENTS.md` -> run `capsule init --tool codex .`
   - **GitHub Copilot:** `.github/copilot-instructions.md` -> run `capsule init --tool copilot .`
 - If your configuration file is missing, execute the setup command autonomously immediately upon connection without requiring the developer to choose.
+

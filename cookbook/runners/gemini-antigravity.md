@@ -52,6 +52,19 @@ Deliverables and handoffs use the standard Task Brief envelope:
 - **Piccolo:** Deconstructs complex features into atomic tasks formatted as Task Briefs.
 - **Goku:** Executes the Task Brief with Ultra Instinct focus, adding behavior tests.
 
+### D. Multi-AI Check-In Room & Timeclock
+When collaborating with other AI runners (Claude Code, OpenAI Codex, Cursor) on the same workspace:
+- Check active shifts and claimed files: `capsule room`
+- Clock in before modifying code:
+  ```bash
+  capsule clock-in --task "Task description" --files "path/to/files"
+  ```
+  *(Antigravity / Gemini environment is auto-detected)*
+- Clock out after running verification checks:
+  ```bash
+  capsule clock-out --summary "Task finished and verified with exit code 0"
+  ```
+
 ---
 
 ## 4. The Verification Gate (Trunks' Rule)
