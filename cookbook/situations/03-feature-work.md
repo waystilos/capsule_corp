@@ -1,48 +1,61 @@
 # Situation: I have a feature to build
 
-Use this recipe for a new feature, integration, endpoint, UI flow, or data change.
+Use this recipe for any change: from a small bugfix or CSS adjustment up to a complex multi-service epic.
 
-## 1. Scope it with Bulma
+## Step 1: Pick the Workflow Matching Your Task
 
-```text
-Act as Bulma. Turn this idea into an MVP PRD.
-Include the user journey, data entities, API contracts, acceptance criteria,
-and explicit out-of-scope items. Do not write implementation code.
+Avoid forcing every request through the entire cohort:
+
+- **Small Fix (typo, CSS tweak, quick bugfix):** Go straight to **Builder (`@Goku`)** $\to$ **`capsule check`**. Skip product scoping and coordinator overhead.
+- **Standard Feature (new endpoint, component, user flow):** **Product (`@Bulma`)** defines acceptance criteria $\to$ **Builder (`@Goku`)** implements $\to$ **Reviewer (`@Trunks`)** reviews $\to$ **`capsule check`**.
+- **Complex Epic (architecture overhaul, auth migration):** **Coordinator (`@Piccolo` / `@Whis`)** deconstructs into task tree & invokes specialists $\to$ **Builder (`@Goku`)** $\to$ **Reviewer (`@Trunks`)** $\to$ **`capsule check`**.
+
+---
+
+## Step 2: The Standard Task Brief Envelope
+
+When assigning work or passing tasks between roles, always format the brief using this schema:
+
+```markdown
+### Task Brief
+- **Goal:** [1-2 sentences: what is being built or fixed and why]
+- **Scope:** [Exact files, endpoints, or UI surfaces touched]
+- **Constraints:** [Tech boundaries, no unrequested refactors, zero external dependencies]
+- **Acceptance Criteria:** [Testable bullets asserting observable behaviors]
+- **Verification:** [Explicit commands to run: e.g. capsule check, pytest, npm test]
 ```
 
-## 2. Decompose it with Piccolo
+---
 
+## Step 3: Execution & Verification
+
+### 1. Product Scoping (Bulma) — Standard Feature
 ```text
-Act as Piccolo. Read the PRD and break it into atomic tasks.
-For each task, name the files or subsystem, dependencies, owner, expected output,
-and exact verification command. Keep each task independently testable.
+Act as Product (@Bulma). Turn this idea into an MVP spec with concrete acceptance criteria.
+Define testable behaviors before code is written. Do not write implementation code.
 ```
 
-## 3. Implement with Goku
-
-Give Goku one bounded task:
-
+### 2. Implementation (Goku) — Builder
+Give Goku the Task Brief:
 ```text
-Act as Goku.
-Task: <one atomic task>
-Files in scope: <paths>
-Acceptance criteria: <literal observable behavior>
-Do not change unrelated files. Add behavior-focused tests and run the test command.
+Act as Builder (@Goku). Implement this Task Brief with Ultra Instinct focus.
+Zero conversational filler, minimal diff footprint. Add behavior tests asserting observable outputs.
 ```
 
-## 4. Verify before expanding scope
+### 3. Review & Verification (Trunks) — Reviewer
+```bash
+capsule check /path/to/project
+```
 
-After each task:
-
+Then run strict gates before opening a PR:
 ```bash
 capsule verify /path/to/project
+capsule security /path/to/project
 ```
-
-Then ask Android 17 and Trunks to review the result before starting the next task.
 
 ## You are ready when
 
-- Every acceptance criterion has a test or a documented manual check.
-- The diff is limited to the intended scope.
-- Security and verification gates are green.
+- Every acceptance criterion has an automated test asserting observable behavior.
+- `capsule check` passes with exit code 0.
+- Diff contains zero secrets, debug markers, or unrelated files.
 

@@ -50,7 +50,8 @@ Cascade has broad agency to navigate and alter directories. Keep it on track by 
 ### C. The Trunks Gate
 Ask Cascade to execute:
 ```bash
-capsule verify .
-capsule security .
+capsule check .      # Everyday factual checks (tests, lint, typecheck, secrets)
+capsule verify .     # Strict verification gate
+capsule security .   # Security scanner
 ```
-And verify that the diff contains 0 secret patterns and 0 regressions.
+And verify that the checks pass with 0 secret patterns and 0 regressions.

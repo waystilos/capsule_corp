@@ -6,13 +6,25 @@ Use this recipe when you have just cloned the repository or want to understand t
 
 ```bash
 cd /path/to/capsule-corp
-capsule list
-capsule test
-capsule verify .
-capsule security .
+capsule check .       # Factual breakdown: tests, lint, typecheck, secrets
+capsule list          # Roster of roles, aliases, and model tiers
+capsule test          # Cohort test suite
+capsule verify .      # Strict verification gate
+capsule security .    # Vulnerability & secret scanner
 ```
 
 If the command is not installed globally, use `./bin/capsule` from the repository root.
+
+## Core Role Architecture
+
+Capsule Corp operates with **four default roles** and calls **specialists only when strictly needed**:
+
+- **Product (`@Bulma`):** Requirements, user journeys, API contracts, acceptance criteria.
+- **Builder (`@Goku`):** Frontline implementation with Ultra Instinct focus. Lean code, minimal diffs.
+- **Reviewer (`@Trunks`):** Verification gatekeeper: tests, linters, typechecks, diff hygiene.
+- **Coordinator (`@Piccolo` / `@Whis`):** Epic decomposition and orchestrating specialists.
+
+Optional specialists (`@Android-17` for security, `@Android-18` for refactoring, `@Videl` for UX, `@Vegeta` for infra, `@Roshi` for games) are invoked only on-demand.
 
 ## Ask the AI
 
@@ -23,8 +35,8 @@ Do not change files yet. Tell me the proposed scope and verification command.
 
 ## You are ready when
 
-- The roster prints successfully.
-- The internal tests pass.
-- Verification and security checks produce a green result.
-- You can identify the owner for product, implementation, security, verification, and infrastructure work.
+- `capsule check .` outputs `VERDICT: PASS`.
+- The internal tests pass (`capsule test`).
+- Verification and security checks produce green results.
+- You can identify whether a task needs a **Small Fix** (Builder $\to$ verify), **Standard Feature** (Product $\to$ Builder $\to$ Reviewer $\to$ verify), or **Complex Epic** (Coordinator $\to$ specialists $\to$ Builder $\to$ Reviewer $\to$ verify).
 

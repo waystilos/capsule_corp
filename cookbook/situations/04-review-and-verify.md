@@ -2,7 +2,19 @@
 
 Use this recipe before opening a pull request, handing work to another developer, or shipping a release.
 
-## Run the gates
+## Everyday Checks vs Release Gates
+
+### 1. Everyday Development Checks (`capsule check`)
+Run factual checks during everyday coding to inspect tests, linters, typecheckers, and diff secrets:
+
+```bash
+capsule check /path/to/project
+```
+
+`capsule check` reports each check as `[PASS]`, `[FAIL]`, or `[SKIP]` with execution times. If configured in `capsule.json` or `pyproject.toml [tool.capsule]`, it executes your project's explicit commands rather than guessing.
+
+### 2. Strict Release & PR Gates (`capsule verify`)
+Before opening a pull request or tagging a release:
 
 ```bash
 capsule verify /path/to/project
@@ -11,7 +23,7 @@ git status --short
 git diff --check
 ```
 
-Verification inspects staged, unstaged, and untracked files for conflict markers and common exposed-secret patterns. It also runs the project’s detected test suite.
+Verification inspects staged, unstaged, and untracked files for conflict markers and common exposed-secret patterns. It also runs the project’s detected or configured test suite.
 
 If there is intentionally no test runner, make the decision explicit:
 

@@ -50,16 +50,20 @@ Once the plan is established, prompt Goku:
 ### B. Verification in Composer & Integrated Terminal
 When Cursor finishes a batch of file edits:
 1. Open Cursor's integrated terminal (`` Ctrl+` `` or `` Cmd+` ``).
-2. Run Trunks' verification gate:
+2. Run everyday checks:
+   ```bash
+   capsule check .      # Factual report: tests, lint, typecheck, secrets
+   ```
+3. Run strict release gates before opening PRs:
    ```bash
    capsule verify .
    capsule security .
    ```
-3. If issues arise, paste the Trunks sentinel output back into Composer:
+4. If issues arise, paste the check output back into Composer:
    ```text
    Fix the regression identified by Trunks above.
    ```
 
 ### C. Guarding Against Hallucinated Dependencies
 Cursor may occasionally suggest installing new npm or pip packages. Enforce Goku's constraint:
-- *"Zero speculative dependencies without explicit founder approval."*
+- *"Zero speculative dependencies without explicit approval."* Always verify with `capsule check .`.

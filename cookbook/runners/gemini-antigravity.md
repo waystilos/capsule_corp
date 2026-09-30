@@ -46,10 +46,11 @@ Take advantage of Antigravity's interactive slash commands:
 - **`/boost` (Trunks + Android 17):** Deep reasoning mode with multi-perspective analysis and rigorous verification.
 - **`/grill-me` (Bulma Interview):** Rapid interactive Q&A to resolve requirements and edge-case ambiguities.
 
-### C. Artifact-Driven Handoffs
-Bulma and Piccolo should emit Markdown artifacts for deliverables:
-- **Bulma:** Generates structured PRD artifacts with Mermaid user state flow diagrams.
-- **Piccolo:** Generates task tree checklists that Goku marks off sequentially.
+### C. Artifact & Task Brief Handoffs
+Deliverables and handoffs use the standard Task Brief envelope:
+- **Bulma:** Generates structured PRD artifacts with Mermaid user flow diagrams and testable acceptance criteria.
+- **Piccolo:** Deconstructs complex features into atomic tasks formatted as Task Briefs.
+- **Goku:** Executes the Task Brief with Ultra Instinct focus, adding behavior tests.
 
 ---
 
@@ -57,7 +58,8 @@ Bulma and Piccolo should emit Markdown artifacts for deliverables:
 
 Antigravity executes verification gates asynchronously in background tasks:
 ```bash
-capsule verify .
-capsule security .
+capsule check .      # Everyday factual checks (tests, lint, typecheck, secrets)
+capsule verify .     # Strict verification gate
+capsule security .   # Security scanner
 ```
-Because Antigravity listens to task completion notifications automatically, you do not need to poll or wait manually—the system resumes turns when the verification reports are ready.
+Because Antigravity listens to task completion notifications automatically, you do not need to poll or wait manually—the system resumes execution when verification reports are ready.

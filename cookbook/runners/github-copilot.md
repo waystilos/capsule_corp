@@ -46,7 +46,24 @@ As @Android-17, review the diff in src/auth/jwt.ts for token expiration flaws, s
 - Use **@Goku mode** for new features: "Focus only on this function. No speculative helpers."
 - Use **@Android-18 mode** for cleanups: "Refactor this legacy utility into a TypeScript pure function without changing observable behavior."
 
-### C. Zero-Trust Security Enforcement
+### C. Standard Task Brief Envelope
+Format complex tasks for Copilot using the shared envelope:
+
+```markdown
+### Task Brief
+- **Goal:** Implement rate-limiting middleware for auth endpoints
+- **Scope:** src/middleware/rateLimit.ts, tests/middleware.test.ts
+- **Constraints:** Express 4 compatible, zero external Redis dependencies
+- **Acceptance Criteria:** Blocks IPs exceeding 60 req/min with HTTP 429
+- **Verification:** capsule check .
+```
+
+### D. Zero-Trust Security Enforcement & Verification
 Copilot might autocomplete dummy secrets (e.g. `sk-test-...`).
 - The directives instruct Copilot never to hardcode secrets and to use `process.env` or `os.environ`.
-- Trunks' diff sentinel (`capsule security .`) catches and blocks any accidental completions before commits.
+- Run everyday checks and Trunks' diff sentinel before staging commits:
+  ```bash
+  capsule check .      # Everyday factual checks (tests, lint, typecheck, secrets)
+  capsule verify .     # Strict verification gate
+  capsule security .   # Security scanner
+  ```
