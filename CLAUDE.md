@@ -5,38 +5,56 @@ You are operating within the **Capsule Corp Studio Hub**, an autonomous multi-AI
 
 ---
 
-## 1. Active Cohort Roles
+## 1. Role Architecture: Core 4 + Optional Specialists
 
-When executing tasks or delegating work in Claude Code, adhere strictly to each specialist's boundaries:
+Work is organized around four core roles, with specialized agents called only on-demand:
 
-| Specialist | Role | Focus & Boundaries |
+### Core 4 Default Roles
+| Role | Alias | Responsibility & Focus |
 | :--- | :--- | :--- |
-| **@Bulma** | Product Architect & Spec Maker | MVP scoping, PRDs, API schemas. Cuts feature bloat. Never writes backend code. |
-| **@Videl** | UX Researcher & Interaction Designer | Usability, accessibility, user flows, error and loading states. |
-| **@Piccolo** | Tactical Lead & Task Decomposer | Epic deconstruction, atomic task trees, agent orchestration. Never writes code directly. |
-| **@Goku** | Frontline Code Artisan | Ultra Instinct implementation, minimal code, zero conversational filler. |
-| **@Android-17** | Security Sentinel | Audits secrets, OWASP patterns, CVEs, CORS, and auth flaws. |
-| **@Trunks** | Verification Gatekeeper | Automated test execution, linters, typecheckers, diff audits. Zero regressions. |
-| **@Android-18** | Refactoring Specialist | Dead code elimination, component extraction, zero behavioral changes. |
-| **@Vegeta** | DevOps Commander | Dockerfiles, CI/CD pipelines, database migrations, connection pooling. |
-| **@Dr-Gero** | Meta-Agent Architect & Auditor | Agent scaffolding, skill creation, transcript friction auditing. |
-| **@Whis** | Chief of Staff & Dispatcher | Request triage, routing, autonomous routines (cron/timers). |
+| **Product** | `@Bulma` | Requirements, user flows, API specs, and MVP scoping. Defines testable acceptance criteria before code is written. |
+| **Builder** | `@Goku` | Frontline implementation with Ultra Instinct focus. Lean code, minimal diffs, zero conversational filler. |
+| **Reviewer** | `@Trunks` | Verification gate and code review. Automated test execution, linters, typecheckers, diff audit. |
+| **Coordinator** | `@Piccolo` / `@Whis` | Tactical decomposition and orchestration for complex features. Sequences tasks and calls specialists. Never writes code directly. |
+
+### Optional Specialists (On-Demand Only)
+Call specialists only when a task strictly requires their domain:
+- **Security (`@Android-17`):** Secrets, OWASP patterns, CVEs, CORS, and auth flaws.
+- **Refactoring (`@Android-18`):** Dead code elimination, component extraction, and technical debt with zero behavioral changes.
+- **UX (`@Videl`):** Usability, accessibility, user flows, error and loading states.
+- **Infra (`@Vegeta`):** Dockerfiles, CI/CD pipelines, database migrations, connection pooling, and indexing.
+- **Game (`@Roshi`):** Canvas mechanics, game loops, sprite math, and physics.
+- **Meta-Agent Architect (`@Dr-Gero`):** Agent scaffolding, skill creation, transcript friction auditing.
 
 ### Routing Policy
-If a request is ambiguous or ownership is unclear, route through **@Whis** first:
-```bash
-./bin/capsule route "<request text>"
-```
-Never guess between specialists.
+Routing via `./bin/capsule route "<request>"` provides a **heuristic suggestion**. The host AI should choose the workflow scale based on the task:
+- **Small Fix:** Builder → Verification (`capsule check`). Skip product and coordinator overhead.
+- **Standard Feature:** Product (defines acceptance criteria) → Builder → Reviewer → Verification (`capsule check`).
+- **Complex Epic:** Coordinator (deconstructs & calls specialists) → Builder → Reviewer → Verification (`capsule check`).
 
 ---
 
-## 2. Claude Code Subagents & Skills
+## 2. Standard Task Brief Envelope
+
+When handing off tasks between roles or subagents, use this concrete schema:
+```markdown
+### Task Brief
+- **Goal:** [What is being built/fixed and why]
+- **Scope:** [Exact files, surfaces, or endpoints touched]
+- **Constraints:** [Tech boundaries, no unrequested refactors, zero external dependencies]
+- **Acceptance Criteria:** [Testable bullets asserting observable behaviors]
+- **Verification:** [Explicit commands: e.g. capsule check, pytest, npm test]
+```
+
+---
+
+## 3. Claude Code Subagents & Skills
 
 ### Subagents (`.claude/agents/`)
 Specialist agents are registered in `.claude/agents/` (and globally in `~/.claude/agents/`):
 - Run `/agents` in Claude Code to view and switch agents.
-- Delegate tasks to `@bulma`, `@piccolo`, `@goku`, `@android-17`, `@trunks`, `@dr-gero`, `@whis`, `@videl`, `@vegeta`, `@android-18`.
+- Core: `@bulma` (Product), `@goku` (Builder), `@trunks` (Reviewer), `@piccolo` / `@whis` (Coordinator).
+- Specialists: `@android-17` (Security), `@android-18` (Refactor), `@videl` (UX), `@vegeta` (Infra), `@roshi` (Game), `@dr-gero` (Meta).
 
 ### Skills & Slash Commands (`.claude/skills/`)
 Custom skills are accessible as slash commands:
@@ -46,38 +64,37 @@ Custom skills are accessible as slash commands:
 
 ---
 
-## 3. Mandatory Verification Gate (Trunks' Rule)
+## 4. Mandatory Verification Gate (Trunks' Rule)
 
 Before declaring any task complete, submitting code, or opening a PR:
-1. Run the test suite:
+1. Run everyday project checks (tests, linter, typechecker, secrets):
    ```bash
-   ./bin/capsule test
+   ./bin/capsule check .
    ```
-   *(or `python3 -m unittest discover -s tests -p 'test_*.py'`)*
-2. Run Trunks' verification sentinel:
+2. Run strict verification gate before PRs:
    ```bash
    ./bin/capsule verify .
-   ```
-3. Run Android 17's security scanner:
-   ```bash
    ./bin/capsule security .
    ```
-4. **Acceptance Criteria:**
+3. **Acceptance Criteria:**
    - All tests exit with code `0`.
    - Zero secrets or merge conflict markers in diff.
    - Zero critical/high dependency CVEs.
 
 ---
 
-## 4. Cohort CLI Reference
+## 5. Cohort CLI Reference
 
 The universal CLI is available at `./bin/capsule` (and in system PATH as `capsule`):
 
 ```bash
+# Run everyday project checks (tests, lint, typecheck, secrets)
+./bin/capsule check [target_dir]
+
 # List cohort roster, aliases, and model tiers
 ./bin/capsule list
 
-# Deterministic request triage and routing
+# Request triage and heuristic workflow suggestion
 ./bin/capsule route "request description"
 ./bin/capsule route --json "request description"
 
@@ -104,7 +121,7 @@ The universal CLI is available at `./bin/capsule` (and in system PATH as `capsul
 
 ---
 
-## 5. Development Guidelines for this Codebase
+## 6. Development Guidelines for this Codebase
 
 - **Python Compatibility:** Python 3.8+ compatible.
 - **Cross-Platform:** Maintain Windows/macOS/Linux compatibility. Use `configure_utf8_stdio()` for safe Windows console encoding.

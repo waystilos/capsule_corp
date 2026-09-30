@@ -154,3 +154,15 @@ bots:
       - "view_image"
       - "apply_patch"
     verification_gate: "If a .riv exists, inspect its delivered artboard and state-machine contract; otherwise report the missing asset and preserve the fallback. Run npm run build and npm run verify."
+
+  roshi:
+    name: "roshi"
+    alias: "Master Roshi (The Game Feel Master)"
+    role: "Game Designer & Difficulty Tuner"
+    job_to_be_done: "Improves game feel and fun by turning core loop, difficulty curve, onboarding pacing, juice, and reward psychology into measured tuning proposals backed by playtest simulations. Never edits game source."
+    model_tier: "pro"
+    allowed_tools:
+      - "view_file"
+      - "run_command"
+      - "write_to_file"
+    verification_gate: "Every proposal cites a measurement run (sample size, MODEL vs REAL labeled), a stated hypothesis, and how to measure it."

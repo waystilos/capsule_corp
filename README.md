@@ -33,12 +33,13 @@ Project-specific tools such as `pytest`, `npm`, `cargo`, or `go` are only needed
 ### Run the built-in checks
 
 ```bash
-./bin/capsule test
-./bin/capsule verify .
-./bin/capsule security .
+capsule check .      # Everyday factual check: tests, lint, typecheck, secrets
+capsule test         # Cohort test suite
+capsule verify .     # Trunks' strict verification gate
+capsule security .   # Android 17's security scanner
 ```
 
-All three commands should exit with code 0 before treating the local setup as ready.
+All commands should exit with code 0 before treating changes as ready.
 
 ### Route a request when you are unsure
 
@@ -158,20 +159,28 @@ Forced replacements create timestamped backups. Do not run global sync on a shar
 
 For detailed situation-based workflows, see the [Capsule Corp Cookbook](cookbook/README.md).
 
-## 1. The Startup Cohort Roster
+## 1. Role Architecture: Core 4 + Optional Specialists
 
-| Character | Role | Operational Focus | Primary Job To Be Done (JTBD) |
+Rather than forcing every request through a large roster, Capsule Corp structures work around **four default roles** and calls **specialists only when needed**. Functional names clarify responsibilities; Dragon Ball archetypes provide memorable shorthand aliases.
+
+### The Core 4 Default Roles
+| Role | Alias | Operational Focus | Primary Job To Be Done (JTBD) |
 | :--- | :--- | :--- | :--- |
-| **Bulma**<br>`Chief Product Architect` | **Product Architect & Spec Maker** | MVP Scoping & API Contracts | Translates founder ideas into sharp PRDs, user flows, and API specifications. Cuts non-essential feature bloat. |
-| **Videl**<br>`User Experience Advocate` | **UX Researcher & Interaction Designer** | Usability, Accessibility & Interaction Design | Turns product intent into clear, accessible, and testable user experiences. Covers real-world states beyond the happy path. |
-| **Piccolo**<br>`The Tactical Lead` | **Engineering Lead & Decomposer** | Strategy & Orchestration | Deconstructs feature epics into atomic task trees. Orchestrates parallel worker agents and coordinates verification. Never writes raw code directly. |
-| **Goku**<br>`The Code Artisan` | **Frontline Implementation Worker** | Ultra Instinct Execution | Surgical code implementation with Ultra Instinct focus and high bias to act. Zero speculative dependencies or conversational filler. |
-| **Android 17**<br>`The Security Sentinel` | **Security & Compliance Sentinel** | Zero-Trust & Vulnerability Audit | Inspects codebases and PRs for exposed secrets, OWASP vulnerabilities, injection risks, and dependency flaws. |
-| **Trunks**<br>`The Timeline Sentinel` | **Verification Gatekeeper** | Zero-Regression Quality Gate | The quality gate. Runs test suites, linters, and typecheckers before code is accepted. Guarantees zero regressions. |
-| **Android 18**<br>`Refactoring Specialist` | **Precision Refactoring Worker** | Dead Code & Tech Debt | Eliminates dead code, cleans technical debt, and extracts components with zero regression. |
-| **Vegeta**<br>`DevOps Commander` | **DevOps, Infra & Database** | Gravity Chamber (Scale & CI/CD) | Multi-stage Dockerfiles, GitHub Actions CI/CD pipelines, database migrations, connection pooling, and query indexing. |
-| **Dr. Gero**<br>`The Android Architect` | **Meta-Agent Architect & Auditor** | System Scaffolding & Evals | Designs, scaffolds, audits, and prunes other agents and skills. Audits transcripts for friction and token waste. |
-| **Whis**<br>`The Attendant & CoS` | **Chief of Staff & Routine Dispatcher** | Triage & Automation | Request triage, background routine scheduling (cron/timers), resource allocation, and developer communication. |
+| **Product** | `@Bulma` | MVP Scoping & Acceptance Criteria | Translates founder ideas into sharp PRDs, user flows, API specs, and testable acceptance criteria before code is written. |
+| **Builder** | `@Goku` | Ultra Instinct Frontline Execution | Surgical implementation with Ultra Instinct focus. Lean code, minimal diffs, zero speculative dependencies or conversational filler. |
+| **Reviewer** | `@Trunks` | Verification Gate & Review | Executes automated tests, linters, typecheckers, and git diff audits before code is accepted. Guarantees zero regressions. |
+| **Coordinator** | `@Piccolo` / `@Whis` | Strategy & Orchestration | Deconstructs complex features into atomic task trees. Orchestrates parallel tasks and invokes specialists when needed. Never writes code directly. |
+
+### Optional Specialists (Called On-Demand Only)
+Specialists are called only when a task strictly requires their specific expertise—never for everyday changes:
+| Specialist | Role | Operational Focus | When to Call |
+| :--- | :--- | :--- | :--- |
+| **@Android-17** | **Security Sentinel** | Zero-Trust & Vulnerability Audit | Auth systems, secret audits, OWASP risks, dependency CVEs, and input sanitization. |
+| **@Android-18** | **Refactoring Specialist** | Dead Code & Tech Debt | Component extraction, duplicate cleanup, and technical debt with zero behavioral changes. |
+| **@Videl** | **UX Researcher & Designer** | Usability & Accessible States | User journey flows, accessibility (WCAG), empty states, and error handling for user interfaces. |
+| **@Vegeta** | **DevOps Commander** | Infrastructure & Scale | Multi-stage Dockerfiles, GitHub Actions CI/CD pipelines, database migrations, connection pooling. |
+| **@Master-Roshi** | **Game Feel Master** | Core Loops & Canvas Mechanics | Game feel, sprite math, frame timing, physics loops, and difficulty tuning. |
+| **@Dr-Gero** | **Meta-Agent Architect** | System Scaffolding & Evals | Scaffolding new agents, authoring skills, and auditing execution transcripts for agent friction. |
 
 ---
 
@@ -261,57 +270,110 @@ In your chat or CLI session:
 
 ---
 
-## 4. The `capsule` CLI Reference
+## 4. The `capsule` Everyday CLI Reference
 
-The CLI is in your system PATH (`~/.zshrc`). You can run `capsule` from any terminal:
+The CLI is available in PATH (`capsule`) and locally (`./bin/capsule`). Everyday engineering centers around factual checks, diagnostics, and routing:
 
 ```bash
-# 1. List all agents in the cohort with roles and model tiers
-capsule list
+# 1. Everyday factual checks (tests, linters, typecheckers, diff audit)
+capsule check [project_dir]
+capsule check --json [project_dir]
 
-# 2. Configure only the AI integration you are using
-capsule init --tool claude /path/to/startup-project
-capsule init --tool copilot /path/to/startup-project
-# Use --force only when replacing existing directive files is intentional
-capsule init --tool claude --force /path/to/startup-project
-# Explicit multi-tool setup is available when required
-capsule init --tools copilot,claude,codex,cursor,gemini /path/to/startup-project
+# 2. Heuristic request routing & workflow tier suggestion
+capsule route "fix typo in button class"
+capsule route "design an accessible onboarding flow"
+capsule route --json "deconstruct architecture into task tree"
 
 # 3. Multi-AI Environment & Health Diagnostics
 capsule doctor [project_dir]
 
-# 4. Run Android 17's Security Sentinel (secret leaks, OWASP patterns, dependency CVEs)
+# 4. Strict verification gate (deterministic pass/fail for PRs and CI)
+capsule verify [project_dir]
 capsule security [project_dir]
 
-# 5. Run Trunks' Verification Gate (auto-detects pytest, npm, pnpm, bun, cargo, go, etc.)
-capsule verify [project_dir]
+# 5. Configure one AI tool by default (or multiple)
+capsule init --tool codex /path/to/project
+capsule init --tool claude /path/to/project
+capsule init --tool gemini /path/to/project
+capsule init --tools copilot,claude,cursor /path/to/project
 
-# 6. Run Dr. Gero's transcript auditor to identify friction & patch prompts
+# 6. List all agents in the cohort with roles and model tiers
+capsule list
+
+# 7. Dr. Gero's transcript friction auditor
 capsule audit --latest
 
-# 7. Synchronize all skills, rules, and permissions across all AIs
+# 8. Synchronize skills, rules, and permissions across all AIs
 capsule sync --dry-run
 capsule sync --force
 
-# 8. Run the cohort's internal unit tests
+# 9. Run the cohort's internal test suite
 capsule test
 ```
 
-For a guided, situation-based walkthrough, start with the [Capsule Corp Cookbook](cookbook/README.md).
+### Project-Specific Configuration (`capsule.json`)
+Rather than guessing commands from build manifests, Capsule Corp allows projects to explicitly declare their test, lint, and typecheck commands in `capsule.json`, `.capsulerc.json`, or `pyproject.toml`:
+
+```json
+{
+  "test": "npm test",
+  "lint": "npm run lint",
+  "typecheck": "tsc --noEmit"
+}
+```
+
+Or in `pyproject.toml`:
+```toml
+[tool.capsule]
+test = "pytest -v"
+lint = "ruff check ."
+typecheck = "mypy src"
+```
+
+When configured, `capsule check` and `capsule verify` execute these explicit project commands and report factual `[PASS]`, `[FAIL]`, and `[SKIP]` statuses with execution times.
 
 ---
 
-## 5. Startup Project Workflow (From Idea to Shipped Feature)
+## 5. Tiered Workflows That Scale
 
+Avoid forcing every request through the entire cohort. A simple CSS fix or typo should never require product scoping, multi-agent orchestration, and security review. Match the workflow to the task:
+
+### 1. Small Fix (Single change, typo, bugfix, CSS tweak)
+```mermaid
+flowchart LR
+    Task["Bug or Tweak"] --> Builder["Builder (@Goku)\nSurgical Implementation"]
+    Builder --> Check["Verification\n(capsule check)"]
+```
+
+### 2. Standard Feature (New endpoint, UI component, user story)
+```mermaid
+flowchart LR
+    Idea["Feature Request"] --> Product["Product (@Bulma)\nDefines Acceptance Criteria"]
+    Product --> Builder["Builder (@Goku)\nUltra Instinct Implementation"]
+    Builder --> Reviewer["Reviewer (@Trunks)\nTests & Diff Audit"]
+    Reviewer --> Check["Verification\n(capsule check)"]
+```
+
+### 3. Complex Epic (Multi-service migration, system redesign, auth overhaul)
 ```mermaid
 flowchart TD
-    Founder["1. Founder Idea"] --> Bulma["2. Bulma (Product Architect)\nScopes MVP & Writes PRD / API Specs"]
-    Bulma --> Piccolo["3. Piccolo (Tactical Lead)\nDecomposes into Atomic Tasks"]
-    Piccolo --> Goku["4. Goku (Frontline Worker)\nUltra Instinct Implementation"]
-    Piccolo --> Vegeta["5. Vegeta (DevOps)\nMigrations & Dockerfiles"]
-    Goku --> A17["6. Android 17 (Security Sentinel)\nScans Secrets & OWASP Vulnerabilities"]
-    A17 --> Trunks["7. Trunks (Timeline Sentinel)\nRuns Tests & Diff Integrity Gate"]
-    Trunks --> Whis["8. Whis (Chief of Staff)\nReports Clean Deploy & Schedules Routines"]
+    Epic["Complex Epic"] --> Coord["Coordinator (@Piccolo / @Whis)\nDeconstructs into Task Tree"]
+    Coord -.->|"On-Demand"| Spec["Optional Specialists\n(@Android-17 / @Vegeta / @Videl)"]
+    Coord --> Builder["Builder (@Goku)\nParallel Task Slices"]
+    Builder --> Reviewer["Reviewer (@Trunks)\nVerification Gate"]
+    Reviewer --> Check["Verification\n(capsule check)"]
+```
+
+### The Standard Task Brief Envelope
+Every role and subagent communicates through a compact, structured envelope rather than conversational introductions or repeated backstories:
+
+```markdown
+### Task Brief
+- **Goal:** [1-2 sentences stating what is being built or fixed and why]
+- **Scope:** [Exact files, surfaces, or endpoints touched]
+- **Constraints:** [Tech boundaries, no unrequested refactors, zero external dependencies]
+- **Acceptance Criteria:** [Testable bullets asserting observable behaviors]
+- **Verification:** [Explicit commands to run: e.g. capsule check, pytest, npm test]
 ```
 
 ---
@@ -335,12 +397,17 @@ capsule-corp/
 │   ├── android_18.md         # Android 18: Precision Refactoring Specialist
 │   ├── vegeta.md             # Vegeta: Infrastructure & Database Commander
 │   ├── dr_gero.md            # Dr. Gero: Meta-Agent Architect & Auditor
-│   └── whis.md               # Whis: Chief of Staff & Routine Dispatcher
+│   ├── whis.md               # Whis: Chief of Staff & Routine Dispatcher
+│   ├── goten.md              # Goten: Articulated Sprite Animation Specialist
+│   ├── android_16.md         # Android 16: Rive Rig Integration Specialist
+│   └── roshi.md              # Master Roshi: Game Designer & Difficulty Tuner
 ├── skills/                   # Progressive disclosure runbooks (synced to all AIs)
 │   ├── scaffold-agent/       # Dr. Gero's bot designer
 │   ├── audit-transcripts/    # Dr. Gero's session log friction auditor
 │   └── verification-gate/    # Trunks' automated test & diff gates
 ├── scripts/                  # Automation engines
+│   ├── check_project.py      # Everyday project check engine (capsule check)
+│   ├── route_request.py      # Request triage & workflow suggestion (capsule route)
 │   ├── security_audit.py     # Android 17's security scanner
 │   ├── init_project.py       # Multi-AI project bootstrap utility
 │   ├── scaffold_bot.py       # Bot creation script
@@ -354,8 +421,9 @@ capsule-corp/
 ├── config/
 │   ├── sync_all_ais.sh       # Multi-AI sync script (Copilot, Codex, Claude, Gemini, Cursor)
 │   └── sync_to_gemini.sh     # Gemini-specific sync script
-├── cookbook/                  # Getting-started guide and situation recipes
+├── cookbook/                  # Getting-started guide, situation recipes & runner guides
 │   ├── README.md
+│   ├── runners/              # Tool guides: Claude Code, Gemini, Codex, Cursor, Windsurf, Copilot
 │   └── situations/
 ├── registry.yaml             # Master cohort manifest & tool allowlists
 └── README.md                 # This documentation guide

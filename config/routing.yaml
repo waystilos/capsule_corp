@@ -46,3 +46,8 @@ routes:
     keywords: [agent, bot, skill, prompt, persona, transcript, scaffold]
     handoff: [dr-gero, trunks]
     avoid: [product feature]
+  - intent: game_design
+    owner: roshi
+    keywords: [game, gameplay, game feel, fun, difficulty, difficulty curve, too hard, too easy, frustrating, tune, tuning, playtest, balance, juice, progression, streak, star thresholds, core loop, reward]
+    handoff: [roshi, goku, trunks]
+    avoid: [prd, accessibility, usability, wireframe, deploy]
