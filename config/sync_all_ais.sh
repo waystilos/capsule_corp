@@ -216,6 +216,7 @@ Before declaring any task complete or submitting code changes:
 When multiple AI agents or models operate in the same repository:
 - Run \`capsule room\` to inspect active shifts and claimed files.
 - Clock in before editing: \`capsule clock-in --task "..." --files "..."\`
+- Refresh activity for long shifts: \`capsule heartbeat\`
 - Verify with \`capsule check .\` and clock out: \`capsule clock-out --summary "..."\`
 
 ## 7. Cohort CLI
@@ -223,6 +224,7 @@ Universal CLI available at: \`$CAPSULE_DIR/bin/capsule\`
 - \`capsule check [dir]\`
 - \`capsule room [dir]\`
 - \`capsule clock-in --task "..." [--files "..."]\`
+- \`capsule heartbeat\`
 - \`capsule clock-out --summary "..."\`
 - \`capsule list\`
 - \`capsule route "request text"\`
@@ -299,6 +301,7 @@ Before declaring any task done or opening a PR:
 When multiple agents work on this codebase:
 - Check active shifts: \`capsule room\`
 - Clock in before editing: \`capsule clock-in --task "..." --files "..."\`
+- Refresh activity for long shifts: \`capsule heartbeat\`
 - Verify and clock out: \`capsule clock-out --summary "..."\`
 
 ## 7. Cohort CLI
@@ -306,6 +309,7 @@ Universal CLI: \`$CAPSULE_DIR/bin/capsule\`
 - \`capsule check [dir]\`
 - \`capsule room [dir]\`
 - \`capsule clock-in --task "..." [--files "..."]\`
+- \`capsule heartbeat\`
 - \`capsule clock-out --summary "..."\`
 - \`capsule list\`
 - \`capsule route "<text>"\`

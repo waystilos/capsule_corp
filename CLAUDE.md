@@ -92,12 +92,16 @@ When multiple agents or models work on the same repository:
    ./bin/capsule clock-in --task "Task description" --files "file1,file2"
    ```
    *(Provider and model are auto-detected from environment)*
-3. **Verify:** Run `./bin/capsule check .` after modifications.
-4. **Clock Out:** Conclude your shift with a completion summary once verified:
+3. **Heartbeat:** For long-running shifts, refresh activity to avoid auto-expiration:
+   ```bash
+   ./bin/capsule heartbeat
+   ```
+4. **Verify:** Run `./bin/capsule check .` after modifications.
+5. **Clock Out:** Conclude your shift with a completion summary once verified:
    ```bash
    ./bin/capsule clock-out --summary "Task completed and verified with exit code 0"
    ```
-*(Stale shifts >2 hours auto-expire; history is capped at 15 entries in `.capsule/room.json` and `.capsule/CONFERENCE.md`.)*
+*(Stale shifts >2 hours without heartbeat or clock-out auto-expire; history is capped at 15 entries in `.capsule/room.json` and `.capsule/CONFERENCE.md`.)*
 
 ---
 
@@ -114,6 +118,9 @@ The universal CLI is available at `./bin/capsule` (and in system PATH as `capsul
 
 # Clock in to active work shift (claims files, auto-detects provider/model)
 ./bin/capsule clock-in --task "Description" [--files "file1,file2"]
+
+# Send heartbeat to keep active shift alive
+./bin/capsule heartbeat
 
 # Clock out and record summary (auto-prunes logs)
 ./bin/capsule clock-out --summary "Summary of completed work"

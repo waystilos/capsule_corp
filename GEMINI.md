@@ -44,12 +44,16 @@ When collaborating with other AI agents (Claude Code, Codex, Cursor, Windsurf):
   ```bash
   capsule clock-in --task "Task description" --files "path/to/file1,path/to/file2"
   ```
+- **Heartbeat:** For long-running shifts, refresh activity to avoid auto-expiration:
+  ```bash
+  capsule heartbeat
+  ```
 - **Verify:** Run `capsule check .` after implementation.
 - **Clock Out:** Conclude your shift once verified:
   ```bash
   capsule clock-out --summary "Completed and verified"
   ```
-*(Stale shifts >2 hours auto-expire; history is capped at 15 items to prevent log bloat.)*
+*(Stale shifts >2 hours without heartbeat or clock-out auto-expire; history is capped at 15 items to prevent log bloat.)*
 
 ## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 When operating in this or any project initialized with Capsule Corp:

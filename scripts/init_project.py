@@ -156,6 +156,7 @@ Before declaring any task done or opening a PR:
 When multiple AI agents or models operate in the same repository:
 - Run `capsule room` to inspect active shifts and claimed files.
 - Clock in before editing: `capsule clock-in --task "..." --files "..."`
+- Heartbeat during long tasks: `capsule heartbeat`
 - Verify with `capsule check .` and clock out: `capsule clock-out --summary "..."`
 
 ## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
@@ -251,6 +252,7 @@ Before declaring any task done or opening a PR:
 When collaborating with other AI agents (Claude Code, Codex, Cursor, Windsurf):
 - Run `capsule room` to inspect active shifts and avoid concurrent edits to the same files.
 - Clock in before editing: `capsule clock-in --task "..." --files "..."`
+- Heartbeat during long tasks: `capsule heartbeat`
 - Verify and clock out: `capsule clock-out --summary "..."`
 
 ## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
@@ -310,6 +312,7 @@ Before declaring any task done or opening a PR:
 When collaborating with other AI agents (Gemini, Codex, Cursor, Windsurf):
 - Run `capsule room` to inspect active shifts and claimed files.
 - Clock in before editing: `capsule clock-in --task "..." --files "..."`
+- Heartbeat during long tasks: `capsule heartbeat`
 - Verify and clock out: `capsule clock-out --summary "..."`
 
 ## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)

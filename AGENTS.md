@@ -48,12 +48,16 @@ When multiple AI agents or models operate in the same repository:
   capsule clock-in --task "Brief description of work" --files "path/to/file1,path/to/file2"
   ```
   *(Provider and model are auto-detected from environment variables)*
+- **Heartbeat:** For long-running shifts, refresh activity to avoid auto-expiration:
+  ```bash
+  capsule heartbeat
+  ```
 - **Verify:** Run `capsule check` to verify code correctness.
 - **Clock Out:** Conclude your shift with a completion summary once verification passes:
   ```bash
   capsule clock-out --summary "Task finished and verified with exit code 0"
   ```
-*(Stale shifts >2 hours are automatically expired, and history is capped at 15 items to prevent log bloat in `.capsule/room.json` and `.capsule/CONFERENCE.md`.)*
+*(Stale shifts >2 hours without heartbeat or clock-out are automatically expired, and history is capped at 15 items to prevent log bloat in `.capsule/room.json` and `.capsule/CONFERENCE.md`.)*
 
 ## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 Whenever an AI agent (Claude Code, OpenAI Codex, Google Antigravity/Gemini, Cursor, Windsurf, GitHub Copilot) connects to this project:
