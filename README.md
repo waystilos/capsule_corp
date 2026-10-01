@@ -1,5 +1,9 @@
 # ⚡ Capsule Corp: Autonomous Multi-AI Agent Cohort
 
+<p align="center">
+  <img src="assets/capsule-corp-hq.png" alt="Capsule Corporation Headquarters" width="100%">
+</p>
+
 A specialized cohort of autonomous AI agents modeled on **Dragon Ball Z** archetypes, engineered for startups and unified across all development tools (**GitHub Copilot**, **OpenAI Codex**, **Anthropic Claude Code**, **Google Antigravity / Gemini**, **Cursor**, and **Windsurf**).
 
 > *"I like to call it the Michelin kitchen… when you say software factory, it has this connotation of mass manufactured slop."* — **Lauren Tan** (@poteto, *Behind the Craft*)
