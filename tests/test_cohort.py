@@ -507,6 +507,37 @@ class TestCapsuleCheck(unittest.TestCase):
         self.assertEqual(epic["workflow_tier"], "complex_epic")
         self.assertIn("Coordinator", epic["suggested_workflow"][0])
 
+    def test_route_request_workflow_is_scoped_to_handoff_chain(self):
+        """Specialist routes must not cycle through Product/Builder/Reviewer by default."""
+        import re as _re
+
+        def bots_in(workflow):
+            return [m.casefold() for step in workflow for m in _re.findall(r"@([\w-]+)", step)]
+
+        cases = {
+            "audit the auth flow for a security vulnerability": "android-17",
+            "refactor dead code in room.py": "android-18",
+            "add a docker pipeline for deploys": "vegeta",
+            "improve onboarding usability": "videl",
+            "scaffold a new agent for linting": "dr-gero",
+        }
+        for request, owner in cases.items():
+            result = route_request(request)
+            self.assertEqual(result["status"], "routed", request)
+            self.assertEqual(result["owner"], owner, request)
+            bots = bots_in(result["suggested_workflow"])
+            self.assertEqual(bots[0], owner, request)
+            self.assertEqual(set(bots), set(result["handoff"]), request)
+            self.assertEqual(result["suggested_workflow"][-1], "Verification (capsule check)", request)
+
+        # Builder-owned standard features are the only place Product is added by default.
+        feature = route_request("add a user profile feature")
+        self.assertEqual(bots_in(feature["suggested_workflow"]), ["bulma", "goku", "trunks"])
+
+        # Small fixes never pull in a coordinator or reviewer step.
+        fix = route_request("fix the typo in the README")
+        self.assertEqual(bots_in(fix["suggested_workflow"]), ["goku"])
+
 
 class TestCapsuleRoom(unittest.TestCase):
     def test_detect_environment(self):
