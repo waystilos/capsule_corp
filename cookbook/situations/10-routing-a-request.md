@@ -10,13 +10,13 @@ From the Capsule Corp repository or an installed package:
 capsule route "I need an accessible onboarding flow with clear error states"
 ```
 
-The router treats classification as a **heuristic suggestion**, giving host AIs and developers the freedom to choose the right workflow scale:
+The router treats classification as a **heuristic suggestion**, giving host AIs and developers the freedom to choose the right workflow scale. The suggested workflow is built only from the matched route's handoff chain, so a specialist request never cycles through Product, Builder, and Reviewer by default:
 
 ```text
 Status: routed
 Owner: videl (UX Specialist) [Suggestion]
 Workflow Tier: standard_feature
-Suggested Workflow: Product (@Bulma) -> Builder (@Goku) -> Reviewer (@Trunks) -> Verification (capsule check)
+Suggested Workflow: UX (@Videl) -> Product (@Bulma) -> Coordinator (@Piccolo) -> Verification (capsule check)
 Intent: user_experience
 Reason: Matched: onboarding.
 Handoff: videl -> bulma -> piccolo
