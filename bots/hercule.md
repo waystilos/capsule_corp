@@ -4,8 +4,8 @@ alias: "Hercule Satan (The Hype & Distribution Auditor)"
 role: "Market Reality & Distribution Channel Auditor"
 description: "Audits viral hooks, organic distribution channels, and cuts through founder vanity hype to verify real user demand."
 model_tier: flash
-input_contract: "CapsuleEnvelope (root_request, ledger)"
-output_contract: "Distribution reality audit receipt asserting verified distribution wedges"
+input_contract: {requires: [root_request, ledger], description: "CapsuleEnvelope (root_request, ledger)"}
+output_contract: {provides: [audit_receipt], description: "Distribution reality audit receipt asserting verified distribution wedges"}
 ---
 
 

@@ -71,11 +71,24 @@ def run_module(module: str, args: List[str]) -> int:
     ).returncode
 
 
-def cmd_list() -> int:
+def cmd_list(args: Optional[List[str]] = None) -> int:
     registry = resource_root() / "registry.yaml"
     if not registry.exists():
         print(f"Error: bundled registry not found at {registry}", file=sys.stderr)
         return 1
+
+    if "--json" in (args or []):
+        import json
+        from scripts import models
+        cfg, warnings = models.load_config(resource_root())
+        for w in warnings:
+            print(w, file=sys.stderr)
+        try:
+            print(json.dumps({"bots": models.list_bots(resource_root())}, indent=2))
+        except models.ModelsError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+        return 0
 
     try:
         import yaml
@@ -100,15 +113,23 @@ def cmd_list() -> int:
     print("=" * 90)
     print(" 🚀 CAPSULE CORP AGENT COHORT ROSTER")
     print("=" * 90)
-    print(f"{'BOT ID':<16} | {'ALIAS':<32} | {'MODEL TIER':<10} | {'PRIMARY ROLE'}")
-    print("-" * 18 + "+" + "-" * 34 + "+" + "-" * 12 + "+" + "-" * 24)
+    print(f"{'BOT ID':<16} | {'ALIAS':<32} | {'MODEL TIER':<10} | {'MODEL':<10} | {'PRIMARY ROLE'}")
+    print("-" * 18 + "+" + "-" * 34 + "+" + "-" * 12 + "+" + "-" * 12 + "+" + "-" * 24)
+    from scripts import models
+    cfg, warnings = models.load_config(resource_root())
+    for w in warnings:
+        print(w, file=sys.stderr)
     for bot_id, details in bots.items():
         details = details if isinstance(details, dict) else {}
         name = details.get("name", bot_id)
         alias = details.get("alias", name)
         tier = details.get("model_tier", "inherit")
         role = details.get("role", "")
-        print(f"{name:<16} | {alias[:32]:<32} | {tier:<10} | {role}")
+        try:
+            model = models.resolve_model(bot=name, root=resource_root(), config=cfg)["model"]
+        except models.ModelsError:
+            model = "?"
+        print(f"{name:<16} | {alias[:32]:<32} | {tier:<10} | {model:<10} | {role}")
     print("=" * 90)
     print(f"Total Agents: {len(bots)} | Resources: {resource_root()}")
     return 0
@@ -130,7 +151,7 @@ def cmd_test() -> int:
 def main(argv: Optional[List[str]] = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args or args[0] in {"-h", "--help"}:
-        print("Usage: capsule {check|validate|room|spy|clock-in|clock-out|heartbeat|list|route|doctor|test|scaffold|audit|verify|security|attack|grill|init|sync|install-elixir} [options]")
+        print("Usage: capsule {check|validate|room|spy|clock-in|clock-out|heartbeat|send|inbox|ack|list|route|models|doctor|test|scaffold|audit|verify|security|attack|grill|init|sync|install-elixir} [options]")
         return 0
 
     command, extra = args[0], args[1:]
@@ -148,10 +169,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         return run_module("scripts.room", ["clock-out"] + extra)
     if command in {"heartbeat", "touch"}:
         return run_module("scripts.room", ["heartbeat"] + extra)
+    if command in {"send", "inbox", "ack"}:
+        return run_module("scripts.messaging", [command] + extra)
     if command == "list":
-        return cmd_list()
+        return cmd_list(extra)
     if command == "route":
         return run_module("scripts.route_request", extra)
+    if command == "models":
+        return run_module("scripts.models", extra)
     if command == "doctor":
         return run_module("scripts.doctor", extra)
     if command == "test":

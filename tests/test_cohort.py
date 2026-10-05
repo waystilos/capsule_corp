@@ -432,7 +432,7 @@ class TestAndroid17Security(unittest.TestCase):
             ):
                 exit_code, _ = run_dependency_audit(root)
             self.assertEqual(exit_code, 0)
-            self.assertEqual(calls, [["npm", "audit", "--audit-level=high"], ["pip-audit", "-r", str(root / "requirements.txt")]])
+            self.assertEqual(calls, [["npm", "audit", "--audit-level=high"], ["pip-audit", "-r", str(root / "requirements.txt"), "--no-deps", "--disable-pip"]])
 
 
 class TestCapsuleCheck(unittest.TestCase):
@@ -538,9 +538,9 @@ class TestCapsuleCheck(unittest.TestCase):
         feature = route_request("add a user profile feature")
         self.assertEqual(bots_in(feature["suggested_workflow"]), ["bulma", "goku", "trunks"])
 
-        # Small fixes never pull in a coordinator or reviewer step.
+        # Small fixes never pull in a coordinator or Product, but verification (Trunks) is kept.
         fix = route_request("fix the typo in the README")
-        self.assertEqual(bots_in(fix["suggested_workflow"]), ["goku"])
+        self.assertEqual(bots_in(fix["suggested_workflow"]), ["goku", "trunks"])
 
 
 class TestCapsuleRoom(unittest.TestCase):
@@ -623,7 +623,7 @@ class TestCapsuleRoom(unittest.TestCase):
             root = Path(temp_dir)
             shift = clock_in(root, agent="codex", task="Fix bug")
             # Unrelated agent attempts clock out
-            out_unrelated = clock_out(root, agent="claude", summary="Unrelated attempt")
+            out_unrelated = clock_out(root, agent="claude", summary="Unrelated attempt", token=shift["session_token"])
             self.assertIsNone(out_unrelated)
 
             room_json = root / ".capsule" / "room.json"
@@ -631,7 +631,7 @@ class TestCapsuleRoom(unittest.TestCase):
             self.assertIn(shift["shift_id"], data["active_shifts"])
 
             # Correct agent clocks out
-            out_shift = clock_out(root, agent="codex", summary="Bug fixed")
+            out_shift = clock_out(root, agent="codex", summary="Bug fixed", token=shift["session_token"])
             self.assertIsNotNone(out_shift)
             self.assertEqual(out_shift["agent_id"], "codex")
 
@@ -639,7 +639,7 @@ class TestCapsuleRoom(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             shift1 = clock_in(root, agent="codex", task="Session 1", files=["file1.py"])
-            shift2 = clock_in(root, agent="codex", task="Session 2", files=["file2.py"])
+            shift2 = clock_in(root, agent="codex", task="Session 2", files=["file2.py"], token=shift1["session_token"])
 
             self.assertNotEqual(shift1["shift_id"], shift2["shift_id"])
             data = load_room_data(root / ".capsule" / "room.json")
@@ -651,7 +651,7 @@ class TestCapsuleRoom(unittest.TestCase):
             self.assertIsInstance(ambig, dict)
             self.assertEqual(ambig.get("error"), "ambiguous_session")
 
-            out1 = clock_out(root, session=shift1["shift_id"], summary="Session 1 done")
+            out1 = clock_out(root, session=shift1["shift_id"], summary="Session 1 done", token=shift1["session_token"])
             self.assertIsNotNone(out1)
             self.assertEqual(out1["shift_id"], shift1["shift_id"])
 
@@ -686,7 +686,7 @@ class TestCapsuleRoom(unittest.TestCase):
             data["active_shifts"][shift["shift_id"]]["clocked_in_at"] = past_iso
             (root / ".capsule" / "room.json").write_text(json.dumps(data), encoding="utf-8")
 
-            hb = heartbeat(root, session=shift["shift_id"])
+            hb = heartbeat(root, session=shift["shift_id"], token=shift["session_token"])
             self.assertIsNotNone(hb)
             self.assertTrue(hb.get("ok"))
             self.assertNotEqual(hb["last_seen_at"], past_iso)
@@ -713,9 +713,9 @@ class TestCapsuleRoom(unittest.TestCase):
                         "shift_id": "fresh_shift",
                         "agent_id": "fresh_agent",
                         "agent_name": "Fresh Agent",
-                        "clocked_in_at": "2099-01-01T00:00:00+00:00",
-                        "last_seen_at": "2099-01-01T00:00:00+00:00",
-                        "task": "Future task",
+                        "clocked_in_at": datetime.now(timezone.utc).isoformat(),
+                        "last_seen_at": datetime.now(timezone.utc).isoformat(),
+                        "task": "Recent task",
                     },
                 },
                 "history": [{"summary": f"Task {i}"} for i in range(20)],
@@ -992,7 +992,7 @@ class TestCellRedTeam(unittest.TestCase):
             self.assertEqual(report["verdict"], "RESILIENT")
             self.assertEqual(report["summary"]["total_findings"], 0)
             rendered = format_red_team_report(report)
-            self.assertIn("DEFENSES HOLD", rendered)
+            self.assertIn("No known patterns matched", rendered)
 
     def test_routing_routes_to_cell_for_offensive_security(self):
         res = route_request("run a penetration test and attack prompt injection points")
@@ -1226,7 +1226,8 @@ class TestElixirInstallerCrossPlatform(unittest.TestCase):
         mock_which.side_effect = lambda cmd: "/opt/homebrew/bin/brew" if cmd == "brew" else None
         manager, cmds, _ = detect_installer()
         self.assertEqual(manager, "homebrew")
-        self.assertEqual(cmds, [["brew", "install", "elixir"]])
+        # commands now carry the resolved absolute path (cwd-safe resolution)
+        self.assertEqual(cmds, [["/opt/homebrew/bin/brew", "install", "elixir"]])
 
     @patch("shutil.which", return_value=None)
     @patch("platform.system", return_value="Darwin")
@@ -1286,7 +1287,7 @@ class TestElixirInstallerCrossPlatform(unittest.TestCase):
     @patch("platform.system", return_value="Windows")
     def test_detect_windows_winget(self, mock_sys, mock_which):
         from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "C:\\winget.exe" if cmd == "winget" else None
+        mock_which.side_effect = lambda cmd: "/win/winget.exe" if cmd == "winget" else None
         manager, cmds, _ = detect_installer()
         self.assertEqual(manager, "winget")
         self.assertIn("winget", cmds[0][0])
@@ -1295,7 +1296,7 @@ class TestElixirInstallerCrossPlatform(unittest.TestCase):
     @patch("platform.system", return_value="Windows")
     def test_detect_windows_choco(self, mock_sys, mock_which):
         from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "C:\\choco.exe" if cmd == "choco" else None
+        mock_which.side_effect = lambda cmd: "/win/choco.exe" if cmd == "choco" else None
         manager, cmds, _ = detect_installer()
         self.assertEqual(manager, "chocolatey")
         self.assertIn("choco", cmds[0][0])
@@ -1304,7 +1305,7 @@ class TestElixirInstallerCrossPlatform(unittest.TestCase):
     @patch("platform.system", return_value="Windows")
     def test_detect_windows_scoop(self, mock_sys, mock_which):
         from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "C:\\scoop.cmd" if cmd == "scoop" else None
+        mock_which.side_effect = lambda cmd: "/win/scoop.cmd" if cmd == "scoop" else None
         manager, cmds, _ = detect_installer()
         self.assertEqual(manager, "scoop")
         self.assertIn("scoop", cmds[0][0])
@@ -1313,7 +1314,8 @@ class TestElixirInstallerCrossPlatform(unittest.TestCase):
     def test_detect_version_manager_mise(self, mock_which):
         from scripts.install_elixir import detect_installer
         mock_which.side_effect = lambda cmd: "/usr/local/bin/mise" if cmd == "mise" else None
-        manager, cmds, _ = detect_installer()
+        # mise/asdf are opt-in (--manager) and never install "latest" silently (--version)
+        manager, cmds, _ = detect_installer("mise", "1.17.3")
         self.assertEqual(manager, "mise")
         self.assertIn("mise", cmds[0][0])
 
@@ -1321,7 +1323,7 @@ class TestElixirInstallerCrossPlatform(unittest.TestCase):
     def test_detect_version_manager_asdf(self, mock_which):
         from scripts.install_elixir import detect_installer
         mock_which.side_effect = lambda cmd: "/usr/local/bin/asdf" if cmd == "asdf" else None
-        manager, cmds, _ = detect_installer()
+        manager, cmds, _ = detect_installer("asdf", "1.17.3")
         self.assertEqual(manager, "asdf")
         self.assertIn("asdf", cmds[0][0])
 

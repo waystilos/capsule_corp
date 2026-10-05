@@ -1,1 +1,0 @@
-../../bots/android_18.md

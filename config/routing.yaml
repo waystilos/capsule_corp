@@ -1,4 +1,6 @@
 version: "1.0.0"
+# `entry:` lists envelope fields the CALLER must supply for the route (artifacts by reference).
+# root_request and ledger are always seeded by the router.
 fallback: whis
 routes:
   - intent: product_strategy
@@ -20,26 +22,33 @@ routes:
     owner: goku
     keywords: [implement, code, fix, bug, build, feature, test]
     handoff: [goku, trunks]
+    entry: [target_files]
     avoid: [security audit, product scope, deploy]
   - intent: verification
     owner: trunks
+    strong_keywords: [bugs, faults, check for bugs, find bugs, regression]
     keywords: [verify, test, tests, lint, typecheck, regression, ci, quality]
     handoff: [trunks]
+    entry: [diff_reference]
     avoid: [implement, refactor]
   - intent: security
     owner: android-17
-    keywords: [security, vulnerability, secret, cve, owasp, auth, injection, dependency audit]
+    strong_keywords: [vulnerability, vulnerabilities, leaked, leak, credential leak, credentials, credential, exposed credentials, exposed secrets, exposed key, leaked key, rotate, api key, auth bypass, cve, xss, csrf, rce, sqli, sql injection, path traversal, deserialization, privilege escalation, buffer overflow, crypto, cryptography, encryption, jwt, oauth]
+    keywords: [security, vulnerability, vuln, secret, secrets, cve, owasp, auth, injection, dependency audit, password, passwords, token, tokens, exploit, privilege, overflow, bypass, traversal, session, cookie, cookies, cors, hash, sanitize, sanitization]
     handoff: [android-17, trunks]
+    entry: [diff_reference]
     avoid: [design, product scope]
   - intent: refactoring
     owner: android-18
     keywords: [refactor, technical debt, dead code, cleanup, simplify, duplicate]
     handoff: [android-18, trunks]
+    entry: [target_files]
     avoid: [new feature, product scope]
   - intent: infrastructure
     owner: vegeta
     keywords: [docker, ci/cd, pipeline, deploy, infrastructure, database, migration, performance, index, runtime, install, setup, elixir, erlang]
     handoff: [vegeta, android-17, trunks]
+    entry: [target_files]
     avoid: [frontend, user experience]
   - intent: agent_design
     owner: dr-gero
@@ -50,36 +59,45 @@ routes:
     owner: roshi
     keywords: [game, gameplay, game feel, fun, difficulty, difficulty curve, too hard, too easy, frustrating, tune, tuning, playtest, balance, juice, progression, streak, star thresholds, core loop, reward]
     handoff: [roshi, goku, trunks]
+    entry: [game_state_refs]
     avoid: [prd, accessibility, usability, wireframe, deploy]
   - intent: agent_supervision
     owner: king-kai
     keywords: [spy, monitor, watchdog, supervise, drift, off path, rogue, align, alignment, unbudgeted, overseer, wandering]
     handoff: [king-kai, trunks]
+    entry: [shift_id, claimed_files, active_diff_ref]
     avoid: [product feature, implement]
   - intent: idea_validation
     owner: bulma
     keywords: [validate, validation, is this worth building, idea, market validation, kill or go, validate idea]
     handoff: [bulma, hercule, trunks]
+    entry: [diff_reference]
     avoid: [write code, deploy]
   - intent: offensive_security
     owner: cell
+    strong_keywords: [red team, red-team, redteam, pen test, pentest, penetration test, penetration testing, ssrf, prompt injection, fuzz, fuzzing]
     keywords: [attack, red team, redteam, penetration test, pen test, exploit, fuzz, chaos, adversary, adversarial, red-team]
     handoff: [cell, android-17, trunks]
+    entry: [attack_surface_refs, diff_reference]
     avoid: [product scope, ux]
   - intent: code_inquisition
     owner: beerus
+    strong_keywords: [grill, grill me, hakai, inquisition]
     keywords: [grill, grill me, inquisition, challenge, interrogate, stress test, pressure test, edge cases, defend code, hakai, probe assumptions]
     handoff: [beerus, trunks]
+    entry: [diff_reference]
     avoid: [product scope, deploy]
   - intent: sprite_animation
     owner: goten
     keywords: [sprite, animation, frame, frames, volleyball, hitbox, anticipation frame, recovery frame, articulated]
     handoff: [goten, trunks]
+    entry: [sprite_asset_refs]
     avoid: [deploy, database]
   - intent: rive_rig
     owner: android-16
     keywords: [rive, rig, artboard, state machine, riv, character rig, rive runtime]
     handoff: [android-16, trunks]
+    entry: [riv_asset_refs]
     avoid: [deploy, database]
   - intent: aesthetic_direction
     owner: zarbon
@@ -90,7 +108,5 @@ routes:
     owner: hercule
     keywords: [distribution, viral, acquisition, channels, market demand, hype, vanity metrics, customer acquisition]
     handoff: [hercule, bulma, trunks]
+    entry: [diff_reference]
     avoid: [implementation, code]
-
-
-

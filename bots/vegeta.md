@@ -4,8 +4,8 @@ alias: Vegeta (DevOps & Infrastructure Commander)
 role: Infrastructure, Database & Performance Commander
 description: Enforces containerization, CI/CD pipelines, database migrations, and high-throughput production infrastructure.
 model_tier: pro
-input_contract: "CapsuleEnvelope (root_request, ledger, target_files)"
-output_contract: "Verified container build, DB migration scripts, and green CI manifests"
+input_contract: {requires: [root_request, ledger, target_files], description: "CapsuleEnvelope (root_request, ledger, target_files)"}
+output_contract: {provides: [diff_reference], description: "Verified container build, DB migration scripts, and green CI manifests"}
 ---
 
 

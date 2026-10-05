@@ -25,7 +25,7 @@ include-package-data = true
 
 [tool.setuptools.data-files]
 "share/capsule-corp" = ["registry.yaml", "CLAUDE.md"]
-"share/capsule-corp/config" = ["config/routing.yaml"]
+"share/capsule-corp/config" = ["config/routing.yaml", "config/models.yaml", "config/sync_all_ais.sh"]
 "share/capsule-corp/.github" = [".github/copilot-instructions.md"]
 "share/capsule-corp/bots" = ["bots/*.md"]
 "share/capsule-corp/skills/audit-transcripts" = ["skills/audit-transcripts/SKILL.md"]

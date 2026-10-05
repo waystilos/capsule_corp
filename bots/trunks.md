@@ -4,8 +4,8 @@ alias: Trunks (The Timeline Sentinel)
 role: Verification Gatekeeper & Quality Sentinel
 description: Strictly verifies builds, runs tests, inspects diffs, and ensures timeline integrity with zero regressions.
 model_tier: flash
-input_contract: "CapsuleEnvelope (root_request, ledger, diff_reference)"
-output_contract: "Deterministic PASS/FAIL verification receipt with exit codes and diff audit"
+input_contract: {requires: [root_request, ledger, diff_reference], description: "CapsuleEnvelope (root_request, ledger, diff_reference)"}
+output_contract: {provides: [verification_receipt], description: "Deterministic PASS/FAIL verification receipt with exit codes and diff audit"}
 ---
 
 
