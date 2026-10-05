@@ -248,7 +248,23 @@ def run_project_checks(
             })
 
     # 5. Agent Alignment & Drift Audit (King Kai's Watchdog)
-    if check_drift:
+    # Automatically activates when an active agent shift exists in the Check-In Room,
+    # or when explicitly requested via check_drift=True (--check-drift).
+    auto_drift = False
+    try:
+        try:
+            from .room import get_room_paths, load_room_data
+        except ImportError:
+            from room import get_room_paths, load_room_data
+        room_json, _, _ = get_room_paths(root_dir)
+        if room_json.exists():
+            rdata = load_room_data(room_json)
+            if rdata.get("active_shifts"):
+                auto_drift = True
+    except Exception:
+        pass
+
+    if check_drift or auto_drift:
         try:
             try:
                 from .spy_watchdog import audit_agent_drift
@@ -256,15 +272,22 @@ def run_project_checks(
                 from spy_watchdog import audit_agent_drift
 
             drift_report = audit_agent_drift(root_dir)
+            issue_lines = []
+            for i in drift_report.get("issues", []):
+                msg = f"- {i['type']}: {i['message']}"
+                files = i.get("unclaimed_files") or i.get("files")
+                if files:
+                    msg += f" (Off-path files: {', '.join(files)})"
+                issue_lines.append(msg)
+            output = "\n".join(issue_lines)
+
             if drift_report["verdict"] == "FAIL":
                 has_failure = True
                 status = "FAILED"
                 summary = f"{len(drift_report['issues'])} agent drift / rogue issue(s) detected"
-                output = "\n".join(f"- {i['type']}: {i['message']}" for i in drift_report["issues"])
             elif drift_report["verdict"] == "WARN":
                 status = "WARNING"
                 summary = f"Drift warning: {len(drift_report['issues'])} minor issue(s)"
-                output = "\n".join(f"- {i['type']}: {i['message']}" for i in drift_report["issues"])
             else:
                 status = "PASSED"
                 summary = "Agent shifts aligned with claimed scope"

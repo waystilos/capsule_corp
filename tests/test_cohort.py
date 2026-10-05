@@ -842,6 +842,32 @@ class TestKingKaiWatchdog(unittest.TestCase):
             self.assertIsNotNone(align_check)
             self.assertEqual(align_check["status"], "PASSED")
 
+    def test_check_project_auto_activates_watchdog_on_active_shift(self):
+        """capsule check must automatically enforce King Kai's watchdog without flags when an agent is on shift."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=root, check=True)
+            pass_cmd = f"{sys.executable} -c 'import sys; sys.exit(0)'"
+
+            # 1. Without active shift, Agent Alignment is not run by default
+            res_no_shift = run_project_checks(root, test_cmd_override=pass_cmd, skip_secrets=True)
+            self.assertIsNone(next((c for c in res_no_shift["checks"] if c["name"] == "Agent Alignment"), None))
+
+            # 2. Clock in Goku claiming only allowed.py
+            clock_in(root, agent="goku", files=["allowed.py"], task="Fix allowed")
+            (root / "allowed.py").write_text("print('ok')\n", encoding="utf-8")
+            (root / "rogue.py").write_text("print('rogue')\n", encoding="utf-8")
+
+            # 3. Running check WITHOUT check_drift flag automatically triggers King Kai and catches rogue.py
+            res_with_shift = run_project_checks(root, test_cmd_override=pass_cmd, skip_secrets=True)
+            align_check = next((c for c in res_with_shift["checks"] if c["name"] == "Agent Alignment"), None)
+            self.assertIsNotNone(align_check)
+            self.assertEqual(align_check["status"], "FAILED")
+            self.assertEqual(res_with_shift["verdict"], "FAIL")
+            self.assertIn("rogue.py", align_check["output"])
+
 
 class TestBulmaHerculeValidation(unittest.TestCase):
     def test_evaluate_idea_go_verdict(self):
