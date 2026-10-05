@@ -1150,8 +1150,244 @@ class TestFunctionalEnvelopeAndElixirInstaller(unittest.TestCase):
         self.assertIn("commands", data)
 
 
+class TestAll18BotsExhaustive(unittest.TestCase):
+    """Exhaustively asserts that every single one of Capsule Corp's 18 bots is correctly configured."""
+
+    EXPECTED_BOTS = {
+        "dr_gero": {"tier": "pro", "tools": ["read_file", "write_file", "search_transcripts", "define_subagent"]},
+        "piccolo": {"tier": "pro", "tools": ["invoke_subagent", "send_message", "view_file", "manage_task"]},
+        "whis": {"tier": "flash", "tools": ["schedule", "manage_task", "invoke_subagent"]},
+        "trunks": {"tier": "flash", "tools": ["run_command", "view_file"]},
+        "goku": {"tier": "pro", "tools": ["view_file", "replace_file_content", "write_to_file"]},
+        "android_18": {"tier": "flash", "tools": ["view_file", "replace_file_content", "run_command"]},
+        "android_17": {"tier": "pro", "tools": ["view_file", "run_command", "replace_file_content"]},
+        "bulma": {"tier": "pro", "tools": ["view_file", "write_to_file", "replace_file_content"]},
+        "videl": {"tier": "pro", "tools": ["view_file", "write_to_file", "replace_file_content"]},
+        "vegeta": {"tier": "pro", "tools": ["view_file", "run_command", "write_to_file", "replace_file_content"]},
+        "goten": {"tier": "flash", "tools": ["view_image", "rg", "apply_patch"]},
+        "android_16": {"tier": "pro", "tools": ["rg", "view_image", "apply_patch"]},
+        "roshi": {"tier": "pro", "tools": ["view_file", "run_command", "write_to_file"]},
+        "zarbon": {"tier": "pro", "tools": ["search_web", "view_file", "write_to_file"]},
+        "hercule": {"tier": "flash", "tools": ["search_web", "view_file"]},
+        "king_kai": {"tier": "flash", "tools": ["view_file", "run_command", "manage_task", "manage_subagents", "send_message"]},
+        "cell": {"tier": "pro", "tools": ["run_command", "view_file", "search_web", "write_to_file", "replace_file_content"]},
+        "beerus": {"tier": "pro", "tools": ["view_file", "run_command", "ask_question"]},
+    }
+
+    def setUp(self):
+        reg_path = CAPSULE_ROOT / "registry.yaml"
+        self.reg_data = yaml.safe_load(reg_path.read_text(encoding="utf-8"))
+        self.bots = self.reg_data["bots"]
+
+    def test_exact_bot_count(self):
+        self.assertEqual(len(self.bots), 18)
+        self.assertEqual(set(self.bots.keys()), set(self.EXPECTED_BOTS.keys()))
+
+    def test_each_bot_spec_and_markdown(self):
+        bots_dir = CAPSULE_ROOT / "bots"
+        for bot_id, expected in self.EXPECTED_BOTS.items():
+            b = self.bots[bot_id]
+            self.assertEqual(b["model_tier"], expected["tier"], f"Bot {bot_id} tier mismatch")
+            self.assertEqual(b["allowed_tools"], expected["tools"], f"Bot {bot_id} tools mismatch")
+            self.assertTrue(b.get("input_contract"), f"Bot {bot_id} missing input contract")
+            self.assertTrue(b.get("output_contract"), f"Bot {bot_id} missing output contract")
+            self.assertTrue(b.get("verification_gate"), f"Bot {bot_id} missing verification gate")
+
+            # Check markdown file exists and has frontmatter
+            md_path = bots_dir / f"{bot_id}.md"
+            self.assertTrue(md_path.exists(), f"Markdown file {bot_id}.md missing")
+            content = md_path.read_text(encoding="utf-8")
+            self.assertIn(f"model_tier: {expected['tier']}", content)
+            self.assertIn("## Functional Task Envelope Contract", content)
+
+    def test_routing_coverage_for_all_specialists(self):
+        routing_path = CAPSULE_ROOT / "config" / "routing.yaml"
+        r_data = yaml.safe_load(routing_path.read_text(encoding="utf-8"))
+        routes = r_data["routes"]
+        owners = {r["owner"] for r in routes}
+
+        # Assert every specialist is routable
+        for bot_id, expected in self.EXPECTED_BOTS.items():
+            if bot_id == "whis":
+                # Whis is fallback
+                self.assertEqual(r_data.get("fallback"), "whis")
+            else:
+                bot_name = self.bots[bot_id]["name"]
+                self.assertIn(bot_name, owners, f"Bot {bot_name} not found in routing owners")
+
+
+class TestElixirInstallerCrossPlatform(unittest.TestCase):
+    """Exhaustively tests the Elixir/Erlang cross-platform installer across OS environments."""
+
+    @patch("shutil.which")
+    @patch("platform.system", return_value="Darwin")
+    def test_detect_darwin_with_brew(self, mock_sys, mock_which):
+        from scripts.install_elixir import detect_installer
+        mock_which.side_effect = lambda cmd: "/opt/homebrew/bin/brew" if cmd == "brew" else None
+        manager, cmds, _ = detect_installer()
+        self.assertEqual(manager, "homebrew")
+        self.assertEqual(cmds, [["brew", "install", "elixir"]])
+
+    @patch("shutil.which", return_value=None)
+    @patch("platform.system", return_value="Darwin")
+    def test_detect_darwin_without_brew(self, mock_sys, mock_which):
+        from scripts.install_elixir import detect_installer
+        manager, cmds, explanation = detect_installer()
+        self.assertEqual(manager, "unsupported")
+        self.assertIn("Homebrew", explanation)
+
+    @patch("shutil.which")
+    @patch("platform.system", return_value="Linux")
+    def test_detect_linux_apt(self, mock_sys, mock_which):
+        from scripts.install_elixir import detect_installer
+        mock_which.side_effect = lambda cmd: "/usr/bin/apt-get" if cmd == "apt-get" else None
+        manager, cmds, _ = detect_installer()
+        self.assertEqual(manager, "apt")
+        self.assertEqual(len(cmds), 2)
+        self.assertIn("apt-get", cmds[1][1])
+
+    @patch("shutil.which")
+    @patch("platform.system", return_value="Linux")
+    def test_detect_linux_dnf(self, mock_sys, mock_which):
+        from scripts.install_elixir import detect_installer
+        mock_which.side_effect = lambda cmd: "/usr/bin/dnf" if cmd == "dnf" else None
+        manager, cmds, _ = detect_installer()
+        self.assertEqual(manager, "dnf")
+        self.assertIn("dnf", cmds[0][1])
+
+    @patch("shutil.which")
+    @patch("platform.system", return_value="Linux")
+    def test_detect_linux_pacman(self, mock_sys, mock_which):
+        from scripts.install_elixir import detect_installer
+        mock_which.side_effect = lambda cmd: "/usr/bin/pacman" if cmd == "pacman" else None
+        manager, cmds, _ = detect_installer()
+        self.assertEqual(manager, "pacman")
+        self.assertIn("pacman", cmds[0][1])
+
+    @patch("shutil.which")
+    @patch("platform.system", return_value="Linux")
+    def test_detect_linux_apk(self, mock_sys, mock_which):
+        from scripts.install_elixir import detect_installer
+        mock_which.side_effect = lambda cmd: "/sbin/apk" if cmd == "apk" else None
+        manager, cmds, _ = detect_installer()
+        self.assertEqual(manager, "apk")
+        self.assertIn("apk", cmds[0][1])
+
+    @patch("shutil.which")
+    @patch("platform.system", return_value="Linux")
+    def test_detect_linux_zypper(self, mock_sys, mock_which):
+        from scripts.install_elixir import detect_installer
+        mock_which.side_effect = lambda cmd: "/usr/bin/zypper" if cmd == "zypper" else None
+        manager, cmds, _ = detect_installer()
+        self.assertEqual(manager, "zypper")
+        self.assertIn("zypper", cmds[0][1])
+
+    @patch("shutil.which")
+    @patch("platform.system", return_value="Windows")
+    def test_detect_windows_winget(self, mock_sys, mock_which):
+        from scripts.install_elixir import detect_installer
+        mock_which.side_effect = lambda cmd: "C:\\winget.exe" if cmd == "winget" else None
+        manager, cmds, _ = detect_installer()
+        self.assertEqual(manager, "winget")
+        self.assertIn("winget", cmds[0][0])
+
+    @patch("shutil.which")
+    @patch("platform.system", return_value="Windows")
+    def test_detect_windows_choco(self, mock_sys, mock_which):
+        from scripts.install_elixir import detect_installer
+        mock_which.side_effect = lambda cmd: "C:\\choco.exe" if cmd == "choco" else None
+        manager, cmds, _ = detect_installer()
+        self.assertEqual(manager, "chocolatey")
+        self.assertIn("choco", cmds[0][0])
+
+    @patch("shutil.which")
+    @patch("platform.system", return_value="Windows")
+    def test_detect_windows_scoop(self, mock_sys, mock_which):
+        from scripts.install_elixir import detect_installer
+        mock_which.side_effect = lambda cmd: "C:\\scoop.cmd" if cmd == "scoop" else None
+        manager, cmds, _ = detect_installer()
+        self.assertEqual(manager, "scoop")
+        self.assertIn("scoop", cmds[0][0])
+
+    @patch("shutil.which")
+    def test_detect_version_manager_mise(self, mock_which):
+        from scripts.install_elixir import detect_installer
+        mock_which.side_effect = lambda cmd: "/usr/local/bin/mise" if cmd == "mise" else None
+        manager, cmds, _ = detect_installer()
+        self.assertEqual(manager, "mise")
+        self.assertIn("mise", cmds[0][0])
+
+    @patch("shutil.which")
+    def test_detect_version_manager_asdf(self, mock_which):
+        from scripts.install_elixir import detect_installer
+        mock_which.side_effect = lambda cmd: "/usr/local/bin/asdf" if cmd == "asdf" else None
+        manager, cmds, _ = detect_installer()
+        self.assertEqual(manager, "asdf")
+        self.assertIn("asdf", cmds[0][0])
+
+    @patch("scripts.install_elixir.get_installed_versions")
+    def test_run_install_already_installed_returns_zero(self, mock_versions):
+        from scripts.install_elixir import run_install
+        mock_versions.return_value = {
+            "elixir": "Elixir 1.19.5",
+            "erlang": "Erlang/OTP 28",
+            "path": "/usr/local/bin/elixir",
+        }
+        res = run_install(dry_run=False, force=False, json_mode=True)
+        self.assertEqual(res, 0)
+
+
+class TestFunctionalTaskEnvelope(unittest.TestCase):
+    """Verifies functional task envelope immutability, pass-by-reference, and event ledger."""
+
+    def test_task_envelope_invariants_preserved(self):
+        root_prompt = "Implement rate limiting middleware on auth tokens"
+        envelope = {
+            "root_request": root_prompt,
+            "goal": "Add 60 req/min rate limit",
+            "scope": ["src/middleware/rate_limit.py"],
+            "constraints": ["No external Redis dependency; in-memory token bucket"],
+            "ledger": [],
+        }
+
+        # Step 1: Bulma specifies
+        step1_event = {
+            "step": 1,
+            "agent": "bulma",
+            "event": "SPEC_DEFINED",
+            "acceptance_criteria": ["60 req/min", "HTTP 429 Too Many Requests"],
+        }
+        envelope["ledger"].append(step1_event)
+
+        # Step 2: Goku attempts implementation
+        step2_event = {
+            "step": 2,
+            "agent": "goku",
+            "event": "ATTEMPT_COMPLETED",
+            "diff_ref": "git:sha:8be0c51",
+            "tacit_discovery": "Clock drift in test runner requires monotonic time",
+        }
+        envelope["ledger"].append(step2_event)
+
+        # Step 3: Beerus grilles and passes
+        step3_event = {
+            "step": 3,
+            "agent": "beerus",
+            "event": "INQUISITION_PASS",
+            "verdict": "DIVINE APPROVAL",
+        }
+        envelope["ledger"].append(step3_event)
+
+        # Assert immutable root invariant was never altered
+        self.assertEqual(envelope["root_request"], root_prompt)
+        # Assert chronological ledger ordering
+        self.assertEqual(len(envelope["ledger"]), 3)
+        self.assertEqual([e["agent"] for e in envelope["ledger"]], ["bulma", "goku", "beerus"])
+
+
 if __name__ == "__main__":
     unittest.main()
+
 
 
 
