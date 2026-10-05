@@ -6,9 +6,8 @@
 
 A specialized cohort of autonomous AI agents modeled on **Dragon Ball Z** archetypes, engineered for startups and unified across all development tools (**GitHub Copilot**, **OpenAI Codex**, **Anthropic Claude Code**, **Google Antigravity / Gemini**, **Cursor**, and **Windsurf**).
 
-> *"I like to call it the Michelin kitchen… when you say software factory, it has this connotation of mass manufactured slop."* — **Lauren Tan** (@poteto, *Behind the Craft*)
+> *"Build warriors, not generic chatbots. Single-purpose operatives, ruthless verification, zero conversational filler, and absolute cross-model synchronization."* — **Capsule Corp Standards**
 
-*Inspired by an interview with poteto (Lauren Tan) and the way they structure their agents: hearing Lauren describe her Michelin kitchen approach inspired me to build my own version—adapting her core agentic engineering principles into the Capsule Corp cohort.*
 
 ---
 
@@ -184,6 +183,8 @@ Specialists are called only when a task strictly requires their specific experti
 | **@Videl** | **UX Researcher & Designer** | Usability & Accessible States | User journey flows, accessibility (WCAG), empty states, and error handling for user interfaces. |
 | **@Vegeta** | **DevOps Commander** | Infrastructure & Scale | Multi-stage Dockerfiles, GitHub Actions CI/CD pipelines, database migrations, connection pooling. |
 | **@Master-Roshi** | **Game Feel Master** | Core Loops & Canvas Mechanics | Game feel, sprite math, frame timing, physics loops, and difficulty tuning. |
+| **@King-Kai** | **Watchdog & Alignment Supervisor** | Drift & Scope Inspection | Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering. |
+| **@Cell** | **Adversarial Red Team & Chaos Sentinel** | Offensive Security & Penetration Testing | Active exploitation, prompt injection probing, SSRF/BOLA auditing, and ReDoS detection. |
 | **@Dr-Gero** | **Meta-Agent Architect** | System Scaffolding & Evals | Scaffolding new agents, authoring skills, and auditing execution transcripts for agent friction. |
 
 ---
@@ -285,32 +286,39 @@ capsule check --json [project_dir]
 
 # 2. Check-In Room & Timeclock (Multi-AI Coordination)
 capsule room [project_dir]                              # View active agents, models, and claimed files
+capsule spy [project_dir]                               # King Kai's watchdog: detect scope drift & rogue edits
 capsule clock-in --task "Add auth API" --files "auth.py" # Clock in to shift (auto-detects agent & model)
 capsule clock-out --summary "Auth added and verified"   # Clock out (auto-prunes logs to prevent bloat)
 capsule room --clean                                    # Reset/clear active shifts
 
-# 3. Heuristic request routing & workflow tier suggestion
+# 3. Pre-Code Demand & Distribution Validation (Bulma's Razor & Hercule's Hype Audit)
+capsule validate "Postgres connection monitor with Discord alerts" # GO / PIVOT / KILL verdict & .capsule/VALIDATION.md contract
+capsule validate --json "Idea description"                        # Machine-readable evaluation scorecard
+capsule validate --strict "Idea description"                      # Fails with exit code 1 on KILL or PIVOT
+
+# 4. Heuristic request routing & workflow tier suggestion
 capsule route "fix typo in button class"
 capsule route "design an accessible onboarding flow"
 capsule route --json "deconstruct architecture into task tree"
 
-# 4. Multi-AI Environment & Health Diagnostics
+# 5. Multi-AI Environment & Health Diagnostics
 capsule doctor [project_dir]
 
-# 5. Strict verification gate (deterministic pass/fail for PRs and CI)
+# 6. Strict verification gate (deterministic pass/fail for PRs and CI)
 capsule verify [project_dir]
 capsule security [project_dir]
+capsule attack [project_dir]
 
-# 6. Configure one AI tool by default (or multiple)
+# 7. Configure one AI tool by default (or multiple)
 capsule init --tool codex /path/to/project
 capsule init --tool claude /path/to/project
 capsule init --tool gemini /path/to/project
 capsule init --tools copilot,claude,cursor /path/to/project
 
-# 7. List all agents in the cohort with roles and model tiers
+# 8. List all agents in the cohort with roles and model tiers
 capsule list
 
-# 8. Dr. Gero's transcript friction auditor
+# 9. Dr. Gero's transcript friction auditor
 capsule audit --latest
 
 # 9. Synchronize skills, rules, and permissions across all AIs

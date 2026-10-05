@@ -5,7 +5,9 @@ Built for Capsule Corp's own agent engineering system
 
 Usage:
   capsule check [dir]       Run project checks (tests, linter, typechecker, secrets)
+  capsule validate [idea]   Bulma & Hercule's pre-code demand & distribution validation gate
   capsule room [dir]        View Check-In Room (active agents, models, claimed files)
+  capsule spy [dir]         King Kai's watchdog to detect agent scope drift & rogue edits
   capsule clock-in ...      Clock in to a work shift (auto-detects agent & claims files)
   capsule clock-out ...     Clock out of a work shift (summary & auto-prunes log)
   capsule heartbeat ...     Send heartbeat to keep active shift alive
@@ -16,6 +18,7 @@ Usage:
   capsule audit [--latest]  Dr. Gero's transcript auditor to detect friction & patch prompts
   capsule verify [dir]      Trunks' verification gate (tests + diff integrity check)
   capsule security [dir]    Android 17's security scan (secrets, CVEs, static code audit)
+  capsule attack [dir]      Cell's adversarial red team attack scan (injection, SSRF, ReDoS, BOLA)
   capsule init [dir]        Bootstrap any startup repo with Copilot, Codex, Claude, Gemini configs
   capsule sync              Sync skills and rules globally across all AIs
   capsule test              Run unit tests for Capsule Corp scripts
@@ -125,6 +128,16 @@ def cmd_room(action, args):
     return run_child([sys.executable, str(script), action] + args)
 
 
+def cmd_validate(args):
+    script = SCRIPTS_DIR / "validate_idea.py"
+    return run_child([sys.executable, str(script)] + args)
+
+
+def cmd_spy(args):
+    script = SCRIPTS_DIR / "spy_watchdog.py"
+    return run_child([sys.executable, str(script)] + args)
+
+
 def cmd_verify(args):
     script = SCRIPTS_DIR / "verify_project.py"
     return run_child([sys.executable, str(script)] + args)
@@ -132,6 +145,11 @@ def cmd_verify(args):
 
 def cmd_security(args):
     script = SCRIPTS_DIR / "security_audit.py"
+    return run_child([sys.executable, str(script)] + args)
+
+
+def cmd_attack(args):
+    script = SCRIPTS_DIR / "red_team.py"
     return run_child([sys.executable, str(script)] + args)
 
 
@@ -163,8 +181,12 @@ def main():
 
     if subcommand == "check":
         exit_code = cmd_check(extra_args)
+    elif subcommand == "validate":
+        exit_code = cmd_validate(extra_args)
     elif subcommand in ("room", "conference"):
         exit_code = cmd_room("status", extra_args)
+    elif subcommand in ("spy", "watchdog"):
+        exit_code = cmd_spy(extra_args)
     elif subcommand == "clock-in":
         exit_code = cmd_room("clock-in", extra_args)
     elif subcommand == "clock-out":
@@ -185,6 +207,8 @@ def main():
         exit_code = cmd_verify(extra_args)
     elif subcommand == "security":
         exit_code = cmd_security(extra_args)
+    elif subcommand in ("attack", "redteam"):
+        exit_code = cmd_attack(extra_args)
     elif subcommand == "init":
         exit_code = cmd_init(extra_args)
     elif subcommand == "sync":

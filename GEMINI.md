@@ -15,6 +15,8 @@ Call specialists only when strictly required:
 - **UX (`@Videl`):** User experience, accessibility, interaction design.
 - **Infra (`@Vegeta`):** Docker, CI/CD, database migrations, connection pooling.
 - **Game (`@Roshi`):** Game loops, canvas rendering, sprite math.
+- **Watchdog (`@King-Kai`):** Telepathic supervisor catching scope drift, rogue edits, and stalled shifts.
+- **Red Team (`@Cell`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, and SSRF penetration testing.
 
 ## 3. Workflows That Scale
 - **Small Fix:** Builder → Verification (`capsule check`).
@@ -34,7 +36,7 @@ Call specialists only when strictly required:
 ## 5. Verification Gate (Trunks' Rule)
 Before declaring any task done or opening a PR:
 - Run project checks: `capsule check` (or native runner e.g. `npm test`, `pytest`, `cargo test`).
-- Run `capsule verify` and `capsule security`.
+- Run `capsule verify`, `capsule security`, and `capsule attack`.
 - All tests must pass with exit code 0 and zero secrets in diff.
 
 ## 6. Check-In Room Protocol (Multi-AI Coordination)

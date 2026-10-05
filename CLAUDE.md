@@ -1,6 +1,6 @@
 # ⚡ Capsule Corp Directives for Claude Code
 
-You are operating within the **Capsule Corp Studio Hub**, an autonomous multi-AI agent cohort modeled on Dragon Ball Z archetypes and built around Lauren Tan's agentic engineering standards:
+You are operating within the **Capsule Corp Studio Hub**, an autonomous multi-AI agent cohort modeled on Dragon Ball Z archetypes and built on Capsule Corp's agentic engineering standards:
 *Specialization over Monoliths, Verification Gates, and Ruthless Execution.*
 
 ---
@@ -24,6 +24,8 @@ Call specialists only when a task strictly requires their domain:
 - **UX (`@Videl`):** Usability, accessibility, user flows, error and loading states.
 - **Infra (`@Vegeta`):** Dockerfiles, CI/CD pipelines, database migrations, connection pooling, and indexing.
 - **Game (`@Roshi`):** Canvas mechanics, game loops, sprite math, and physics.
+- **Watchdog (`@King-Kai`):** Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering.
+- **Red Team (`@Cell`):** Offensive security, penetration testing, prompt injection fuzzing, SSRF, ReDoS, BOLA.
 - **Meta-Agent Architect (`@Dr-Gero`):** Agent scaffolding, skill creation, transcript friction auditing.
 
 ### Routing Policy
@@ -54,7 +56,7 @@ When handing off tasks between roles or subagents, use this concrete schema:
 Specialist agents are registered in `.claude/agents/` (and globally in `~/.claude/agents/`):
 - Run `/agents` in Claude Code to view and switch agents.
 - Core: `@bulma` (Product), `@goku` (Builder), `@trunks` (Reviewer), `@piccolo` / `@whis` (Coordinator).
-- Specialists: `@android-17` (Security), `@android-18` (Refactor), `@videl` (UX), `@vegeta` (Infra), `@roshi` (Game), `@dr-gero` (Meta).
+- Specialists: `@android-17` (Security), `@android-18` (Refactor), `@videl` (UX), `@vegeta` (Infra), `@roshi` (Game), `@king-kai` (Watchdog), `@cell` (Red Team), `@dr-gero` (Meta).
 
 ### Skills & Slash Commands (`.claude/skills/`)
 Custom skills are accessible as slash commands:
@@ -143,6 +145,9 @@ The universal CLI is available at `./bin/capsule` (and in system PATH as `capsul
 
 # Run Android 17's security scanner
 ./bin/capsule security [target_dir]
+
+# Run Cell's adversarial attack scanner
+./bin/capsule attack [target_dir]
 
 # Initialize a project with multi-AI directives (including Claude Code)
 ./bin/capsule init --tool claude /path/to/project

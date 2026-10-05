@@ -85,7 +85,7 @@ if [ -L "$GLOBAL_GEMINI_FILE" ] || [ -e "$GLOBAL_GEMINI_FILE" ]; then
       cat > "$GLOBAL_GEMINI_FILE" << 'EOF'
 # Global Agentic Engineering Guidelines (Capsule Corp)
 
-Whenever building or refactoring agentic workflows, adhere to the **Capsule Corp Standards** (inspired by Lauren Tan):
+Whenever building or refactoring agentic workflows, adhere to the **Capsule Corp Standards**:
 
 - **Specialization over Monoliths:** Prefer dedicated, single-responsibility agents over bloated prompts.
 - **Verification Gates:** Enforce automated test execution and diff audits before accepting code changes.
@@ -104,7 +104,7 @@ else
     cat > "$GLOBAL_GEMINI_FILE" << 'EOF'
 # Global Agentic Engineering Guidelines (Capsule Corp)
 
-Whenever building or refactoring agentic workflows, adhere to the **Capsule Corp Standards** (inspired by Lauren Tan):
+Whenever building or refactoring agentic workflows, adhere to the **Capsule Corp Standards**:
 
 - **Specialization over Monoliths:** Prefer dedicated, single-responsibility agents over bloated prompts.
 - **Verification Gates:** Enforce automated test execution and diff audits before accepting code changes.
