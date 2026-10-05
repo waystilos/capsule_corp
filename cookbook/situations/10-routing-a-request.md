@@ -50,9 +50,13 @@ Handoff: goku -> trunks
 ### Optional Specialists (Called On-Demand Only)
 - **UX (`@Videl`):** Accessibility, user journey, interaction and error states.
 - **Security (`@Android-17`):** Auth, secrets, CVEs, OWASP patterns.
+- **Red Team (`@Cell`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, penetration testing.
+- **Watchdog (`@King-Kai`):** Telepathic supervisor catching scope drift, rogue edits, and stalled shifts.
 - **Refactoring (`@Android-18`):** Dead code cleanup, technical debt.
 - **Infra (`@Vegeta`):** Docker, CI/CD, database migrations, connection pooling.
 - **Game (`@Roshi`):** Game loops, canvas mechanics, sprite math.
+- **Polish (`@Zarbon`):** Visual aesthetics, typography, micro-interactions, theme design.
+- **Hype (`@Hercule`):** README hooks, launch announcements, marketing copy, social distribution.
 - **Meta (`@Dr-Gero`):** Scaffolding bots and skills, transcript friction auditing.
 
 If the router reports `needs_clarification`, Whis will triage and ask for clarification rather than making a random guess between tied specialists. Host AIs may also override routing based on the developer's instructions.

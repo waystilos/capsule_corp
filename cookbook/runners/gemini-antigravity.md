@@ -60,6 +60,7 @@ When collaborating with other AI runners (Claude Code, OpenAI Codex, Cursor) on 
   capsule clock-in --task "Task description" --files "path/to/files"
   ```
   *(Antigravity / Gemini environment is auto-detected)*
+- Monitor shifts and avoid scope drift: `capsule spy .`
 - Clock out after running verification checks:
   ```bash
   capsule clock-out --summary "Task finished and verified with exit code 0"
@@ -74,5 +75,6 @@ Antigravity executes verification gates asynchronously in background tasks:
 capsule check .      # Everyday factual checks (tests, lint, typecheck, secrets)
 capsule verify .     # Strict verification gate
 capsule security .   # Security scanner
+capsule attack .     # Red team adversarial attack scan
 ```
 Because Antigravity listens to task completion notifications automatically, you do not need to poll or wait manually—the system resumes execution when verification reports are ready.

@@ -53,8 +53,9 @@ Ask Cascade to execute:
 capsule check .      # Everyday factual checks (tests, lint, typecheck, secrets)
 capsule verify .     # Strict verification gate
 capsule security .   # Security scanner
+capsule attack .     # Red team adversarial attack scan
 ```
-And verify that the checks pass with 0 secret patterns and 0 regressions.
+And verify that the checks pass with 0 secret patterns, 0 vulnerabilities, and 0 regressions.
 
 ### D. Multi-AI Check-In Room & Timeclock
 When collaborating with other agents (Claude Code, Gemini, Codex):
@@ -64,6 +65,7 @@ When collaborating with other agents (Claude Code, Gemini, Codex):
   capsule clock-in --task "Implement payment webhook" --files "src/api/webhooks.ts"
   ```
   *(Windsurf environment is auto-detected)*
+- Monitor shifts and avoid scope drift: `capsule spy .`
 - Clock out once verified:
   ```bash
   capsule clock-out --summary "Payment webhook implemented and verified with capsule check"

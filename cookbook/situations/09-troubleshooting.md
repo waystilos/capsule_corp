@@ -9,6 +9,7 @@ capsule list
 capsule test
 capsule verify /path/to/project
 capsule security /path/to/project
+capsule attack /path/to/project
 ```
 
 Read the exit code as well as the printed report. A failed child command should now produce a non-zero `capsule` exit code.

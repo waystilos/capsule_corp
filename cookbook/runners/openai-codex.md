@@ -49,6 +49,8 @@ Codex should always be instructed to end its execution block with verification:
 ```bash
 capsule check .      # Everyday factual checks (tests, lint, typecheck, secrets)
 capsule verify .     # Strict verification gate
+capsule security .   # Defensive security and secret scan
+capsule attack .     # Red team adversarial attack scan
 ```
 
 ### C. Standard Task Brief Envelope
@@ -76,6 +78,7 @@ When collaborating with other models (Claude Code, Gemini, Cursor) on the same c
   capsule clock-in --task "Add unit tests for authService.ts" --files "src/authService.ts,tests/authService.test.ts"
   ```
   *(OpenAI Codex environment is auto-detected)*
+- Monitor shifts and avoid scope drift: `capsule spy .`
 - Clock out upon successful verification:
   ```bash
   capsule clock-out --summary "Unit tests added and verified with capsule check"

@@ -40,6 +40,8 @@ capsule check .      # Everyday factual check: tests, lint, typecheck, secrets
 capsule test         # Cohort test suite
 capsule verify .     # Trunks' strict verification gate
 capsule security .   # Android 17's security scanner
+capsule attack .     # Cell's adversarial red team attack scan
+capsule spy .        # King Kai's watchdog for agent scope drift & rogue edits
 ```
 
 All commands should exit with code 0 before treating changes as ready.
@@ -63,6 +65,7 @@ From PowerShell or Command Prompt, use the Windows launcher:
 .\bin\capsule.cmd test
 .\bin\capsule.cmd verify .
 .\bin\capsule.cmd security .
+.\bin\capsule.cmd attack .
 ```
 
 The launcher uses `py` when available and falls back to `python`. You can also invoke the Python script directly:
@@ -185,6 +188,8 @@ Specialists are called only when a task strictly requires their specific experti
 | **@Master-Roshi** | **Game Feel Master** | Core Loops & Canvas Mechanics | Game feel, sprite math, frame timing, physics loops, and difficulty tuning. |
 | **@King-Kai** | **Watchdog & Alignment Supervisor** | Drift & Scope Inspection | Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering. |
 | **@Cell** | **Adversarial Red Team & Chaos Sentinel** | Offensive Security & Penetration Testing | Active exploitation, prompt injection probing, SSRF/BOLA auditing, and ReDoS detection. |
+| **@Hercule** | **Hype & Distribution Auditor** | Market Reality & Channel Validation | Cuts through vanity hype, audits organic distribution wedges, and verifies user demand. |
+| **@Zarbon** | **Creative Director & Polish** | Aesthetic Elegance & Brand Framing | High-standard aesthetic direction, brand naming, and prestigious editorial framing. |
 | **@Dr-Gero** | **Meta-Agent Architect** | System Scaffolding & Evals | Scaffolding new agents, authoring skills, and auditing execution transcripts for agent friction. |
 
 ---
@@ -248,6 +253,7 @@ codex
 Then prompt Codex:
 * **Decompose an Epic:** *"Piccolo, review this project and break down the payment integration into an atomic task tree."*
 * **Security Audit:** *"Android 17, run a security scan on this repository and check for leaked keys."* (Codex will run `capsule security` with full permission).
+* **Adversarial Attack:** *"Cell, launch prompt injection and ReDoS attack probes against this codebase."* (Codex will execute `capsule attack`).
 * **Verify Code:** *"Trunks, run the verification sentinel on this repository."* (Codex will execute `capsule verify`).
 
 ### C. In Anthropic Claude Code (`claude`)
@@ -260,6 +266,8 @@ Then leverage the native cohort integration:
   * *"Bulma, outline the MVP schema and API endpoints for our onboarding flow."*
   * *"Goku, implement the database query in models.py with zero fluff and add unit tests."*
   * *"Android 17, scan this repository and dependencies for security risks."*
+  * *"Cell, probe this API endpoint for prompt injection, SSRF, and catastrophic regex backtracking."*
+  * *"King Kai, check whether active agents are staying within their claimed files."*
   * *"Trunks, run the verification gate and inspect our diff."*
 * **Slash Commands:** Execute cohort skills directly:
   * `/verification-gate` - Run Trunks' verification matrix and diff audit.
@@ -269,8 +277,8 @@ Then leverage the native cohort integration:
 
 ### D. In Google Antigravity / Gemini
 In your chat or CLI session:
-* The subagents `bulma`, `videl`, `piccolo`, `goku`, `android-17`, `trunks`, `vegeta`, `android-18`, `dr-gero`, and `whis` are natively registered.
-* Simply say: *"Bulma, scope this feature"* or *"Android 17, audit this codebase for security"*.
+* The subagents `bulma`, `videl`, `piccolo`, `goku`, `android-17`, `trunks`, `vegeta`, `android-18`, `dr-gero`, `cell`, `king-kai`, `hercule`, `zarbon`, and `whis` are natively registered.
+* Simply say: *"Bulma, scope this feature"* or *"Cell, attack this service"* or *"King Kai, inspect active shifts for rogue modifications"*.
 * Initialize projects with `capsule init --tool gemini /path/to/project` (or `--tool agy`) to generate `GEMINI.md`.
 
 ---
@@ -440,6 +448,8 @@ capsule-corp/
 │   ├── piccolo.md            # Piccolo: Tactical Lead & Task Decomposer
 │   ├── goku.md               # Goku: Frontline Code Artisan
 │   ├── android_17.md         # Android 17: Security & Compliance Sentinel
+│   ├── cell.md               # Cell: Adversarial Red Team & Chaos Sentinel
+│   ├── king_kai.md           # King Kai: Telepathic Watchdog & Shift Supervisor
 │   ├── trunks.md             # Trunks: Timeline Sentinel & Verification Gate
 │   ├── android_18.md         # Android 18: Precision Refactoring Specialist
 │   ├── vegeta.md             # Vegeta: Infrastructure & Database Commander
@@ -447,6 +457,8 @@ capsule-corp/
 │   ├── whis.md               # Whis: Chief of Staff & Routine Dispatcher
 │   ├── goten.md              # Goten: Articulated Sprite Animation Specialist
 │   ├── android_16.md         # Android 16: Rive Rig Integration Specialist
+│   ├── hercule.md            # Hercule: Hype & Distribution Auditor
+│   ├── zarbon.md             # Zarbon: Creative Director & Polish
 │   └── roshi.md              # Master Roshi: Game Designer & Difficulty Tuner
 ├── skills/                   # Progressive disclosure runbooks (synced to all AIs)
 │   ├── scaffold-agent/       # Dr. Gero's bot designer
@@ -455,11 +467,14 @@ capsule-corp/
 ├── scripts/                  # Automation engines
 │   ├── check_project.py      # Everyday project check engine (capsule check)
 │   ├── route_request.py      # Request triage & workflow suggestion (capsule route)
-│   ├── security_audit.py     # Android 17's security scanner
-│   ├── init_project.py       # Multi-AI project bootstrap utility
-│   ├── scaffold_bot.py       # Bot creation script
-│   ├── audit_transcripts.py  # JSONL transcript analysis engine
-│   └── verify_project.py     # Multi-ecosystem test runner & diff scanner
+│   ├── security_audit.py     # Android 17's security scanner (capsule security)
+│   ├── attack_project.py     # Cell's adversarial red team attack scan (capsule attack)
+│   ├── spy_room.py           # King Kai's watchdog auditor (capsule spy)
+│   ├── validate_idea.py      # Pre-code demand validation (capsule validate)
+│   ├── init_project.py       # Multi-AI project bootstrap utility (capsule init)
+│   ├── scaffold_bot.py       # Bot creation script (capsule new)
+│   ├── audit_transcripts.py  # JSONL transcript analysis engine (capsule audit)
+│   └── verify_project.py     # Multi-ecosystem test runner & diff scanner (capsule verify)
 ├── src/capsule/              # Installable cross-platform CLI package
 │   └── cli.py
 ├── pyproject.toml             # Python package metadata and `capsule` entry point
@@ -478,7 +493,7 @@ capsule-corp/
 
 ---
 
-## 7. How to Maintain & Update
+## 8. How to Maintain & Update
 
 Whenever you add or edit a skill or bot persona:
 1. Save the new skill in `skills/<skill-name>/SKILL.md`.

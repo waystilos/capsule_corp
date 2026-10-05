@@ -39,7 +39,17 @@ Validate the result:
 capsule check /path/to/project       # Everyday check: tests, lint, typecheck, secrets
 capsule verify /path/to/project      # Strict verification gate
 capsule security /path/to/project    # Security and CVE scan
+capsule attack /path/to/project      # Red team adversarial attack scan
 ```
+
+### Pre-Code Idea Validation (`capsule validate`)
+Before scaffolding a new project or writing code, validate the product thesis, competitor alternatives, moat, and pain severity:
+
+```bash
+capsule validate "Real-time collaborative markdown editor with CRDTs"
+```
+
+Bulma evaluates the thesis against 5 dimensions, delivering an instant GO / PIVOT / KILL verdict and score stored in `.capsule/VALIDATION.md`.
 
 ### Project-Specific Configuration (`capsule.json`)
 Rather than relying on build manifest heuristics, you can explicitly configure check commands in `capsule.json`, `.capsulerc.json`, or `pyproject.toml`:
