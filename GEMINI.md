@@ -29,14 +29,24 @@ Call specialists only when strictly required:
 - **Standard Feature:** Product → Builder → Reviewer → Verification (`capsule check`).
 - **Complex Epic:** Coordinator → Builder → Reviewer → Verification (`capsule check`).
 
-## 4. Standard Task Brief Envelope
+## 4. Functional Task Envelope & Model Tiering Protocol
+Handoffs between roles adhere to a pure **functional programming paradigm** ($\text{Output} = \text{Agent}(\text{Envelope})$) with zero conversational baggage:
+- **Immutable Root Anchor:** `root_request` is pinned as an immutable constant across all handoffs so user intent never degrades.
+- **Pass By Reference:** Pass file paths, git commit SHAs, and symbols by reference; never paste entire raw file bodies into prompts.
+- **Append-Only Event Ledger:** Append tacit discoveries, test diagnostics, and discarded approaches to `ledger` so retries never loop.
+- **Model Tiering Economics:**
+  - **Flash Tier (`model_tier: flash`):** Fast triage, routine monitoring, test execution, and diff checks (`@Whis`, `@Trunks`, `@King-Kai`, `@Android-18`, `@Goten`, `@Hercule`).
+  - **Pro Tier (`model_tier: pro`):** Frontier reasoning, architecture, implementation, and inquisition (`@Bulma`, `@Goku`, `@Beerus`, `@Android-17`, `@Cell`, `@Piccolo`, `@Dr-Gero`, `@Videl`, `@Vegeta`, `@Roshi`, `@Zarbon`, `@Android-16`).
+
 ```markdown
-### Task Brief
+### Task Brief Envelope
+- **Root Request:** [Immutable user prompt]
 - **Goal:** [What is being built/fixed and why]
-- **Scope:** [Exact files, surfaces, or endpoints touched]
+- **Scope:** [Exact files or references claimed]
 - **Constraints:** [Tech boundaries, zero speculative refactors]
 - **Acceptance Criteria:** [Testable bullets asserting observable behaviors]
 - **Verification:** [Explicit commands: e.g. capsule check, pytest, npm test]
+- **Ledger:** [Append-only events: tacit findings, previous attempts, reviewer feedback]
 ```
 
 ## 5. Verification Gate (Trunks' Rule)

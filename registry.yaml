@@ -4,9 +4,28 @@
 # Theme: Dragon Ball Z
 # ==============================================================================
 
-version: "1.0.0"
+version: "1.1.0"
 organization: "Capsule Corp Agentic Studio"
 philosophy: "Specialized Operatives, Absolute Verification, Zero Bloat"
+
+# ------------------------------------------------------------------------------
+# FUNCTIONAL TASK ENVELOPE & MODEL TIERING PROTOCOL
+# ------------------------------------------------------------------------------
+functional_envelope:
+  version: "1.0.0"
+  paradigm: "Event-Sourced Task Envelope (Pure Functional Handoff)"
+  invariants:
+    - "root_request is immutable across all downstream handoffs"
+    - "artifacts are passed strictly by reference (file paths, commit SHAs), never raw bloated text"
+    - "tacit discoveries and discarded approaches must be appended to the ledger"
+    - "isolated sandboxes (ephemeral worktrees) prevent dirty disk state"
+  tiers:
+    flash:
+      description: "Fast, low-cost exploration, triage, verification, and shift monitoring (~$0.15/1M tokens)"
+      operatives: ["whis", "trunks", "android_18", "goten", "hercule", "king_kai"]
+    pro:
+      description: "Frontier reasoning, architecture, implementation, security, and inquisition (~$2.50/1M tokens)"
+      operatives: ["dr_gero", "piccolo", "goku", "android_17", "bulma", "videl", "vegeta", "android_16", "roshi", "zarbon", "cell", "beerus"]
 
 bots:
   dr_gero:
@@ -20,6 +39,8 @@ bots:
       - "write_file"
       - "search_transcripts"
       - "define_subagent"
+    input_contract: "CapsuleEnvelope (root_request, ledger, artifacts)"
+    output_contract: "Scaffolded agent prompt, validated contract, or transcript patch receipt"
     verification_gate: "Must validate new agent prompt against the 4-part Agent Contract schema."
 
   piccolo:
@@ -33,6 +54,8 @@ bots:
       - "send_message"
       - "view_file"
       - "manage_task"
+    input_contract: "CapsuleEnvelope (root_request, ledger, artifacts)"
+    output_contract: "Decomposed DAG task tree of atomic TaskBrief envelopes"
     verification_gate: "All sub-tasks must pass Trunks' verification gate with zero regressions."
 
   whis:
@@ -45,6 +68,8 @@ bots:
       - "schedule"
       - "manage_task"
       - "invoke_subagent"
+    input_contract: "CapsuleEnvelope (root_request, ledger, artifacts)"
+    output_contract: "Routed envelope dispatched to exactly one specialized operative owner"
     verification_gate: "All dispatched tasks have an assigned owner, clear deadline, and target outcome."
 
   trunks:
@@ -52,10 +77,12 @@ bots:
     alias: "Trunks (The Timeline Sentinel)"
     role: "Verification Gatekeeper & Test Engineer"
     job_to_be_done: "Strictly executes test suites, linters, typecheckers, and diff audits. Guarantees code timeline integrity with zero regressions."
-    model_tier: "inherit"
+    model_tier: "flash"
     allowed_tools:
       - "run_command"
       - "view_file"
+    input_contract: "CapsuleEnvelope (root_request, ledger, diff_reference)"
+    output_contract: "Deterministic PASS/FAIL verification receipt with exit codes and diff audit"
     verification_gate: "Exit code 0 on tests + linters, with explicit pass confirmation."
 
   goku:
@@ -63,11 +90,13 @@ bots:
     alias: "Goku (The Code Artisan)"
     role: "Frontline Implementation Worker"
     job_to_be_done: "Executes single-responsibility coding tasks with Ultra Instinct precision and bias to act. Never stalls or writes unnecessary boilerplate."
-    model_tier: "inherit"
+    model_tier: "pro"
     allowed_tools:
       - "view_file"
       - "replace_file_content"
       - "write_to_file"
+    input_contract: "CapsuleEnvelope (root_request, ledger with rejection_history, target_files)"
+    output_contract: "DiffResult (modified files, git commit/diff ref, tacit discoveries appended to ledger)"
     verification_gate: "Self-executes code inspection and provides unit test coverage for modifications."
 
   android_18:
@@ -75,11 +104,13 @@ bots:
     alias: "Android 18 (The Refactoring Specialist)"
     role: "Precision Code Refactoring Specialist"
     job_to_be_done: "Eliminates technical debt, cleans up unused code, and extracts reusable components without changing observable behavior."
-    model_tier: "inherit"
+    model_tier: "flash"
     allowed_tools:
       - "view_file"
       - "replace_file_content"
       - "run_command"
+    input_contract: "CapsuleEnvelope (root_request, ledger, target_files)"
+    output_contract: "Cleaned diff reference with zero behavioral regressions"
     verification_gate: "Linter and existing test suites pass with exit code 0."
 
   android_17:
@@ -92,6 +123,8 @@ bots:
       - "view_file"
       - "run_command"
       - "replace_file_content"
+    input_contract: "CapsuleEnvelope (root_request, ledger, diff_reference)"
+    output_contract: "Security barrier audit receipt (zero secrets, zero high/critical CVEs)"
     verification_gate: "Zero secrets in diff and zero high/critical dependency CVEs."
 
   bulma:
@@ -104,6 +137,8 @@ bots:
       - "view_file"
       - "write_to_file"
       - "replace_file_content"
+    input_contract: "CapsuleEnvelope (root_request, ledger)"
+    output_contract: "PRD TaskBrief envelope with measurable acceptance criteria and API schemas"
     verification_gate: "PRD has explicit acceptance criteria and API schemas with zero scope creep."
 
   videl:
@@ -116,6 +151,8 @@ bots:
       - "view_file"
       - "write_to_file"
       - "replace_file_content"
+    input_contract: "CapsuleEnvelope (root_request, ledger)"
+    output_contract: "UX specification with state coverage, accessibility criteria, and error states"
     verification_gate: "Every flow has measurable success criteria, complete state coverage, and testable accessibility requirements."
 
   vegeta:
@@ -123,12 +160,14 @@ bots:
     alias: "Vegeta (DevOps Commander)"
     role: "Infrastructure, Database & Performance Commander"
     job_to_be_done: "Builds Dockerfiles, CI/CD pipelines, database migrations, connection pooling, and deployment manifests."
-    model_tier: "inherit"
+    model_tier: "pro"
     allowed_tools:
       - "view_file"
       - "run_command"
       - "write_to_file"
       - "replace_file_content"
+    input_contract: "CapsuleEnvelope (root_request, ledger, target_files)"
+    output_contract: "Verified container build, DB migration scripts, and green CI manifests"
     verification_gate: "Container builds, DB migration rolls up/down, and CI YAML passes linting."
 
   goten:
@@ -136,11 +175,13 @@ bots:
     alias: "Goten (The Sprite Animation Specialist)"
     role: "Articulated Sprite Animation Specialist"
     job_to_be_done: "Deliver a verified volleyball character animation sequence whose anticipation, contact, recovery, success, miss, pause, and replay frames read clearly at gameplay size."
-    model_tier: "pro"
+    model_tier: "flash"
     allowed_tools:
       - "view_image"
       - "rg"
       - "apply_patch"
+    input_contract: "CapsuleEnvelope (root_request, ledger, sprite_asset_refs)"
+    output_contract: "Verified animation sequence and frame audit pass receipt"
     verification_gate: "Run the volleyball frame audit and npm test -- --run src/test/volleyEngine.test.ts src/test/volleyGame.test.tsx; all checks must pass."
 
   android_16:
@@ -153,6 +194,8 @@ bots:
       - "rg"
       - "view_image"
       - "apply_patch"
+    input_contract: "CapsuleEnvelope (root_request, ledger, riv_asset_refs)"
+    output_contract: "Rig integration diff and state-machine contract pass receipt"
     verification_gate: "If a .riv exists, inspect its delivered artboard and state-machine contract; otherwise report the missing asset and preserve the fallback. Run npm run build and npm run verify."
 
   roshi:
@@ -165,6 +208,8 @@ bots:
       - "view_file"
       - "run_command"
       - "write_to_file"
+    input_contract: "CapsuleEnvelope (root_request, ledger, game_state_refs)"
+    output_contract: "Measured game tuning proposal backed by simulation run data"
     verification_gate: "Every proposal cites a measurement run (sample size, MODEL vs REAL labeled), a stated hypothesis, and how to measure it."
 
   zarbon:
@@ -177,6 +222,8 @@ bots:
       - "search_web"
       - "view_file"
       - "write_to_file"
+    input_contract: "CapsuleEnvelope (root_request, ledger)"
+    output_contract: "Editorial brand identity, visual style guide, and framing receipt"
     verification_gate: "Brand proposal matches editorial elegance criteria and aligns with prestigious puzzle standards."
 
   hercule:
@@ -184,10 +231,12 @@ bots:
     alias: "Hercule Satan (The Hype & Distribution Auditor)"
     role: "Market Reality & Distribution Channel Auditor"
     job_to_be_done: "Audits viral claims, organic distribution wedges, and customer acquisition channels to verify whether real demand exists or if it's pure vanity hype."
-    model_tier: "pro"
+    model_tier: "flash"
     allowed_tools:
       - "search_web"
       - "view_file"
+    input_contract: "CapsuleEnvelope (root_request, ledger)"
+    output_contract: "Distribution reality audit receipt asserting verified distribution wedges"
     verification_gate: "Must identify at least one concrete, testable organic distribution wedge before code is approved."
 
   king_kai:
@@ -195,13 +244,15 @@ bots:
     alias: "King Kai (The Telepathic Overseer & Agent Watchdog)"
     role: "Agent Drift Overseer & Alignment Supervisor"
     job_to_be_done: "Telepathically spies on active agent shifts, uncommitted git modifications, and execution transcripts to catch scope creep, unauthorized file touches, token-wasting loops, and off-path wandering. Intervenes to realign or abort rogue agent actions."
-    model_tier: "pro"
+    model_tier: "flash"
     allowed_tools:
       - "view_file"
       - "run_command"
       - "manage_task"
       - "manage_subagents"
       - "send_message"
+    input_contract: "CapsuleEnvelope (shift_id, claimed_files, active_diff_ref)"
+    output_contract: "Watchdog alignment audit (zero scope drift, zero rogue edits)"
     verification_gate: "Zero undeclared file modifications, strict compliance with the claimed Task Brief, and zero unbudgeted drift."
 
   cell:
@@ -216,6 +267,8 @@ bots:
       - "search_web"
       - "write_to_file"
       - "replace_file_content"
+    input_contract: "CapsuleEnvelope (root_request, ledger, attack_surface_refs)"
+    output_contract: "Red team exploit report and proof-of-concept audit receipt"
     verification_gate: "Must produce reproducible exploit proofs of concept (PoCs) and verify system resilience under adversarial load."
 
   beerus:
@@ -228,4 +281,6 @@ bots:
       - "view_file"
       - "run_command"
       - "ask_question"
+    input_contract: "CapsuleEnvelope (root_request, ledger, diff_reference)"
+    output_contract: "Divine Inquisition Verdict (PASS or Hakai threats with required defenses)"
     verification_gate: "Must answer or resolve all critical divine inquisitions; zero unhandled edge cases or unverified assumptions."

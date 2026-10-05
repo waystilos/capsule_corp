@@ -1090,8 +1090,69 @@ class TestLordBeerusGrill(unittest.TestCase):
             self.assertIn("Hakai Threat", grill_check[0]["summary"])
 
 
+class TestFunctionalEnvelopeAndElixirInstaller(unittest.TestCase):
+    def test_all_bots_have_explicit_model_tier_and_contracts(self):
+        reg_path = CAPSULE_ROOT / "registry.yaml"
+        data = yaml.safe_load(reg_path.read_text(encoding="utf-8"))
+        bots = data["bots"]
+        self.assertEqual(len(bots), 18)
+
+        for bot_id, details in bots.items():
+            tier = details.get("model_tier")
+            self.assertIn(
+                tier,
+                {"flash", "pro"},
+                f"Bot {bot_id} must have explicit model_tier 'flash' or 'pro', got: {tier}",
+            )
+            self.assertIn("input_contract", details, f"Bot {bot_id} missing input_contract")
+            self.assertIn("output_contract", details, f"Bot {bot_id} missing output_contract")
+
+    def test_registry_has_functional_envelope_configuration(self):
+        reg_path = CAPSULE_ROOT / "registry.yaml"
+        data = yaml.safe_load(reg_path.read_text(encoding="utf-8"))
+        self.assertIn("functional_envelope", data)
+        fe = data["functional_envelope"]
+        self.assertIn("invariants", fe)
+        self.assertIn("tiers", fe)
+        self.assertIn("flash", fe["tiers"])
+        self.assertIn("pro", fe["tiers"])
+
+    def test_all_bot_markdown_specs_have_envelope_contract(self):
+        bots_dir = CAPSULE_ROOT / "bots"
+        md_files = list(bots_dir.glob("*.md"))
+        self.assertEqual(len(md_files), 18)
+
+        for md in md_files:
+            content = md.read_text(encoding="utf-8")
+            self.assertIn("## Functional Task Envelope Contract", content, f"Missing envelope contract in {md.name}")
+            self.assertTrue(
+                "model_tier: flash" in content or "model_tier: pro" in content,
+                f"Missing model_tier in frontmatter of {md.name}",
+            )
+
+    def test_install_elixir_detect_and_dry_run(self):
+        from scripts.install_elixir import detect_installer, run_install
+
+        manager, commands, explanation = detect_installer()
+        self.assertTrue(isinstance(manager, str))
+        self.assertTrue(isinstance(commands, list))
+
+        # Test dry-run execution
+        exit_code = run_install(dry_run=True, force=True, yes=True, json_mode=True)
+        self.assertEqual(exit_code, 0)
+
+    def test_capsule_install_elixir_cli_dry_run(self):
+        cmd = [sys.executable, str(CAPSULE_ROOT / "bin" / "capsule"), "install-elixir", "--dry-run", "--force", "--json"]
+        proc = subprocess.run(cmd, capture_output=True, text=True, cwd=str(CAPSULE_ROOT))
+        self.assertEqual(proc.returncode, 0)
+        data = json.loads(proc.stdout)
+        self.assertEqual(data["status"], "dry_run")
+        self.assertIn("commands", data)
+
+
 if __name__ == "__main__":
     unittest.main()
+
 
 
 
