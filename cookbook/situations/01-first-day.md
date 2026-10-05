@@ -25,7 +25,7 @@ Capsule Corp operates with **four default roles** and calls **specialists only w
 - **Reviewer (`@Trunks`):** Verification gatekeeper: tests, linters, typechecks, diff hygiene.
 - **Coordinator (`@Piccolo` / `@Whis`):** Epic decomposition and orchestrating specialists.
 
-Optional specialists (`@Android-17` for security, `@Cell` for red team attacks, `@King-Kai` for watchdog supervision, `@Android-18` for refactoring, `@Videl` for UX, `@Vegeta` for infra, `@Roshi` for games, `@Zarbon` for polish, `@Hercule` for hype, `@Dr-Gero` for meta) are invoked only on-demand.
+Optional specialists (`@Android-17` for security, `@Cell` for red team attacks, `@King-Kai` for watchdog supervision, `@Android-18` for refactoring, `@Videl` for UX, `@Vegeta` for infra, `@Roshi` for games, `@Hercule` for hype, `@Zarbon` for polish, `@Dr-Gero` for meta, `@Goten` for sprite animation, `@Android-16` for rive rigs) are invoked only on-demand.
 
 ## Ask the AI
 

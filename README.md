@@ -182,15 +182,17 @@ Specialists are called only when a task strictly requires their specific experti
 | Specialist | Role | Operational Focus | When to Call |
 | :--- | :--- | :--- | :--- |
 | **@Android-17** | **Security Sentinel** | Zero-Trust & Vulnerability Audit | Auth systems, secret audits, OWASP risks, dependency CVEs, and input sanitization. |
+| **@Cell** | **Adversarial Red Team & Chaos Sentinel** | Offensive Security & Penetration Testing | Active exploitation, prompt injection probing, SSRF/BOLA auditing, and ReDoS detection. |
+| **@King-Kai** | **Watchdog & Alignment Supervisor** | Drift & Scope Inspection | Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering. |
 | **@Android-18** | **Refactoring Specialist** | Dead Code & Tech Debt | Component extraction, duplicate cleanup, and technical debt with zero behavioral changes. |
 | **@Videl** | **UX Researcher & Designer** | Usability & Accessible States | User journey flows, accessibility (WCAG), empty states, and error handling for user interfaces. |
 | **@Vegeta** | **DevOps Commander** | Infrastructure & Scale | Multi-stage Dockerfiles, GitHub Actions CI/CD pipelines, database migrations, connection pooling. |
 | **@Master-Roshi** | **Game Feel Master** | Core Loops & Canvas Mechanics | Game feel, sprite math, frame timing, physics loops, and difficulty tuning. |
-| **@King-Kai** | **Watchdog & Alignment Supervisor** | Drift & Scope Inspection | Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering. |
-| **@Cell** | **Adversarial Red Team & Chaos Sentinel** | Offensive Security & Penetration Testing | Active exploitation, prompt injection probing, SSRF/BOLA auditing, and ReDoS detection. |
 | **@Hercule** | **Hype & Distribution Auditor** | Market Reality & Channel Validation | Cuts through vanity hype, audits organic distribution wedges, and verifies user demand. |
 | **@Zarbon** | **Creative Director & Polish** | Aesthetic Elegance & Brand Framing | High-standard aesthetic direction, brand naming, and prestigious editorial framing. |
 | **@Dr-Gero** | **Meta-Agent Architect** | System Scaffolding & Evals | Scaffolding new agents, authoring skills, and auditing execution transcripts for agent friction. |
+| **@Goten** | **Sprite Animation Specialist** | Articulated Sprite Sequences | Frame timing, anticipation/recovery frames, clear gameplay hitbox reading. |
+| **@Android-16** | **Rive Rig Specialist** | Vector Rig & State Contract | Validating delivered Rive character rigs, artboard bindings, and state-machine inputs. |
 
 ---
 
@@ -277,7 +279,7 @@ Then leverage the native cohort integration:
 
 ### D. In Google Antigravity / Gemini
 In your chat or CLI session:
-* The subagents `bulma`, `videl`, `piccolo`, `goku`, `android-17`, `trunks`, `vegeta`, `android-18`, `dr-gero`, `cell`, `king-kai`, `hercule`, `zarbon`, and `whis` are natively registered.
+* The full cohort (`bulma`, `goku`, `trunks`, `piccolo`, `whis`, `android-17`, `cell`, `king-kai`, `android-18`, `videl`, `vegeta`, `roshi`, `hercule`, `zarbon`, `dr-gero`, `goten`, and `android-16`) is natively registered.
 * Simply say: *"Bulma, scope this feature"* or *"Cell, attack this service"* or *"King Kai, inspect active shifts for rogue modifications"*.
 * Initialize projects with `capsule init --tool gemini /path/to/project` (or `--tool agy`) to generate `GEMINI.md`.
 

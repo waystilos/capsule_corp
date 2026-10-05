@@ -58,6 +58,8 @@ Handoff: goku -> trunks
 - **Polish (`@Zarbon`):** Visual aesthetics, typography, micro-interactions, theme design.
 - **Hype (`@Hercule`):** README hooks, launch announcements, marketing copy, social distribution.
 - **Meta (`@Dr-Gero`):** Scaffolding bots and skills, transcript friction auditing.
+- **Animation (`@Goten`):** Articulated sprite sequences, frame timing, clear gameplay hitbox reading.
+- **Rig Integration (`@Android-16`):** Rive character rig validation, artboard and state-machine contract checks.
 
 If the router reports `needs_clarification`, Whis will triage and ask for clarification rather than making a random guess between tied specialists. Host AIs may also override routing based on the developer's instructions.
 
