@@ -58,6 +58,7 @@ When Cursor finishes a batch of file edits:
    ```bash
    capsule verify .
    capsule security .
+   capsule attack .
    ```
 4. If issues arise, paste the check output back into Composer:
    ```text
@@ -76,6 +77,7 @@ When working with Cursor alongside other agents (Claude Code, Antigravity, Codex
   capsule clock-in --task "Prisma migration" --files "prisma/schema.prisma"
   ```
   *(Cursor environment is auto-detected)*
+- Monitor shifts and avoid scope drift: `capsule spy .`
 - Clock out once verified:
   ```bash
   capsule clock-out --summary "Prisma schema defined and verified with capsule check"

@@ -63,6 +63,24 @@ Implement your changes surgical and lean. Run project checks before clocking out
 capsule check .
 ```
 
+### 3b. Telepathic Watchdog Audit (`@King-Kai`)
+To monitor active shifts and ensure agents stay on task without wandering or making rogue edits:
+
+```bash
+capsule spy .
+```
+
+King Kai audits the workspace against `.capsule/room.json` and active git status:
+- **Scope Drift:** Warns if an agent is editing files outside its declared `--files` list.
+- **Rogue Edits:** Detects uncommitted modifications when no agent is clocked in.
+- **Stalled Shifts:** Highlights shifts exceeding 45 minutes without a heartbeat.
+
+For JSON output:
+
+```bash
+capsule spy --json .
+```
+
 ### 4. Clock Out and Record Handoff Summary
 When verification succeeds with exit code 0, clock out:
 

@@ -22,6 +22,8 @@ Call specialists only when a task strictly requires their domain:
 - **UX (`@Videl`):** Usability, accessibility, user flows, error and loading states.
 - **Infra (`@Vegeta`):** Dockerfiles, CI/CD pipelines, database migrations, connection pooling, and indexing.
 - **Game (`@Roshi`):** Canvas mechanics, game loops, sprite math, and physics.
+- **Watchdog (`@King-Kai`):** Telepathic supervisor catching scope drift, rogue edits, and stalled shifts.
+- **Red Team (`@Cell`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, and SSRF penetration testing.
 
 ### Workflows That Scale
 - **Small Fix:** Builder → Verification (`capsule check`). Avoid coordination overhead.
@@ -57,11 +59,14 @@ When handing off tasks between roles or subagents, use this concrete schema:
    - The user has the `capsule` CLI available:
      - `capsule check [dir]` (everyday tests, lint, typecheck, secrets)
      - `capsule room [dir]` (view Check-In Room, active shifts, claimed files)
+     - `capsule spy [dir]` (King Kai's watchdog to detect scope drift & rogue edits)
+     - `capsule validate [idea]` (Bulma & Hercule's pre-code demand & distribution gate)
      - `capsule clock-in --task "..." [--files "..."]` (clock in to shift)
      - `capsule heartbeat` (send heartbeat to keep active shift alive)
      - `capsule clock-out --summary "..."` (clock out with summary)
-     - `capsule verify [dir]` (strict verification gate)
-     - `capsule security [dir]` (secrets and CVE scanner)
+     - `capsule verify [dir]` (Trunks' strict verification gate)
+     - `capsule security [dir]` (Android 17's secrets and CVE scanner)
+     - `capsule attack [dir]` (Cell's adversarial red team attack scan)
      - `capsule doctor [dir]` (environment diagnostics)
      - `capsule list`
      - `capsule sync`

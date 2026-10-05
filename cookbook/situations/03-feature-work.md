@@ -51,6 +51,7 @@ Then run strict gates before opening a PR:
 ```bash
 capsule verify /path/to/project
 capsule security /path/to/project
+capsule attack /path/to/project
 ```
 
 ## You are ready when

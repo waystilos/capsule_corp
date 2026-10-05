@@ -61,9 +61,13 @@ Claude Code supports specialized subagents defined in `.claude/agents/`:
   - **`@piccolo`** / **`@whis`**: Deconstruct complex epics into atomic tasks.
 - Optional Specialists (on demand):
   - **`@android-17`**: Security audit for secrets, CORS, and dependency CVEs.
+  - **`@cell`**: Red Team adversarial attacks, prompt injection fuzzing, and ReDoS.
+  - **`@king-kai`**: Watchdog supervisor catching scope drift, rogue edits, and stalled shifts.
   - **`@android-18`**: Refactoring and dead code cleanup.
   - **`@videl`**: UX, accessibility, and user flows.
   - **`@vegeta`**: Docker, CI/CD, and database migrations.
+  - **`@zarbon`**: Visual elegance, typography, and micro-interactions.
+  - **`@hercule`**: Launch marketing, README hooks, and distribution copy.
 
 ### C. Standard Task Brief Handoff
 Pass tasks to Claude Code using the standard Task Brief envelope:
@@ -85,6 +89,7 @@ When collaborating with other models (Codex, Gemini, Cursor) on the same codebas
   capsule clock-in --task "Implement email OTP auth" --files "src/auth/otp.py,tests/test_otp.py"
   ```
   *(Claude Code environment is auto-detected as Anthropic / Claude 3.7 Sonnet)*
+- Monitor shifts and avoid scope drift: `capsule spy .`
 - Clock out upon successful verification:
   ```bash
   capsule clock-out --summary "OTP auth implemented and verified with capsule check"
@@ -100,6 +105,7 @@ Before ending your Claude Code session or accepting code changes, ensure Claude 
 capsule check .      # Everyday factual checks (tests, lint, typecheck, secrets)
 capsule verify .     # Strict verification gate
 capsule security .   # Security scanner
+capsule attack .     # Red team adversarial attack scan
 ```
 
 All must report green with exit code 0.

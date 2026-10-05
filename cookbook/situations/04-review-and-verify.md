@@ -19,11 +19,12 @@ Before opening a pull request or tagging a release:
 ```bash
 capsule verify /path/to/project
 capsule security /path/to/project
+capsule attack /path/to/project
 git status --short
 git diff --check
 ```
 
-Verification inspects staged, unstaged, and untracked files for conflict markers and common exposed-secret patterns. It also runs the project’s detected or configured test suite.
+Verification inspects staged, unstaged, and untracked files for conflict markers and common exposed-secret patterns. It also runs the project’s detected or configured test suite, while `capsule attack` launches Cell's adversarial probes.
 
 If there is intentionally no test runner, make the decision explicit:
 
@@ -52,7 +53,7 @@ Preserve observable behavior, avoid new dependencies, and prove the refactor wit
 
 ## You are ready when
 
-- Tests, verification, and security checks exit 0.
+- Tests, verification, security, and adversarial attack checks exit 0.
 - No unexplained files or generated artifacts are in the diff.
 - Review findings are either fixed or explicitly accepted.
 
