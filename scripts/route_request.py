@@ -58,6 +58,7 @@ BOT_TO_ROLE: Dict[str, str] = {
     "hercule": "Market Reality & Hype Auditor",
     "zarbon": "Aesthetic & Polish Specialist",
     "cell": "Red Team & Adversarial Chaos",
+    "beerus": "Architectural Inquisitor & Code Griller",
 }
 
 
@@ -80,6 +81,7 @@ WORKFLOW_ROLE: Dict[str, str] = {
     "hercule": "Hype Auditor",
     "zarbon": "Polish",
     "cell": "Red Team",
+    "beerus": "Inquisitor",
 }
 
 

@@ -122,6 +122,7 @@ def run_project_checks(
     typecheck_cmd_override: Optional[str] = None,
     skip_secrets: bool = False,
     check_drift: bool = False,
+    check_grill: bool = False,
 ) -> Dict[str, Any]:
     """Run all configured and detected checks for a project."""
     root_dir = root_dir.resolve()
@@ -309,6 +310,54 @@ def run_project_checks(
                 "output": "",
             })
 
+    # 6. Lord Beerus' Architectural Inquisition (Code Griller)
+    # Runs when explicitly requested via check_grill=True (--grill) or config "grill": true
+    if check_grill or (config and config.get("grill")):
+        try:
+            try:
+                from .grill_code import run_grill_audit
+            except ImportError:
+                from grill_code import run_grill_audit
+
+            grill_report = run_grill_audit(root_dir)
+            threat = grill_report["threat_level"]
+            issues = grill_report.get("issues", [])
+            output_lines = []
+            for item in issues:
+                output_lines.append(f"- [{item['severity']}] {item['category']} in {item['file']}:{item['line']}")
+                output_lines.append(f"  Beerus: \"{item['beerus_question']}\"")
+                if item.get("defended"):
+                    output_lines.append(f"  Defense: \"{item.get('defense')}\"")
+            output = "\n".join(output_lines)
+
+            if grill_report["verdict"] == "FAIL":
+                has_failure = True
+                status = "FAILED"
+                summary = f"Hakai Threat: {threat} ({grill_report['summary']['critical']} critical inquisition failure(s))"
+            elif grill_report["verdict"] == "WARN":
+                status = "WARNING"
+                summary = f"Hakai Threat: {threat} ({len(issues)} inquisition item(s) flagged)"
+            else:
+                status = "PASSED"
+                summary = "Hakai Threat: DIVINE APPROVAL (Zero critical flaws)"
+                output = ""
+
+            results.append({
+                "name": "Beerus Inquisition",
+                "status": status,
+                "command": "capsule grill",
+                "summary": summary,
+                "output": output,
+            })
+        except Exception as exc:
+            results.append({
+                "name": "Beerus Inquisition",
+                "status": "SKIPPED",
+                "command": "capsule grill",
+                "summary": f"Skipped: {exc}",
+                "output": "",
+            })
+
     executed_checks = [c for c in results if c["name"] in ("Tests", "Lint", "Typecheck") and c["status"] in ("PASSED", "FAILED")]
     if has_failure:
         verdict = "FAIL"
@@ -375,6 +424,7 @@ def main():
     parser.add_argument("--typecheck-cmd", help="Explicit typecheck command override")
     parser.add_argument("--skip-secrets", action="store_true", help="Skip git diff secret scanner")
     parser.add_argument("--check-drift", action="store_true", help="Run King Kai's agent drift watchdog audit")
+    parser.add_argument("--grill", action="store_true", help="Run Lord Beerus' architectural inquisition & code griller")
     args = parser.parse_args()
 
     target = Path(args.target_dir).resolve()
@@ -389,6 +439,7 @@ def main():
         typecheck_cmd_override=args.typecheck_cmd,
         skip_secrets=args.skip_secrets,
         check_drift=args.check_drift,
+        check_grill=args.grill,
     )
 
     if args.json:

@@ -31,6 +31,7 @@ Call specialists only when a task strictly requires their domain:
 - **Meta-Agent Architect (`@Dr-Gero`):** Agent scaffolding, skill creation, transcript friction auditing.
 - **Animation (`@Goten`):** Articulated sprite sequences, frame timing, and clear gameplay hitbox reading.
 - **Rig Integration (`@Android-16`):** Rive character rig validation, artboard and state-machine contract checks.
+- **Inquisitor / Grill Me (`@Beerus`):** Ruthless architectural inquisition, edge-case probing, stress testing, and Hakai-level code grilling.
 
 ### Routing Policy
 Routing via `./bin/capsule route "<request>"` provides a **heuristic suggestion**. The host AI should choose the workflow scale based on the task:
@@ -152,6 +153,9 @@ The universal CLI is available at `./bin/capsule` (and in system PATH as `capsul
 
 # Run Cell's adversarial attack scanner
 ./bin/capsule attack [target_dir]
+
+# Run Lord Beerus' architectural inquisition & code griller
+./bin/capsule grill [target_dir]
 
 # Initialize a project with multi-AI directives (including Claude Code)
 ./bin/capsule init --tool claude /path/to/project

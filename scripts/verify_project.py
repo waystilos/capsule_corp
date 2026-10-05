@@ -241,6 +241,7 @@ def main():
     parser.add_argument("--skip-tests", action="store_true", help="Skip running tests, only check git diff/safety")
     parser.add_argument("--test-cmd", help="Override test command string")
     parser.add_argument("--timeout", type=int, default=120, help="Test timeout in seconds")
+    parser.add_argument("--grill", action="store_true", help="Include Lord Beerus' code inquisition audit")
     parser.add_argument("--json", action="store_true", help="Output JSON results")
     args = parser.parse_args()
 
@@ -258,6 +259,7 @@ def main():
         project_dir,
         test_cmd_override=args.test_cmd,
         skip_secrets=args.skip_tests,
+        check_grill=args.grill,
     )
 
     verdict = check_report["verdict"]

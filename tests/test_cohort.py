@@ -32,6 +32,7 @@ from room import clock_in, clock_out, clear_room, detect_environment, load_room_
 from spy_watchdog import audit_agent_drift, format_watchdog_report
 from validate_idea import evaluate_idea, save_validation_contract
 from red_team import run_red_team_audit, audit_file_for_attack_vectors, format_red_team_report
+from grill_code import run_grill_audit, audit_diff_for_grill, scan_directory_files, format_grill_report, save_defense
 from capsule.cli import _installed_resource_candidates, cmd_list
 
 
@@ -998,6 +999,95 @@ class TestCellRedTeam(unittest.TestCase):
         self.assertEqual(res["owner"], "cell")
         self.assertEqual(res["status"], "routed")
         self.assertEqual(res["intent"], "offensive_security")
+
+
+class TestLordBeerusGrill(unittest.TestCase):
+    def test_beerus_registered_in_registry_and_bots(self):
+        reg_path = CAPSULE_ROOT / "registry.yaml"
+        data = yaml.safe_load(reg_path.read_text(encoding="utf-8"))
+        self.assertIn("beerus", data["bots"])
+        b = data["bots"]["beerus"]
+        self.assertEqual(b["name"], "beerus")
+        self.assertEqual(b["model_tier"], "pro")
+        self.assertIn("ask_question", b["allowed_tools"])
+        self.assertTrue((CAPSULE_ROOT / "bots" / "beerus.md").exists())
+
+    def test_routing_routes_to_beerus_for_grill_requests(self):
+        res = route_request("grill me on this pull request before merge")
+        self.assertEqual(res["owner"], "beerus")
+        self.assertEqual(res["status"], "routed")
+        self.assertEqual(res["intent"], "code_inquisition")
+
+        res2 = route_request("stress test and interrogate our architectural assumptions")
+        self.assertEqual(res2["owner"], "beerus")
+
+    def test_grill_detects_swallowed_exceptions(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            vuln_file = root / "handler.py"
+            vuln_file.write_text(
+                "try:\n    do_something()\nexcept Exception:\n    pass\n",
+                encoding="utf-8"
+            )
+            issues = scan_directory_files(root)
+            self.assertTrue(any(i["category"] == "SWALLOWED_EXCEPTION" for i in issues))
+            swallowed = [i for i in issues if i["category"] == "SWALLOWED_EXCEPTION"][0]
+            self.assertEqual(swallowed["severity"], "CRITICAL")
+            self.assertIn("production", swallowed["beerus_question"])
+
+    def test_grill_detects_missing_timeouts(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            vuln_file = root / "client.py"
+            vuln_file.write_text(
+                'resp = requests.get("https://api.example.com/data")\n',
+                encoding="utf-8"
+            )
+            issues = scan_directory_files(root)
+            self.assertTrue(any(i["category"] == "MISSING_HTTP_TIMEOUT" for i in issues))
+
+    def test_clean_repo_passes_with_divine_approval(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            clean_file = root / "pure.py"
+            clean_file.write_text(
+                "def add(a: int, b: int) -> int:\n    return a + b\n",
+                encoding="utf-8"
+            )
+            report = run_grill_audit(root, scan_all=True)
+            self.assertEqual(report["verdict"], "PASS")
+            self.assertEqual(report["threat_level"], "DIVINE APPROVAL (SAFE)")
+            rendered = format_grill_report(report)
+            self.assertIn("DIVINE APPROVAL", rendered)
+
+    def test_grill_defenses_recording_and_resolution(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            bad_file = root / "legacy.py"
+            bad_file.write_text(
+                "try:\n    cleanup()\nexcept:\n    pass\n",
+                encoding="utf-8"
+            )
+            report1 = run_grill_audit(root, scan_all=True)
+            self.assertEqual(report1["verdict"], "FAIL")
+            self.assertEqual(report1["threat_level"], "HAKAI IMMINENT")
+
+            # Save developer defense
+            issue_id = report1["issues"][0]["id"]
+            save_defense(root, issue_id, "Best-effort cleanup during shutdown", report1["issues"][0]["beerus_question"])
+
+            report2 = run_grill_audit(root, scan_all=True)
+            self.assertTrue(report2["issues"][0]["defended"])
+            self.assertEqual(report2["summary"]["defended"], 1)
+            self.assertNotEqual(report2["verdict"], "FAIL")
+
+    def test_check_project_with_grill_flag(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            report = run_project_checks(root, check_grill=True)
+            grill_check = [c for c in report["checks"] if c["name"] == "Beerus Inquisition"]
+            self.assertEqual(len(grill_check), 1)
+            self.assertIn("Hakai Threat", grill_check[0]["summary"])
 
 
 if __name__ == "__main__":

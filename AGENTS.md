@@ -23,6 +23,7 @@ Call specialists only when a task strictly requires their domain—never force e
 - **Meta-Agent Architect (`@Dr-Gero`):** System scaffolding, skill creation, transcript friction auditing, and agent evals.
 - **Animation (`@Goten`):** Articulated sprite sequences, frame timing, and clear gameplay hitbox reading.
 - **Rig Integration (`@Android-16`):** Rive character rig validation, artboard and state-machine contract checks.
+- **Inquisitor / Grill Me (`@Beerus`):** Ruthless architectural inquisition, edge-case probing, stress testing, and Hakai-level code grilling.
 
 ## 3. Workflows That Scale
 Choose the workflow matching the task complexity:
@@ -44,7 +45,7 @@ When handing off tasks between roles or subagents, use this concrete schema:
 ## 5. Verification Gate (Trunks' Rule)
 Before declaring any task done or opening a PR:
 - Run project checks: `capsule check` (or native runner e.g. `npm test`, `pytest`, `cargo test`).
-- Run `capsule verify`, `capsule security`, and `capsule attack`.
+- Run `capsule verify`, `capsule security`, `capsule attack`, and `capsule grill`.
 - All checks must pass with exit code 0 and zero secrets/merge conflicts in diff.
 
 ## 6. Check-In Room Protocol (Multi-AI Coordination)
