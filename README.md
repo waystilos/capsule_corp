@@ -33,16 +33,17 @@ cd capsule-corp
 
 Project-specific tools such as `pytest`, `npm`, `cargo`, or `go` are only needed when verifying a project that uses them.
 
-### Run the built-in checks
+### Run the built-in checks & runtime setup
 
 ```bash
-capsule check .      # Everyday factual check: tests, lint, typecheck, secrets
-capsule test         # Cohort test suite
-capsule verify .     # Trunks' strict verification gate
-capsule security .   # Android 17's security scanner
-capsule attack .     # Cell's adversarial red team attack scan
-capsule grill .      # Lord Beerus' architectural inquisition & code griller
-capsule spy .        # King Kai's watchdog for agent scope drift & rogue edits
+capsule check .          # Everyday factual check: tests, lint, typecheck, secrets
+capsule test             # Cohort test suite
+capsule verify .         # Trunks' strict verification gate
+capsule security .       # Android 17's security scanner
+capsule attack .         # Cell's adversarial red team attack scan
+capsule grill .          # Lord Beerus' architectural inquisition & code griller
+capsule spy .            # King Kai's watchdog for agent scope drift & rogue edits
+capsule install-elixir   # Install Elixir/Erlang globally across Mac, Linux, or Windows
 ```
 
 All commands should exit with code 0 before treating changes as ready.
@@ -171,30 +172,37 @@ For detailed situation-based workflows, see the [Capsule Corp Cookbook](cookbook
 Rather than forcing every request through a large roster, Capsule Corp structures work around **four default roles** and calls **specialists only when needed**. Functional names clarify responsibilities; Dragon Ball archetypes provide memorable shorthand aliases.
 
 ### The Core 4 Default Roles
-| Role | Alias | Operational Focus | Primary Job To Be Done (JTBD) |
-| :--- | :--- | :--- | :--- |
-| **Product** | `@Bulma` | MVP Scoping & Acceptance Criteria | Translates founder ideas into sharp PRDs, user flows, API specs, and testable acceptance criteria before code is written. |
-| **Builder** | `@Goku` | Ultra Instinct Frontline Execution | Surgical implementation with Ultra Instinct focus. Lean code, minimal diffs, zero speculative dependencies or conversational filler. |
-| **Reviewer** | `@Trunks` | Verification Gate & Review | Executes automated tests, linters, typecheckers, and git diff audits before code is accepted. Guarantees zero regressions. |
-| **Coordinator** | `@Piccolo` / `@Whis` | Strategy & Orchestration | Deconstructs complex features into atomic task trees. Orchestrates parallel tasks and invokes specialists when needed. Never writes code directly. |
+| Role | Alias | Model Tier | Operational Focus | Primary Job To Be Done (JTBD) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Product** | `@Bulma` | 🧠 `pro` | MVP Scoping & Acceptance Criteria | Translates founder ideas into sharp PRDs, user flows, API specs, and testable acceptance criteria before code is written. |
+| **Builder** | `@Goku` | 🧠 `pro` | Ultra Instinct Frontline Execution | Surgical implementation with Ultra Instinct focus. Lean code, minimal diffs, zero speculative dependencies or conversational filler. |
+| **Reviewer** | `@Trunks` | ⚡ `flash` | Verification Gate & Review | Executes automated tests, linters, typecheckers, and git diff audits before code is accepted. Guarantees zero regressions. |
+| **Coordinator** | `@Piccolo` / `@Whis` | 🧠 `pro` / ⚡ `flash` | Strategy & Orchestration | Deconstructs complex features into atomic task trees. Orchestrates parallel tasks and invokes specialists when needed. Never writes code directly. |
 
 ### Optional Specialists (Called On-Demand Only)
 Specialists are called only when a task strictly requires their specific expertise—never for everyday changes:
-| Specialist | Role | Operational Focus | When to Call |
-| :--- | :--- | :--- | :--- |
-| **@Android-17** | **Security Sentinel** | Zero-Trust & Vulnerability Audit | Auth systems, secret audits, OWASP risks, dependency CVEs, and input sanitization. |
-| **@Cell** | **Adversarial Red Team & Chaos Sentinel** | Offensive Security & Penetration Testing | Active exploitation, prompt injection probing, SSRF/BOLA auditing, and ReDoS detection. |
-| **@King-Kai** | **Watchdog & Alignment Supervisor** | Drift & Scope Inspection | Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering. |
-| **@Android-18** | **Refactoring Specialist** | Dead Code & Tech Debt | Component extraction, duplicate cleanup, and technical debt with zero behavioral changes. |
-| **@Videl** | **UX Researcher & Designer** | Usability & Accessible States | User journey flows, accessibility (WCAG), empty states, and error handling for user interfaces. |
-| **@Vegeta** | **DevOps Commander** | Infrastructure & Scale | Multi-stage Dockerfiles, GitHub Actions CI/CD pipelines, database migrations, connection pooling. |
-| **@Master-Roshi** | **Game Feel Master** | Core Loops & Canvas Mechanics | Game feel, sprite math, frame timing, physics loops, and difficulty tuning. |
-| **@Hercule** | **Hype & Distribution Auditor** | Market Reality & Channel Validation | Cuts through vanity hype, audits organic distribution wedges, and verifies user demand. |
-| **@Zarbon** | **Creative Director & Polish** | Aesthetic Elegance & Brand Framing | High-standard aesthetic direction, brand naming, and prestigious editorial framing. |
-| **@Dr-Gero** | **Meta-Agent Architect** | System Scaffolding & Evals | Scaffolding new agents, authoring skills, and auditing execution transcripts for agent friction. |
-| **@Goten** | **Sprite Animation Specialist** | Articulated Sprite Sequences | Frame timing, anticipation/recovery frames, clear gameplay hitbox reading. |
-| **@Android-16** | **Rive Rig Specialist** | Vector Rig & State Contract | Validating delivered Rive character rigs, artboard bindings, and state-machine inputs. |
-| **@Beerus** | **God of Destruction & Supreme Inquisitor** | Architectural Inquisition & Code Griller | Ruthless interrogation of PRs and architecture: edge cases, swallowed errors, missing timeouts, and Hakai-level code grilling. |
+| Specialist | Role | Model Tier | Operational Focus | When to Call |
+| :--- | :--- | :--- | :--- | :--- |
+| **@Android-17** | **Security Sentinel** | 🧠 `pro` | Zero-Trust & Vulnerability Audit | Auth systems, secret audits, OWASP risks, dependency CVEs, and input sanitization. |
+| **@Cell** | **Adversarial Red Team & Chaos Sentinel** | 🧠 `pro` | Offensive Security & Penetration Testing | Active exploitation, prompt injection probing, SSRF/BOLA auditing, and ReDoS detection. |
+| **@King-Kai** | **Watchdog & Alignment Supervisor** | ⚡ `flash` | Drift & Scope Inspection | Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering. |
+| **@Android-18** | **Refactoring Specialist** | ⚡ `flash` | Dead Code & Tech Debt | Component extraction, duplicate cleanup, and technical debt with zero behavioral changes. |
+| **@Videl** | **UX Researcher & Designer** | 🧠 `pro` | Usability & Accessible States | User journey flows, accessibility (WCAG), empty states, and error handling for user interfaces. |
+| **@Vegeta** | **DevOps Commander** | 🧠 `pro` | Infrastructure & Scale | Multi-stage Dockerfiles, GitHub Actions CI/CD pipelines, database migrations, connection pooling. |
+| **@Master-Roshi** | **Game Feel Master** | 🧠 `pro` | Core Loops & Canvas Mechanics | Game feel, sprite math, frame timing, physics loops, and difficulty tuning. |
+| **@Hercule** | **Hype & Distribution Auditor** | ⚡ `flash` | Market Reality & Channel Validation | Cuts through vanity hype, audits organic distribution wedges, and verifies user demand. |
+| **@Zarbon** | **Creative Director & Polish** | 🧠 `pro` | Aesthetic Elegance & Brand Framing | High-standard aesthetic direction, brand naming, and prestigious editorial framing. |
+| **@Dr-Gero** | **Meta-Agent Architect** | 🧠 `pro` | System Scaffolding & Evals | Scaffolding new agents, authoring skills, and auditing execution transcripts for agent friction. |
+| **@Goten** | **Sprite Animation Specialist** | ⚡ `flash` | Articulated Sprite Sequences | Frame timing, anticipation/recovery frames, clear gameplay hitbox reading. |
+| **@Android-16** | **Rive Rig Specialist** | 🧠 `pro` | Vector Rig & State Contract | Validating delivered Rive character rigs, artboard bindings, and state-machine inputs. |
+| **@Beerus** | **God of Destruction & Supreme Inquisitor** | 🧠 `pro` | Architectural Inquisition & Code Griller | Ruthless interrogation of PRs and architecture: edge cases, swallowed errors, missing timeouts, and Hakai-level code grilling. |
+
+### Functional Task Envelope & Model Tiering Protocol
+Handoffs between roles strictly adhere to a **pure functional programming paradigm** ($\text{Output} = \text{Agent}(\text{Envelope})$):
+- **Immutable Root Anchor:** `root_request` is pinned as an immutable constant across all handoffs so user intent never degrades.
+- **Pass By Reference:** Pass file paths, git commit SHAs, and symbols by reference; never paste entire raw file bodies into prompts.
+- **Append-Only Event Ledger:** Append tacit discoveries, test diagnostics, and discarded approaches to `ledger` so retries never loop.
+- **Model Economics:** Fast reading, testing, and monitoring run on `flash` (~$0.15/1M tokens); heavy reasoning, architecture, and code crafting run on `pro` (~$2.50/1M tokens). Eliminates context bloat by up to 68% and slashes operational costs by 73%.
 
 ---
 

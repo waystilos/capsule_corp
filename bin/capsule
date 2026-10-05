@@ -22,6 +22,7 @@ Usage:
   capsule grill [dir]       Lord Beerus' architectural inquisition & code griller (swallowed errors, timeouts, edge cases)
   capsule init [dir]        Bootstrap any startup repo with Copilot, Codex, Claude, Gemini configs
   capsule sync              Sync skills and rules globally across all AIs
+  capsule install-elixir    Install Elixir & Erlang/OTP globally across macOS, Linux, or Windows
   capsule test              Run unit tests for Capsule Corp scripts
 """
 
@@ -169,6 +170,11 @@ def cmd_sync(args):
     return run_child(["bash", str(script)] + args)
 
 
+def cmd_install_elixir(args):
+    script = SCRIPTS_DIR / "install_elixir.py"
+    return run_child([sys.executable, str(script)] + args)
+
+
 def cmd_test():
     test_dir = CAPSULE_ROOT / "tests"
     return subprocess.run(
@@ -221,6 +227,8 @@ def main():
         exit_code = cmd_init(extra_args)
     elif subcommand == "sync":
         exit_code = cmd_sync(extra_args)
+    elif subcommand in ("install-elixir", "setup-elixir"):
+        exit_code = cmd_install_elixir(extra_args)
     elif subcommand == "test":
         exit_code = cmd_test()
     else:
