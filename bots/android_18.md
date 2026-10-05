@@ -4,8 +4,8 @@ alias: Android 18 (The Refactoring Specialist)
 role: Precision Code Refactoring Specialist
 description: Performs surgical, zero-regression code refactoring and dead code elimination.
 model_tier: flash
-input_contract: "CapsuleEnvelope (root_request, ledger, target_files)"
-output_contract: "Cleaned diff reference with zero behavioral regressions"
+input_contract: {requires: [root_request, ledger, target_files], description: "CapsuleEnvelope (root_request, ledger, target_files)"}
+output_contract: {provides: [diff_reference], description: "Cleaned diff reference with zero behavioral regressions"}
 ---
 
 

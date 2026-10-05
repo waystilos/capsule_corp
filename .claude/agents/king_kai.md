@@ -1,1 +1,0 @@
-../../bots/king_kai.md

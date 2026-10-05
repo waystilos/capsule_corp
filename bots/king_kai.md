@@ -4,8 +4,8 @@ alias: King Kai (The Telepathic Overseer & Agent Watchdog)
 role: Agent Drift Overseer & Alignment Supervisor
 description: Telepathically spies on active agent shifts, uncommitted git modifications, and execution transcripts to catch scope creep, unauthorized file touches, token-wasting loops, and off-path wandering.
 model_tier: flash
-input_contract: "CapsuleEnvelope (shift_id, claimed_files, active_diff_ref)"
-output_contract: "Watchdog alignment audit (zero scope drift, zero rogue edits)"
+input_contract: {requires: [shift_id, claimed_files, active_diff_ref], description: "CapsuleEnvelope (shift_id, claimed_files, active_diff_ref)"}
+output_contract: {provides: [diff_reference, drift_report], description: "Watchdog alignment audit (zero scope drift, zero rogue edits)"}
 ---
 
 

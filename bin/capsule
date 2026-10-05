@@ -11,8 +11,11 @@ Usage:
   capsule clock-in ...      Clock in to a work shift (auto-detects agent & claims files)
   capsule clock-out ...     Clock out of a work shift (summary & auto-prunes log)
   capsule heartbeat ...     Send heartbeat to keep active shift alive
-  capsule list              List all registered cohort bots and their specs
-  capsule route "request"   Route a request safely through the cohort
+  capsule send --to X ...   Send an agent-to-agent message (bodies are untrusted data)
+  capsule inbox [--unread]  Read your inbox; capsule ack <id> acknowledges a message
+  capsule list [--json]     List all registered cohort bots and their specs
+  capsule route "request"   Route a request safely through the cohort (resolves model; --model/--tier/--escalate)
+  capsule models [--bot X|set ...]  Show or set the tier-to-model mapping (config/models.yaml)
   capsule doctor [dir]      Run environment diagnostics and multi-AI healthcheck
   capsule scaffold ...      Dr. Gero's tool to create a new specialized agent
   capsule audit [--latest]  Dr. Gero's transcript auditor to detect friction & patch prompts
@@ -27,6 +30,7 @@ Usage:
 """
 
 import os
+import shutil
 import sys
 import subprocess
 from pathlib import Path
@@ -47,10 +51,24 @@ def configure_utf8_stdio():
 configure_utf8_stdio()
 
 
-def cmd_list():
+def cmd_list(args=()):
     if not REGISTRY_FILE.exists():
         print(f"Error: {REGISTRY_FILE} not found.", file=sys.stderr)
         sys.exit(1)
+
+    if "--json" in args:
+        import json
+        sys.path.insert(0, str(SCRIPTS_DIR))
+        import models
+        cfg, warnings = models.load_config(CAPSULE_ROOT)
+        for w in warnings:
+            print(w, file=sys.stderr)
+        try:
+            print(json.dumps({"bots": models.list_bots(CAPSULE_ROOT)}, indent=2))
+        except models.ModelsError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+        return 0
 
     try:
         import yaml
@@ -80,14 +98,23 @@ def cmd_list():
     print("==========================================================================================")
     print(" 🚀 CAPSULE CORP AGENT COHORT ROSTER")
     print("==========================================================================================")
-    print(f"{'BOT ID':<16} | {'ALIAS':<32} | {'MODEL TIER':<10} | {'PRIMARY ROLE'}")
-    print("-----------------+----------------------------------+------------+------------------------")
+    print(f"{'BOT ID':<16} | {'ALIAS':<32} | {'MODEL TIER':<10} | {'MODEL':<10} | {'PRIMARY ROLE'}")
+    print("-----------------+----------------------------------+------------+------------+------------------------")
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    import models
+    cfg, warnings = models.load_config(CAPSULE_ROOT)
+    for w in warnings:
+        print(w, file=sys.stderr)
     for bot_id, details in bots.items():
         name = details.get("name", bot_id)
         alias = details.get("alias", name)
         tier = details.get("model_tier", "inherit")
         role = details.get("role", "")
-        print(f"{name:<16} | {alias[:32]:<32} | {tier:<10} | {role}")
+        try:
+            model = models.resolve_model(bot=name, root=CAPSULE_ROOT, config=cfg)["model"]
+        except models.ModelsError:
+            model = "?"
+        print(f"{name:<16} | {alias[:32]:<32} | {tier:<10} | {model:<10} | {role}")
     print("==========================================================================================")
     print(f"Total Agents: {len(bots)} | Centralized at: {CAPSULE_ROOT}")
     return 0
@@ -95,6 +122,11 @@ def cmd_list():
 
 def cmd_route(args):
     script = SCRIPTS_DIR / "route_request.py"
+    return run_child([sys.executable, str(script)] + args)
+
+
+def cmd_models(args):
+    script = SCRIPTS_DIR / "models.py"
     return run_child([sys.executable, str(script)] + args)
 
 
@@ -167,7 +199,11 @@ def cmd_init(args):
 
 def cmd_sync(args):
     script = CONFIG_DIR / "sync_all_ais.sh"
-    return run_child(["bash", str(script)] + args)
+    bash = shutil.which("bash")
+    if bash is None:
+        print("capsule sync requires bash (Git Bash or WSL on Windows); bash was not found on PATH.", file=sys.stderr)
+        return 1
+    return run_child([bash, str(script)] + args)
 
 
 def cmd_install_elixir(args):
@@ -205,10 +241,14 @@ def main():
         exit_code = cmd_room("clock-out", extra_args)
     elif subcommand in ("heartbeat", "touch"):
         exit_code = cmd_room("heartbeat", extra_args)
+    elif subcommand in ("send", "inbox", "ack"):
+        exit_code = run_child([sys.executable, str(SCRIPTS_DIR / "messaging.py"), subcommand] + extra_args)
     elif subcommand == "list":
-        exit_code = cmd_list()
+        exit_code = cmd_list(extra_args)
     elif subcommand == "route":
         exit_code = cmd_route(extra_args)
+    elif subcommand == "models":
+        exit_code = cmd_models(extra_args)
     elif subcommand == "doctor":
         exit_code = cmd_doctor(extra_args)
     elif subcommand == "scaffold":

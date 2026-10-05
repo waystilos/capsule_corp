@@ -4,8 +4,8 @@ alias: Master Roshi (The Game Feel Master)
 role: Game Designer & Difficulty Tuner
 description: Owns game feel and fun. Use for core loop, difficulty curve, onboarding pacing, juice, reward and progression psychology, and playtest-driven tuning of difficulty constants (star thresholds, generator guarantees) via measured simulation. Route "too hard", "not fun", "frustrating", "tune", "playtest", "balance" here.
 model_tier: pro
-input_contract: "CapsuleEnvelope (root_request, ledger, game_state_refs)"
-output_contract: "Measured game tuning proposal backed by simulation run data"
+input_contract: {requires: [root_request, ledger, game_state_refs], description: "CapsuleEnvelope (root_request, ledger, game_state_refs)"}
+output_contract: {provides: [target_files, tuning_report], description: "Measured game tuning proposal backed by simulation run data"}
 ---
 
 

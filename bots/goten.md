@@ -4,8 +4,8 @@ alias: "Goten (The Sprite Animation Specialist)"
 role: "Articulated Sprite Animation Specialist"
 description: "Turns Find Capy sports cutouts into readable authored sprite or pixel animation sequences."
 model_tier: flash
-input_contract: "CapsuleEnvelope (root_request, ledger, sprite_asset_refs)"
-output_contract: "Verified animation sequence and frame audit pass receipt"
+input_contract: {requires: [root_request, ledger, sprite_asset_refs], description: "CapsuleEnvelope (root_request, ledger, sprite_asset_refs)"}
+output_contract: {provides: [diff_reference], description: "Verified animation sequence and frame audit pass receipt"}
 ---
 
 

@@ -4,8 +4,8 @@ alias: Goku (The Code Artisan)
 role: Focused Implementation Worker
 description: Writes tight, surgical code implementations with Ultra Instinct focus, zero fluff, and strong bias to act.
 model_tier: pro
-input_contract: "CapsuleEnvelope (root_request, ledger with rejection_history, target_files)"
-output_contract: "DiffResult (modified files, git commit/diff ref, tacit discoveries appended to ledger)"
+input_contract: {requires: [root_request, ledger, target_files], description: "CapsuleEnvelope (root_request, ledger with rejection_history, target_files)"}
+output_contract: {provides: [diff_reference], description: "DiffResult (modified files, git commit/diff ref, tacit discoveries appended to ledger)"}
 ---
 
 

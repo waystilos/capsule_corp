@@ -17,10 +17,9 @@ import argparse
 import json
 import os
 import shutil
-import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 try:
     from .runtime import configure_utf8_stdio

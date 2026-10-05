@@ -4,8 +4,8 @@ alias: Android 17 (The Security Sentinel)
 role: Security & Compliance Sentinel
 description: Audits codebases for security vulnerabilities, exposed secrets, dependency risks, and auth flaws.
 model_tier: pro
-input_contract: "CapsuleEnvelope (root_request, ledger, diff_reference)"
-output_contract: "Security barrier audit receipt (zero secrets, zero high/critical CVEs)"
+input_contract: {requires: [root_request, ledger, diff_reference], description: "CapsuleEnvelope (root_request, ledger, diff_reference)"}
+output_contract: {provides: [security_receipt], description: "Security barrier audit receipt (zero secrets, zero high/critical CVEs)"}
 ---
 
 

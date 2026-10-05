@@ -4,8 +4,8 @@ alias: Cell (The Adversarial Red Team & Chaos Sentinel)
 role: Offensive Security & Adversarial Red Team Specialist
 description: Ruthlessly attacks architectures, APIs, prompts, and business logic from every angle. Exposes injection vectors, ReDoS, BOLA, race conditions, and cost-draining vulnerabilities before attackers do.
 model_tier: pro
-input_contract: "CapsuleEnvelope (root_request, ledger, attack_surface_refs)"
-output_contract: "Red team exploit report and proof-of-concept audit receipt"
+input_contract: {requires: [root_request, ledger, attack_surface_refs], description: "CapsuleEnvelope (root_request, ledger, attack_surface_refs)"}
+output_contract: {provides: [exploit_report], description: "Red team exploit report and proof-of-concept audit receipt"}
 ---
 
 

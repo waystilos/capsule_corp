@@ -30,7 +30,8 @@ done
 backup_target() {
   local target="$1"
   if [ -L "$target" ] || [ -e "$target" ]; then
-    local backup="${target}.capsule-backup-$(date +%Y%m%d%H%M%S)"
+    local backup
+    backup="${target}.capsule-backup-$(date +%Y%m%d%H%M%S)"
     mv "$target" "$backup"
     echo "  Backed up existing target to $backup"
   fi
@@ -47,7 +48,11 @@ for skill_path in "$CAPSULE_DIR"/skills/*; do
   if [ -d "$skill_path" ]; then
     skill_name="$(basename "$skill_path")"
     target="$GLOBAL_SKILLS_DIR/$skill_name"
-    
+
+    if [ -L "$target" ] && [ "$(readlink "$target")" = "$skill_path" ]; then
+      echo "  Already linked skill: $skill_name"
+      continue
+    fi
     if [ -L "$target" ] || [ -e "$target" ]; then
       if [ "$FORCE" -ne 1 ]; then
         echo "  Preserved existing skill: $target (use --force to replace)"

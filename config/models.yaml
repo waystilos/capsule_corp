@@ -1,0 +1,11 @@
+# Capsule Corp model tier mapping.
+# Precedence (highest first): --model flag > CAPSULE_MODEL > CAPSULE_MODEL_<TIER>
+#   > per-bot override (bots:) > tier default (tiers:)
+# Edit with `capsule models set <tier> <model> [--force]`.
+tiers:
+  flash: haiku
+  pro: sonnet
+  premium: opus
+# Optional per-bot overrides, e.g.:
+#   goku: opus
+bots: {}

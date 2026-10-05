@@ -16,7 +16,6 @@ Outputs:
 
 import argparse
 import json
-import os
 import re
 import sys
 from datetime import datetime
@@ -47,6 +46,22 @@ FRICTION_PATTERNS = [
 ]
 
 COMPILED_FRICTION = [re.compile(p, re.IGNORECASE) for p in FRICTION_PATTERNS]
+
+
+def _content_text(content: Any) -> str:
+    """Normalize transcript content (str, list of blocks, dict, None) to text."""
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, dict):
+        for key in ("text", "content"):
+            if key in content:
+                return _content_text(content[key])
+        return ""
+    if isinstance(content, (list, tuple)):
+        return "\n".join(t for t in (_content_text(b) for b in content) if t)
+    return str(content)
 
 
 def find_brain_dir() -> Path:
@@ -91,7 +106,7 @@ def analyze_transcript(steps: List[Dict[str, Any]]) -> Dict[str, Any]:
     for step in steps:
         step_type = step.get("type", "")
         source = step.get("source", "")
-        content = step.get("content", "")
+        content = _content_text(step.get("content", ""))
 
         if step_type == "USER_INPUT" or source == "USER_EXPLICIT":
             user_inputs += 1
@@ -107,9 +122,12 @@ def analyze_transcript(steps: List[Dict[str, Any]]) -> Dict[str, Any]:
 
         elif step_type == "PLANNER_RESPONSE" or source == "MODEL":
             model_turns += 1
-            tool_calls = step.get("tool_calls", [])
+            tool_calls = step.get("tool_calls") or []
             for tc in tool_calls:
-                fn_name = tc.get("function", {}).get("name") or tc.get("name", "unknown")
+                if not isinstance(tc, dict):
+                    continue
+                fn = tc.get("function")
+                fn_name = (fn.get("name") if isinstance(fn, dict) else None) or tc.get("name", "unknown")
                 tool_usage[fn_name] = tool_usage.get(fn_name, 0) + 1
 
         if step.get("status") == "ERROR":
@@ -157,9 +175,9 @@ def analyze_transcript(steps: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 def generate_healthcheck_report(convo_id: str, analysis: Dict[str, Any]) -> str:
     report = []
-    report.append(f"# Dr. Gero's Transcript Healthcheck")
+    report.append("# Dr. Gero's Transcript Healthcheck")
     report.append(f"**Session:** `{convo_id}` | **Timestamp:** `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`")
-    report.append(f"**Standard:** Capsule Corp Transcript Healthcheck")
+    report.append("**Standard:** Capsule Corp Transcript Healthcheck")
     report.append("")
 
     # 1. Executive Capsule (at most 5 bullets)

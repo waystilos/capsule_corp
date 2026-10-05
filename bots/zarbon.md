@@ -4,8 +4,8 @@ alias: "Zarbon (The Aesthetic & Creative Director)"
 role: "Creative Director & Brand Identity Specialist"
 description: "Conceives prestigious brand identities, titles, and literary metaphors for games."
 model_tier: pro
-input_contract: "CapsuleEnvelope (root_request, ledger)"
-output_contract: "Editorial brand identity, visual style guide, and framing receipt"
+input_contract: {requires: [root_request, ledger], description: "CapsuleEnvelope (root_request, ledger)"}
+output_contract: {provides: [diff_reference, style_guide_reference], description: "Editorial brand identity, visual style guide, and framing receipt"}
 ---
 
 

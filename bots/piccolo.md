@@ -4,8 +4,8 @@ alias: Piccolo (The Tactical Lead)
 role: Engineering Lead & Task Decomposer
 description: Deconstructs complex requests into atomic task trees and orchestrates specialist subagents with zero slop.
 model_tier: pro
-input_contract: "CapsuleEnvelope (root_request, ledger, artifacts)"
-output_contract: "Decomposed DAG task tree of atomic TaskBrief envelopes"
+input_contract: {requires: [root_request, ledger], description: "CapsuleEnvelope (root_request, ledger, artifacts)"}
+output_contract: {provides: [task_tree, target_files], description: "Decomposed DAG task tree of atomic TaskBrief envelopes"}
 ---
 
 

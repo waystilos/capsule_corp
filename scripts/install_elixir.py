@@ -8,8 +8,10 @@ Idempotently detects and installs Elixir and Erlang/OTP across:
   - Windows (winget, Chocolatey, Scoop)
 
 Usage:
-  capsule install-elixir [--dry-run] [--force] [--yes] [--json]
-  python3 scripts/install_elixir.py [--dry-run] [--force] [--yes] [--json]
+  capsule install-elixir [--dry-run] [--force] [--yes] [--json] [--manager M] [--version V]
+  python3 scripts/install_elixir.py [same flags]
+
+Elixir is an optional installer only; the agent system does not depend on it at runtime.
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ import argparse
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -34,11 +37,67 @@ def configure_utf8_stdio():
 configure_utf8_stdio()
 
 
+NOTICE = (
+    "Note: Elixir/Erlang is currently an optional installer only. The Capsule Corp agent "
+    "system does not require or use it at runtime."
+)
+
+SUDO_WARNING = (
+    "WARNING: this plan runs commands with sudo (administrator privileges). "
+    "Review the commands above before confirming."
+)
+
+
+VERSION_RE = re.compile(r"[0-9][0-9A-Za-z.+_-]*")
+_CTRL_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-_]|[\x00-\x1f\x7f-\x9f]")
+
+
+def sanitize_text(text: object) -> str:
+    """Strip ANSI sequences and control characters (incl. newlines) from display text."""
+    return _CTRL_RE.sub("", str(text))
+
+
+def validate_version(version: Optional[str]) -> Optional[str]:
+    """Return an error message if `version` is not a plain version string, else None."""
+    if version is None:
+        return None
+    if not isinstance(version, str) or not VERSION_RE.fullmatch(version):
+        return (
+            f"Invalid --version {sanitize_text(version)!r}: must match "
+            "[0-9][0-9A-Za-z.+_-]* (e.g. 1.17.3)."
+        )
+    return None
+
+
+def _is_under(path: str, base: str) -> bool:
+    for candidate in {os.path.abspath(path), os.path.realpath(path)}:
+        try:
+            b = os.path.realpath(base)
+            if os.path.commonpath([candidate, b]) == b:
+                return True
+        except ValueError:  # different drives on Windows
+            continue
+    return False
+
+
+def safe_which(name: str) -> Optional[str]:
+    """shutil.which, but refuse any binary that lives under the current working directory."""
+    found = shutil.which(name)
+    if not found:
+        return None
+    if _is_under(found, os.getcwd()):
+        return None
+    return found
+
+
 def get_installed_versions() -> Dict[str, Optional[str]]:
-    """Check if elixir and erl executables exist in PATH and get version info."""
+    """Check if elixir and erl executables exist in PATH and get version info.
+
+    Binaries resolved inside the current working directory are ignored and never executed.
+    """
     result: Dict[str, Optional[str]] = {"elixir": None, "erlang": None, "path": None}
-    elixir_path = shutil.which("elixir")
-    erl_path = shutil.which("erl")
+    elixir_path = safe_which("elixir")
+    erl_path = safe_which("erl")
 
     if elixir_path:
         result["path"] = elixir_path
@@ -61,131 +120,156 @@ def get_installed_versions() -> Dict[str, Optional[str]]:
     return result
 
 
-def detect_installer() -> Tuple[str, List[List[str]], str]:
-    """
-    Detect the host operating system and choose the best global package manager.
-    Returns: (manager_name, list_of_command_argvs, explanation)
-    """
-    os_name = platform.system().lower()
+# Managers that can pin a version.
+VERSIONED = {"mise", "asdf", "winget", "chocolatey"}
+OS_MANAGERS = {
+    "darwin": ["homebrew"],
+    "linux": ["apt", "dnf", "pacman", "apk", "zypper"],
+    "windows": ["winget", "chocolatey", "scoop"],
+}
+BINARY = {"homebrew": "brew", "chocolatey": "choco", "apt": "apt-get"}
+ALIASES = {"brew": "homebrew", "choco": "chocolatey"}
 
-    # 1. Version Managers (Cross-Platform) if developer already uses them
-    if shutil.which("mise"):
+
+def _commands_for(manager: str, version: Optional[str]) -> Tuple[List[List[str]], str]:
+    v = version
+    if manager == "mise":
+        spec = [f"elixir@{v}"] if v else []
+        return ([["mise", "use", "-g", "erlang@latest"] + spec],
+                "Using mise to install global Erlang and Elixir (edits mise's global config; "
+                "Erlang uses its latest release and may compile from source)")
+    if manager == "asdf":
         return (
-            "mise",
-            [["mise", "use", "-g", "erlang@latest", "elixir@latest"]],
-            "Using mise cross-runtime manager to install global Erlang and Elixir",
-        )
-    if shutil.which("asdf"):
-        return (
-            "asdf",
             [
                 ["asdf", "plugin", "add", "erlang"],
                 ["asdf", "plugin", "add", "elixir"],
                 ["asdf", "install", "erlang", "latest"],
                 ["asdf", "global", "erlang", "latest"],
-                ["asdf", "install", "elixir", "latest"],
-                ["asdf", "global", "elixir", "latest"],
+                ["asdf", "install", "elixir", v or "latest"],
+                ["asdf", "global", "elixir", v or "latest"],
             ],
-            "Using asdf version manager to install Erlang and Elixir",
+            "Using asdf (Erlang uses its latest release, is built from source, can take a long time, and edits ~/.tool-versions)",
         )
+    if manager == "homebrew":
+        return [["brew", "install", "elixir"]], "Using Homebrew to install Elixir and Erlang/OTP globally"
+    if manager == "apt":
+        return (
+            [["sudo", "apt-get", "update"],
+             ["sudo", "apt-get", "install", "-y", "elixir", "erlang-dev", "erlang-xmerl"]],
+            "Using apt-get to install Elixir and Erlang packages on Debian/Ubuntu",
+        )
+    if manager == "dnf":
+        return [["sudo", "dnf", "install", "-y", "elixir", "erlang"]], "Using dnf to install Elixir and Erlang packages"
+    if manager == "pacman":
+        return [["sudo", "pacman", "-S", "--noconfirm", "elixir", "erlang"]], "Using pacman to install Elixir and Erlang packages"
+    if manager == "apk":
+        return [["sudo", "apk", "add", "elixir", "erlang"]], "Using apk to install Elixir and Erlang packages"
+    if manager == "zypper":
+        return [["sudo", "zypper", "install", "-y", "elixir", "erlang"]], "Using zypper to install Elixir and Erlang packages"
+    if manager == "winget":
+        cmd = ["winget", "install", "ErlangSolutions.Elixir"]
+        if v:
+            cmd += ["--version", v]
+        cmd += ["--accept-package-agreements", "--accept-source-agreements"]
+        return [cmd], "Using Windows Package Manager (winget) to install Elixir"
+    if manager == "chocolatey":
+        cmd = ["choco", "install", "-y", "elixir"]
+        if v:
+            cmd += ["--version", v]
+        return [cmd], "Using Chocolatey to install Elixir"
+    if manager == "scoop":
+        return [["scoop", "install", "elixir"]], "Using Scoop to install Elixir"
+    raise ValueError(manager)
 
-    # 2. macOS (Darwin)
-    if os_name == "darwin":
-        if shutil.which("brew"):
-            return (
-                "homebrew",
-                [["brew", "install", "elixir"]],
-                "Using Homebrew to install Elixir and Erlang/OTP globally",
-            )
+
+def detect_installer(
+    manager: Optional[str] = None, version: Optional[str] = None
+) -> Tuple[str, List[List[str]], str]:
+    """
+    Choose an installer. The OS package manager is preferred; mise/asdf are used only
+    when requested with `manager` (or as a last resort when no OS manager exists).
+    Returns: (manager_name, list_of_command_argvs, explanation)
+    """
+    bad = validate_version(version)
+    if bad:
+        return ("unsupported", [], bad)
+    os_name = platform.system().lower()
+    if manager:
+        manager = ALIASES.get(manager.lower(), manager.lower())
+        candidates = [manager]
+    else:
+        candidates = list(OS_MANAGERS.get(os_name, [])) + ["mise", "asdf"]
+        if os_name not in OS_MANAGERS:
+            candidates = ["mise", "asdf"]
+
+    chosen = None
+    for cand in candidates:
+        if safe_which(BINARY.get(cand, cand)):
+            chosen = cand
+            break
+    if chosen is None:
+        if manager:
+            return ("unsupported", [], f"Requested manager '{sanitize_text(manager)}' was not found on PATH (binaries inside the working directory are ignored).")
+        hint = {"darwin": " Install Homebrew at https://brew.sh first."}.get(os_name, "")
+        return ("unsupported", [], f"No supported package manager found on {platform.system()}.{hint}")
+
+    if version and chosen not in VERSIONED:
         return (
             "unsupported",
             [],
-            "macOS detected, but Homebrew ('brew') was not found. Please install Homebrew at https://brew.sh first.",
+            f"--version is not supported with '{chosen}' (it installs its repository's current package). "
+            f"Use --manager mise or asdf, or winget/chocolatey on Windows.",
         )
-
-    # 3. Linux
-    if os_name == "linux":
-        if shutil.which("apt-get"):
-            return (
-                "apt",
-                [
-                    ["sudo", "apt-get", "update"],
-                    ["sudo", "apt-get", "install", "-y", "elixir", "erlang-dev", "erlang-xmerl"],
-                ],
-                "Using apt-get to install Elixir and Erlang packages on Debian/Ubuntu",
-            )
-        if shutil.which("dnf"):
-            return (
-                "dnf",
-                [["sudo", "dnf", "install", "-y", "elixir", "erlang"]],
-                "Using dnf to install Elixir and Erlang packages on Fedora/RHEL",
-            )
-        if shutil.which("pacman"):
-            return (
-                "pacman",
-                [["sudo", "pacman", "-S", "--noconfirm", "elixir", "erlang"]],
-                "Using pacman to install Elixir and Erlang packages on Arch Linux",
-            )
-        if shutil.which("apk"):
-            return (
-                "apk",
-                [["sudo", "apk", "add", "elixir", "erlang"]],
-                "Using apk to install Elixir and Erlang packages on Alpine Linux",
-            )
-        if shutil.which("zypper"):
-            return (
-                "zypper",
-                [["sudo", "zypper", "install", "-y", "elixir", "erlang"]],
-                "Using zypper to install Elixir and Erlang packages on openSUSE",
-            )
+    if chosen in ("mise", "asdf") and not version:
         return (
             "unsupported",
             [],
-            "Linux detected, but no supported package manager (apt, dnf, pacman, apk, zypper, mise) was found.",
+            f"'{chosen}' would install 'latest' silently; pass --version <elixir version> (e.g. 1.17.3) to proceed.",
         )
 
-    # 4. Windows
-    if os_name == "windows":
-        if shutil.which("winget"):
-            return (
-                "winget",
-                [
-                    [
-                        "winget",
-                        "install",
-                        "ErlangSolutions.Elixir",
-                        "--accept-package-agreements",
-                        "--accept-source-agreements",
-                    ]
-                ],
-                "Using Windows Package Manager (winget) to install Elixir globally",
-            )
-        if shutil.which("choco"):
-            return (
-                "chocolatey",
-                [["choco", "install", "-y", "elixir"]],
-                "Using Chocolatey to install Elixir globally",
-            )
-        if shutil.which("scoop"):
-            return (
-                "scoop",
-                [["scoop", "install", "elixir"]],
-                "Using Scoop to install Elixir globally",
-            )
-        return (
-            "unsupported",
-            [],
-            "Windows detected, but no supported package manager (winget, choco, scoop) was found.",
-        )
-
-    return (
-        "unsupported",
-        [],
-        f"Operating system '{platform.system()}' is not directly supported by automatic installer.",
-    )
+    commands, explanation = _commands_for(chosen, version)
+    resolved = safe_which(BINARY.get(chosen, chosen))
+    if resolved:
+        bare = BINARY.get(chosen, chosen)
+        rewritten = []
+        for c in commands:
+            if c and c[0] == bare:
+                c = [resolved] + c[1:]
+            elif len(c) > 1 and c[0] == "sudo" and c[1] == bare:
+                c = ["sudo", resolved] + c[2:]
+            rewritten.append(c)
+        commands = rewritten
+    return chosen, commands, explanation
 
 
-def run_install(dry_run: bool = False, force: bool = False, yes: bool = False, json_mode: bool = False) -> int:
+def adjust_for_privileges(commands: List[List[str]]) -> Tuple[List[List[str]], Optional[str]]:
+    """Drop `sudo` when already root; error if sudo is needed but unavailable."""
+    if not any(cmd and cmd[0] == "sudo" for cmd in commands):
+        return commands, None
+    geteuid = getattr(os, "geteuid", None)
+    if geteuid is not None and geteuid() == 0:
+        return [cmd[1:] if cmd and cmd[0] == "sudo" else cmd for cmd in commands], None
+    sudo_path = safe_which("sudo")
+    if not sudo_path:
+        return commands, "This installer needs root privileges but a trusted 'sudo' was not found (binaries inside the working directory are ignored). Re-run as root."
+    return [[sudo_path] + cmd[1:] if cmd and cmd[0] == "sudo" else cmd for cmd in commands], None
+
+
+def run_install(
+    dry_run: bool = False,
+    force: bool = False,
+    yes: bool = False,
+    json_mode: bool = False,
+    manager: Optional[str] = None,
+    version: Optional[str] = None,
+) -> int:
+    bad_version = validate_version(version)
+    if bad_version:
+        if json_mode:
+            print(json.dumps({"status": "error", "error": bad_version}, indent=2))
+        else:
+            print(f"Error: {bad_version}", file=sys.stderr)
+        return 2
     installed = get_installed_versions()
     has_elixir = bool(installed["elixir"])
 
@@ -210,12 +294,12 @@ def run_install(dry_run: bool = False, force: bool = False, yes: bool = False, j
             print(f" ✓ Erlang Status:  {installed['erlang']}")
             print(f" ✓ Binary Path:    {installed['path']}")
             print("--------------------------------------------------------------------------")
-            print(" Runtime is ready for Actor model execution & BEAM processes.")
+            print(f" {NOTICE}")
             print(" (Use --force to reinstall or upgrade)")
             print("==========================================================================")
         return 0
 
-    manager, commands, explanation = detect_installer()
+    manager, commands, explanation = detect_installer(manager, version)
 
     if manager == "unsupported" or not commands:
         if json_mode:
@@ -224,7 +308,17 @@ def run_install(dry_run: bool = False, force: bool = False, yes: bool = False, j
             print(f"Error: {explanation}", file=sys.stderr)
         return 1
 
-    flat_commands = [" ".join(cmd) for cmd in commands]
+    commands, priv_error = adjust_for_privileges(commands)
+    if priv_error:
+        if json_mode:
+            print(json.dumps({"status": "error", "error": priv_error}, indent=2))
+        else:
+            print(f"Error: {priv_error}", file=sys.stderr)
+        return 1
+
+    flat_commands = [sanitize_text(" ".join(cmd)) for cmd in commands]
+    explanation = sanitize_text(explanation)
+    uses_sudo = any(cmd and os.path.basename(cmd[0]) == "sudo" for cmd in commands)
 
     if dry_run:
         if json_mode:
@@ -235,6 +329,8 @@ def run_install(dry_run: bool = False, force: bool = False, yes: bool = False, j
                         "manager": manager,
                         "commands": flat_commands,
                         "description": explanation,
+                        "uses_sudo": uses_sudo,
+                        "note": NOTICE,
                     },
                     indent=2,
                 )
@@ -249,6 +345,9 @@ def run_install(dry_run: bool = False, force: bool = False, yes: bool = False, j
             print(" Commands to execute:")
             for cmd in flat_commands:
                 print(f"   $ {cmd}")
+            if uses_sudo:
+                print(f" {SUDO_WARNING}")
+            print(f" {NOTICE}")
             print("==========================================================================")
         return 0
 
@@ -261,30 +360,43 @@ def run_install(dry_run: bool = False, force: bool = False, yes: bool = False, j
         print(" Commands:")
         for cmd in flat_commands:
             print(f"   $ {cmd}")
+        if uses_sudo:
+            print(f" {SUDO_WARNING}")
+        print(f" {NOTICE}")
         print("--------------------------------------------------------------------------")
 
-    if not yes and not json_mode:
+    if not yes:
+        if json_mode:
+            print(
+                json.dumps(
+                    {"status": "error", "error": "--json requires --yes to run an installation non-interactively."},
+                    indent=2,
+                )
+            )
+            return 2
         try:
             choice = input("Proceed with installation? [y/N]: ").strip().lower()
             if choice not in ("y", "yes"):
                 print("Installation aborted by user.")
-                return 0
+                return 1
         except (KeyboardInterrupt, EOFError):
             print("\nAborted.")
             return 1
 
     for cmd in commands:
         if not json_mode:
-            print(f"==> Running: {' '.join(cmd)}")
+            print(f"==> Running: {sanitize_text(' '.join(cmd))}")
         try:
-            proc = subprocess.run(cmd, check=True)
+            # `asdf plugin add` exits non-zero when the plugin already exists.
+            tolerant = [os.path.basename(cmd[0])] + cmd[1:3] == ["asdf", "plugin", "add"]
+            subprocess.run(cmd, check=not tolerant)
         except subprocess.CalledProcessError as exc:
             if json_mode:
                 print(
                     json.dumps(
                         {
                             "status": "failed",
-                            "failed_command": " ".join(cmd),
+                            "failed_command": sanitize_text(" ".join(cmd)),
                             "exit_code": exc.returncode,
                         },
                         indent=2,
@@ -321,6 +433,7 @@ def run_install(dry_run: bool = False, force: bool = False, yes: bool = False, j
             print(f" ✓ Elixir: {post_check['elixir']}")
             print(f" ✓ Erlang: {post_check['erlang']}")
             print(f" ✓ Binary: {post_check['path']}")
+            print(f" {NOTICE}")
             print("==========================================================================")
         return 0
     else:
@@ -366,8 +479,21 @@ def main() -> int:
         help="Output results in JSON format.",
     )
 
+    parser.add_argument(
+        "--manager",
+        help="Use a specific manager (mise, asdf, brew, apt, dnf, pacman, apk, zypper, winget, choco, scoop). "
+        "Default: the OS package manager.",
+    )
+    parser.add_argument(
+        "--version",
+        help="Elixir version to pin (supported by mise, asdf, winget, choco; required for mise/asdf).",
+    )
+
     args = parser.parse_args()
-    return run_install(dry_run=args.dry_run, force=args.force, yes=args.yes, json_mode=args.json)
+    return run_install(
+        dry_run=args.dry_run, force=args.force, yes=args.yes, json_mode=args.json,
+        manager=args.manager, version=args.version,
+    )
 
 
 if __name__ == "__main__":

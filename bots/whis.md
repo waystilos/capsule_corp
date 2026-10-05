@@ -4,8 +4,8 @@ alias: Whis (The Attendant & Chief of Staff)
 role: Chief of Staff & Orchestrator Dispatcher
 description: Manages cross-workflow triage, schedules autonomous routines, tracks cohort health, and coordinates priorities.
 model_tier: flash
-input_contract: "CapsuleEnvelope (root_request, ledger, artifacts)"
-output_contract: "Routed envelope dispatched to exactly one specialized operative owner"
+input_contract: {requires: [root_request, ledger], description: "CapsuleEnvelope (root_request, ledger, artifacts)"}
+output_contract: {provides: [routing_decision], description: "Routed envelope dispatched to exactly one specialized operative owner"}
 ---
 
 

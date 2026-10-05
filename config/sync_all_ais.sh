@@ -39,28 +39,39 @@ done
 backup_target() {
   local target="$1"
   if [[ -e "$target" || -L "$target" ]]; then
-    local backup="${target}.capsule-backup-$(date +%Y%m%d%H%M%S)"
+    local backup
+    backup="${target}.capsule-backup-$(date +%Y%m%d%H%M%S)"
     mv "$target" "$backup"
     echo "   ↪ Backed up existing target to $backup"
   fi
 }
 
+# True when $1 is a symlink already pointing at $2.
+links_to() {
+  [[ -L "$1" && "$(readlink "$1")" == "$2" ]]
+}
+
 write_managed_file() {
   local target="$1"
+  local content
   MANAGED_FILE_CHANGED=0
+  content="$(cat; printf x)"
+  content="${content%x}"
+  if [[ -f "$target" && ! -L "$target" ]] && [[ "$(cat "$target"; printf x)" == "$content"x ]]; then
+    echo "   ✓ Already up to date: $target"
+    return 0
+  fi
   if [[ -e "$target" || -L "$target" ]] && [[ "$FORCE" -ne 1 ]]; then
     echo "   · Preserved existing $target (use --force to replace)"
     SYNC_BLOCKED=1
-    cat >/dev/null
     return 0
   fi
   if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "   · Would write $target"
-    cat >/dev/null
     return 0
   fi
   backup_target "$target"
-  cat > "$target"
+  printf '%s' "$content" > "$target"
   MANAGED_FILE_CHANGED=1
 }
 
@@ -87,6 +98,10 @@ for target_dir in "${TARGET_SKILL_DIRS[@]}"; do
     if [ -d "$skill_path" ]; then
       skill_name="$(basename "$skill_path")"
       dest="$target_dir/$skill_name"
+      if links_to "$dest" "$skill_path"; then
+        echo "   ✓ Already linked $skill_name"
+        continue
+      fi
       if [ -L "$dest" ] || [ -e "$dest" ]; then
         if [[ "$FORCE" -ne 1 ]]; then
           echo "   · Preserved existing $dest (use --force to replace)"
@@ -119,9 +134,13 @@ else
 fi
 for bot_path in "$CAPSULE_DIR/bots"/*.md; do
   if [ -f "$bot_path" ]; then
+    # Single kebab-case name matches each bot's front-matter `name:` (no duplicate agents).
     bot_filename="$(basename "$bot_path")"
+    bot_filename="${bot_filename//_/-}"
     dest="$CLAUDE_AGENTS_DIR/$bot_filename"
-    if [ -L "$dest" ] || [ -e "$dest" ]; then
+    if links_to "$dest" "$bot_path"; then
+      echo "   ✓ Already linked $bot_filename"
+    elif [ -L "$dest" ] || [ -e "$dest" ]; then
       if [[ "$FORCE" -ne 1 ]]; then
         echo "   · Preserved existing $dest (use --force to replace)"
         SYNC_BLOCKED=1
@@ -140,28 +159,6 @@ for bot_path in "$CAPSULE_DIR/bots"/*.md; do
       else
         ln -s "$bot_path" "$dest"
         echo "   ✓ Linked $bot_filename"
-      fi
-    fi
-    kebab_name="${bot_filename//_/-}"
-    if [ "$kebab_name" != "$bot_filename" ]; then
-      kebab_dest="$CLAUDE_AGENTS_DIR/$kebab_name"
-      if [ -L "$kebab_dest" ] || [ -e "$kebab_dest" ]; then
-        if [[ "$FORCE" -eq 1 ]]; then
-          if [[ "$DRY_RUN" -eq 1 ]]; then
-            echo "   · Would replace $kebab_dest"
-          else
-            backup_target "$kebab_dest"
-            ln -s "$bot_path" "$kebab_dest"
-            echo "   ✓ Linked $kebab_name"
-          fi
-        fi
-      else
-        if [[ "$DRY_RUN" -eq 1 ]]; then
-          echo "   · Would link $kebab_name"
-        else
-          ln -s "$bot_path" "$kebab_dest"
-          echo "   ✓ Linked $kebab_name"
-        fi
       fi
     fi
   fi
@@ -455,14 +452,21 @@ if [ -f "$ZSHRC" ]; then
     if [[ "$DRY_RUN" -eq 1 ]]; then
       echo "   · Would add capsule to PATH in $ZSHRC"
     else
-      echo '' >> "$ZSHRC"
-      echo '# Capsule Corp Agent CLI' >> "$ZSHRC"
-      echo "export PATH=\"\$PATH:$CAPSULE_DIR/bin\"" >> "$ZSHRC"
+      {
+        echo ''
+        echo '# Capsule Corp Agent CLI'
+        echo "export PATH=\"\$PATH:$CAPSULE_DIR/bin\""
+      } >> "$ZSHRC"
       echo "   ✓ Added capsule to PATH in ~/.zshrc"
     fi
   else
     echo "   ✓ Capsule already in PATH in ~/.zshrc"
   fi
+fi
+
+if [[ "$SYNC_BLOCKED" -ne 0 ]]; then
+  echo "Sync incomplete: existing targets differ and were preserved. Re-run with --force to replace them." >&2
+  exit 1
 fi
 
 echo ""
@@ -475,8 +479,3 @@ echo "    - Cursor: Connected (Global ~/.cursorrules)"
 echo "    - Windsurf: Connected (Global ~/.windsurfrules)"
 echo "    - Open Agents Standard: Connected (~/.agents/skills)"
 echo "=================================================================="
-
-if [[ "$SYNC_BLOCKED" -ne 0 ]]; then
-  echo "Sync incomplete: existing targets were preserved. Re-run with --force to replace them." >&2
-  exit 1
-fi

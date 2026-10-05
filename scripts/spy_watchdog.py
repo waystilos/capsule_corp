@@ -17,10 +17,20 @@ from typing import Dict, List, Optional, Set, Any
 
 try:
     from .runtime import configure_utf8_stdio
-    from .room import load_room_data, get_room_paths
+    from .room import (
+        RoomCorruptError, load_room_data, get_room_paths,
+        normalize_claim, claim_covers, fs_is_case_insensitive, shift_inactive_seconds,
+        sanitize_text, MAX_CLAIMS, MAX_CLAIM_LEN,
+    )
+    from .messaging import unacked_messages, UNACKED_WARN_SECONDS
 except ImportError:
     from runtime import configure_utf8_stdio
-    from room import load_room_data, get_room_paths
+    from room import (
+        RoomCorruptError, load_room_data, get_room_paths,
+        normalize_claim, claim_covers, fs_is_case_insensitive, shift_inactive_seconds,
+        sanitize_text, MAX_CLAIMS, MAX_CLAIM_LEN,
+    )
+    from messaging import unacked_messages, UNACKED_WARN_SECONDS
 
 configure_utf8_stdio()
 
@@ -36,53 +46,154 @@ DEBUG_STATEMENT_PATTERNS = [
 ]
 
 
-def get_git_status_files(target_dir: Path) -> Dict[str, List[str]]:
-    """Return modified, untracked, and deleted files relative to git root."""
+def _git(target_dir: Path, args: List[str]) -> Optional[str]:
     try:
         proc = subprocess.run(
-            ["git", "status", "--porcelain=v1"],
+            ["git"] + args,
             cwd=str(target_dir),
             capture_output=True,
             text=True,
             check=True,
         )
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return {"modified": [], "untracked": [], "deleted": []}
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+    return proc.stdout
 
-    modified = []
-    untracked = []
-    deleted = []
 
-    for line in proc.stdout.splitlines():
-        if not line or len(line) < 4:
+def _is_manifest(path: str) -> bool:
+    return path.rsplit("/", 1)[-1] in SENSITIVE_FILES
+
+
+_GLOB_ONLY = re.compile(r"^[\s*?/\\.]*$")
+
+
+def is_overbroad_claim(raw: str, norm: str) -> bool:
+    """True for claims that cover the whole tree ('.', '*', '**', '/', './', root path)."""
+    return norm == "." or norm == "/" or bool(_GLOB_ONLY.match(raw or "x")) or bool(_GLOB_ONLY.match(norm))
+
+
+def _is_capsule_internal(path: str) -> bool:
+    """True only for the .capsule/ state directory (not e.g. .capsulerc.json)."""
+    return path == ".capsule" or path.startswith(".capsule/")
+
+
+def get_git_status_files(target_dir: Path) -> Dict[str, List[str]]:
+    """Return modified, untracked, and deleted files as paths relative to target_dir."""
+    # "errors" non-empty means the view is incomplete (callers must fail closed, never treat as clean).
+    empty: Dict[str, List[str]] = {"modified": [], "untracked": [], "deleted": [], "errors": [], "hidden": [], "excluded": []}
+    top = _git(target_dir, ["rev-parse", "--show-toplevel"])
+    out = _git(target_dir, ["status", "--porcelain", "-z", "-uall"])
+    if top is None or out is None:
+        empty["errors"].append("git is unavailable or this is not a usable git work tree (git status failed)")
+        return empty
+    git_root = os.path.realpath(top.strip())
+    base = os.path.realpath(str(target_dir))
+
+    modified: List[str] = []
+    untracked: List[str] = []
+    deleted: List[str] = []
+
+    def to_target_rel(git_rel: str) -> Optional[str]:
+        # Porcelain paths are relative to the git root, not to target_dir.
+        rel = os.path.relpath(os.path.join(git_root, git_rel), base)
+        if rel == ".." or rel.startswith(".." + os.sep):
+            return None
+        norm = os.path.normpath(rel).replace("\\", "/")
+        return None if _is_capsule_internal(norm) else norm
+
+    entries = out.split("\0")
+    i = 0
+    while i < len(entries):
+        entry = entries[i]
+        i += 1
+        if len(entry) < 4:
             continue
-        status = line[:2]
-        filepath = line[3:].strip().strip('"')
-        # Normalize relative path
-        norm_path = os.path.normpath(filepath).replace("\\", "/")
+        status, filepath = entry[:2], entry[3:]
+        orig = None
+        if "R" in status or "C" in status:
+            # -z rename/copy records are "XY new\0old\0"
+            orig = entries[i] if i < len(entries) else None
+            i += 1
 
-        # Ignore internal .capsule room files
-        if norm_path == ".capsule" or norm_path.startswith(".capsule/") or norm_path.startswith(".capsule"):
-            continue
+        path = to_target_rel(filepath)
+        if path is not None:
+            if "D" in status:
+                deleted.append(path)
+            elif status == "??":
+                untracked.append(path)
+            else:
+                modified.append(path)
+        if orig and "R" in status:
+            old = to_target_rel(orig)
+            if old is not None:
+                deleted.append(old)
 
-        if "D" in status:
-            deleted.append(norm_path)
-        elif "??" in status:
-            untracked.append(norm_path)
-        else:
-            modified.append(norm_path)
+    errors: List[str] = []
+    hidden: List[str] = []
+    excluded: List[str] = []
+
+    # Files hidden from `git status` via assume-unchanged (lowercase tag) or skip-worktree (S/s).
+    lsv = _git(target_dir, ["ls-files", "-v", "-z"])
+    if lsv is None:
+        errors.append("git ls-files -v failed; hidden (assume-unchanged / skip-worktree) files cannot be ruled out")
+    else:
+        for rec in lsv.split("\0"):
+            if len(rec) > 2 and (rec[0].islower() or rec[0] in "Ss"):
+                p = os.path.normpath(rec[2:]).replace("\\", "/")
+                if not _is_capsule_internal(p):
+                    hidden.append(f"{p} [{rec[0]}]")
+
+    # Untracked files hidden by .git/info/exclude (invisible to `git status` and not reviewable in git).
+    exc_path = _git(target_dir, ["rev-parse", "--git-path", "info/exclude"])
+    if exc_path is None:
+        errors.append("could not locate .git/info/exclude")
+    else:
+        exc_file = os.path.join(str(target_dir), exc_path.strip())
+        try:
+            has_rules = os.path.isfile(exc_file) and any(
+                ln.strip() and not ln.lstrip().startswith("#")
+                for ln in open(exc_file, encoding="utf-8", errors="replace"))
+        except OSError:
+            has_rules = True
+        if has_rules:
+            ign = _git(target_dir, ["ls-files", "-o", "-i", "-z", "--exclude-from=" + exc_file])
+            if ign is None:
+                errors.append("could not enumerate files hidden by .git/info/exclude")
+            else:
+                for p in ign.split("\0"):
+                    p = os.path.normpath(p).replace("\\", "/") if p else ""
+                    if p and not _is_capsule_internal(p):
+                        excluded.append(p)
+                        untracked.append(p)
+
+    # Any other exclude source (core.excludesFile, global ignore) hides files the same way.
+    # Files ignored only via .gitignore files stay as today (reviewable in git).
+    all_ign = _git(target_dir, ["ls-files", "-o", "-i", "-z", "--exclude-standard"])
+    gi_ign = _git(target_dir, ["ls-files", "-o", "-i", "-z", "--exclude-per-directory=.gitignore"])
+    if all_ign is None or gi_ign is None:
+        errors.append("could not enumerate files hidden by core.excludesFile / global excludes")
+    else:
+        gi_set = {os.path.normpath(p).replace("\\", "/") for p in gi_ign.split("\0") if p}
+        for p in all_ign.split("\0"):
+            p = os.path.normpath(p).replace("\\", "/") if p else ""
+            if p and p not in gi_set and not _is_capsule_internal(p):
+                excluded.append(p)
+                untracked.append(p)
 
     return {
-        "modified": sorted(modified),
-        "untracked": sorted(untracked),
-        "deleted": sorted(deleted),
+        "modified": sorted(set(modified)),
+        "untracked": sorted(set(untracked)),
+        "deleted": sorted(set(deleted)),
+        "errors": errors,
+        "hidden": sorted(set(hidden)),
+        "excluded": sorted(set(excluded)),
     }
 
 
 def audit_agent_drift(target_dir: Path) -> Dict[str, Any]:
     """Inspect whether active agents are adhering to their claimed files and boundaries."""
     target_dir = Path(target_dir).resolve()
-    room_json, conf_md, _ = get_room_paths(target_dir)
+    room_json, _, _ = get_room_paths(target_dir)
     room_data = load_room_data(room_json)
 
     git_files = get_git_status_files(target_dir)
@@ -94,29 +205,65 @@ def audit_agent_drift(target_dir: Path) -> Dict[str, Any]:
     claimed_by_agent: Dict[str, List[str]] = {}
     all_claimed: Set[str] = set()
     stale_shifts: List[Dict[str, Any]] = []
+    overbroad: List[str] = []
 
     for shift_id, shift in active_shifts.items():
-        agent_id = shift.get("agent_id", "unknown")
-        files = [os.path.normpath(f.strip()).replace("\\", "/") for f in shift.get("files", []) if f.strip()]
+        agent_id = sanitize_text(shift.get("agent_id", "unknown"), 80)
+        raw_files = shift.get("files", []) if isinstance(shift.get("files"), list) else []
+        files = [normalize_claim(sanitize_text(f, MAX_CLAIM_LEN), target_dir)
+                 for f in raw_files[:MAX_CLAIMS] if sanitize_text(f, MAX_CLAIM_LEN)]
         claimed_by_agent[agent_id] = files
+        for f in raw_files[:MAX_CLAIMS]:
+            raw = sanitize_text(f, MAX_CLAIM_LEN)
+            if raw and is_overbroad_claim(raw, normalize_claim(raw, target_dir)):
+                overbroad.append(f"{agent_id}: {raw!r}")
         all_claimed.update(files)
 
-        # Check for shift stalling (>45m without heartbeat)
-        last_seen = shift.get("last_seen_at") or shift.get("clocked_in_at")
-        if last_seen:
-            try:
-                dt = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
-                if now - dt > timedelta(minutes=45):
-                    stale_shifts.append({
-                        "shift_id": shift_id,
-                        "agent_id": agent_id,
-                        "inactive_minutes": int((now - dt).total_seconds() / 60),
-                    })
-            except Exception:
-                pass
+        # Check for shift stalling (>45m without heartbeat; far-future timestamps count as stale)
+        try:
+            idle = shift_inactive_seconds(shift, now)
+            if idle is not None and idle > 45 * 60:
+                stale_shifts.append({
+                    "shift_id": sanitize_text(shift_id, 64),
+                    "agent_id": agent_id,
+                    "inactive_minutes": None if idle == float("inf") else int(idle / 60),
+                })
+        except (ValueError, TypeError, AttributeError) as exc:
+            print(f"Warning: shift {sanitize_text(shift_id, 64)} has an unreadable timestamp ({exc}).", file=sys.stderr)
 
     issues: List[Dict[str, Any]] = []
-    unclaimed_dirty = [f for f in all_dirty if f not in all_claimed]
+    fold = (lambda x: x.casefold()) if fs_is_case_insensitive(target_dir) else (lambda x: x)
+    folded_claims = [fold(c) for c in all_claimed]
+    unclaimed_dirty = [f for f in all_dirty if not any(claim_covers(c, fold(f)) for c in folded_claims)]
+
+    # Scenario 0: git view incomplete -> fail closed (never report ALIGNED on an unverified tree)
+    incomplete: List[str] = list(git_files.get("errors", []))
+    for h in git_files.get("hidden", []):
+        incomplete.append(f"file hidden from git status: {h}")
+    if incomplete:
+        issues.append({
+            "type": "INCOMPLETE",
+            "severity": "FAIL",
+            "message": "Cannot verify the working tree: " + "; ".join(incomplete),
+            "files": list(git_files.get("hidden", [])),
+            "fix": "Run inside a healthy git work tree (unset GIT_DIR), and clear assume-unchanged/skip-worktree flags "
+                   "('git update-index --no-assume-unchanged --no-skip-worktree <file>').",
+        })
+    if git_files.get("excluded"):
+        issues.append({
+            "type": "HIDDEN_BY_EXCLUDE",
+            "severity": "WARN",
+            "message": f"{len(git_files['excluded'])} file(s) are hidden by .git/info/exclude; they are audited as dirty.",
+            "files": git_files["excluded"],
+            "fix": "Review .git/info/exclude; rogue files can be concealed there.",
+        })
+    for ob in overbroad:
+        issues.append({
+            "type": "OVERBROAD_CLAIM",
+            "severity": "FAIL",
+            "message": f"Claim covers the entire tree ({ob}); scope drift cannot be detected.",
+            "fix": "Clock in with explicit files or directories instead of '.', '*' or '/'.",
+        })
 
     # Scenario 1: Dirty tree with NO active agents clocked in (Rogue modifications)
     if all_dirty and not active_shifts:
@@ -144,14 +291,27 @@ def audit_agent_drift(target_dir: Path) -> Dict[str, Any]:
         issues.append({
             "type": "STALE_SHIFT",
             "severity": "WARN",
-            "message": f"Agent '{stale['agent_id']}' shift has been idle for {stale['inactive_minutes']}m without heartbeat.",
+            "message": (f"Agent '{stale['agent_id']}' shift has been idle for {stale['inactive_minutes']}m without heartbeat."
+                        if stale["inactive_minutes"] is not None
+                        else f"Agent '{stale['agent_id']}' shift has a forged future timestamp and is treated as stale."),
             "shift_id": stale["shift_id"],
             "fix": "Run 'capsule heartbeat' to renew activity, or 'capsule clock-out'.",
         })
 
+    # Scenario 3b: Messages left unacknowledged for too long
+    for m in unacked_messages(target_dir, UNACKED_WARN_SECONDS):
+        age = "unknown age" if m["age_s"] is None else f"{m['age_s'] // 60}m"
+        issues.append({
+            "type": "UNACKED_MESSAGE",
+            "severity": "WARN",
+            "message": f"Message {m['id']} from '{m['from']}' to '{m['to']}' unacknowledged for {age} (untrusted body: {m['body']!r}).",
+            "fix": f"Recipient should run 'capsule inbox --agent {m['to']} --unread' and 'capsule ack {m['id']}'.",
+        })
+
     # Scenario 4: Sensitive dependency tampering
-    tampered_deps = [f for f in all_dirty if any(f.endswith(s) or f == s for s in SENSITIVE_FILES)]
-    if tampered_deps and not any("package" in f or "deps" in f for f in all_claimed):
+    tampered_deps = [f for f in all_dirty if _is_manifest(f)]
+    # Only an explicit claim of the exact manifest path counts as authorization (not '.', dirs, or lookalike names).
+    if tampered_deps and not all(f in all_claimed for f in tampered_deps):
         issues.append({
             "type": "DEPENDENCY_TAMPERING",
             "severity": "WARN",
@@ -163,7 +323,10 @@ def audit_agent_drift(target_dir: Path) -> Dict[str, Any]:
     has_fail = any(i["severity"] == "FAIL" for i in issues)
     has_warn = any(i["severity"] == "WARN" for i in issues)
 
-    if has_fail:
+    if incomplete:
+        status = "INCOMPLETE"
+        verdict = "FAIL"
+    elif has_fail:
         status = "DRIFT_DETECTED" if active_shifts else "ROGUE_ACTIVITY"
         verdict = "FAIL"
     elif has_warn:
@@ -193,9 +356,10 @@ def format_watchdog_report(report: Dict[str, Any]) -> str:
     ]
 
     verdict = report["verdict"]
-    status = report["status"]
 
-    if verdict == "PASS":
+    if report.get("status") == "INCOMPLETE":
+        lines.append(" ❓ STATUS: INCOMPLETE - the working tree could not be fully verified")
+    elif verdict == "PASS":
         lines.append(" 🟢 STATUS: PERFECTLY ALIGNED")
         lines.append("    All active agents are operating strictly within their claimed files.")
         lines.append("    Zero unbudgeted scope creep or rogue drift detected.")
@@ -234,13 +398,23 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     target_dir = Path(args.target).resolve()
-    report = audit_agent_drift(target_dir)
+    if not target_dir.is_dir():
+        print(f"Error: target directory does not exist: {target_dir}", file=sys.stderr)
+        return 2
+    try:
+        report = audit_agent_drift(target_dir)
+    except RoomCorruptError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
 
     if args.json:
         print(json.dumps(report, indent=2))
     else:
         print(format_watchdog_report(report))
 
+    if report["status"] == "INCOMPLETE":
+        print("Error: spy is INCOMPLETE (cannot verify working tree); see report.", file=sys.stderr)
+        return 2
     if report["verdict"] == "FAIL" or (args.strict and report["verdict"] == "WARN"):
         return 1
     return 0

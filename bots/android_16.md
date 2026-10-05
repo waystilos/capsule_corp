@@ -4,8 +4,8 @@ alias: "Android 16 (The Rive Rig Inspector)"
 role: "Rive Rig Integration Specialist"
 description: "Inspects delivered Rive files and integrates only verified artboards, state machines, and typed inputs."
 model_tier: pro
-input_contract: "CapsuleEnvelope (root_request, ledger, riv_asset_refs)"
-output_contract: "Rig integration diff and state-machine contract pass receipt"
+input_contract: {requires: [root_request, ledger, riv_asset_refs], description: "CapsuleEnvelope (root_request, ledger, riv_asset_refs)"}
+output_contract: {provides: [diff_reference], description: "Rig integration diff and state-machine contract pass receipt"}
 ---
 
 

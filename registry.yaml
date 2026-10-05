@@ -27,6 +27,18 @@ functional_envelope:
       description: "Frontier reasoning, architecture, implementation, security, and inquisition (~$2.50/1M tokens)"
       operatives: ["dr_gero", "piccolo", "goku", "android_17", "bulma", "videl", "vegeta", "android_16", "roshi", "zarbon", "cell", "beerus"]
 
+# ------------------------------------------------------------------------------
+# MESSAGING MAP
+# `send_message` in a bot's allowed_tools is an abstract capability, NOT a dispatcher or a callable tool.
+# It is realised by the file-based agent-to-agent CLI below (bodies are untrusted data; sending/reading as an
+# agent that is on shift requires its CAPSULE_SESSION_TOKEN). No other transport exists.
+# ------------------------------------------------------------------------------
+messaging:
+  send_message:
+    send: "capsule send --to <agent> --body <text> [--envelope file.json] [--in-reply-to msg_id]"
+    inbox: "capsule inbox [--unread] [--agent <id>]"
+    ack: "capsule ack <msg_id> [--agent <id>]"
+
 bots:
   dr_gero:
     name: "dr-gero"
@@ -39,8 +51,12 @@ bots:
       - "write_file"
       - "search_transcripts"
       - "define_subagent"
-    input_contract: "CapsuleEnvelope (root_request, ledger, artifacts)"
-    output_contract: "Scaffolded agent prompt, validated contract, or transcript patch receipt"
+    input_contract:
+      requires: [root_request, ledger]
+      description: "CapsuleEnvelope (root_request, ledger, artifacts)"
+    output_contract:
+      provides: [diff_reference]
+      description: "Scaffolded agent prompt, validated contract, or transcript patch receipt"
     verification_gate: "Must validate new agent prompt against the 4-part Agent Contract schema."
 
   piccolo:
@@ -54,8 +70,12 @@ bots:
       - "send_message"
       - "view_file"
       - "manage_task"
-    input_contract: "CapsuleEnvelope (root_request, ledger, artifacts)"
-    output_contract: "Decomposed DAG task tree of atomic TaskBrief envelopes"
+    input_contract:
+      requires: [root_request, ledger]
+      description: "CapsuleEnvelope (root_request, ledger, artifacts)"
+    output_contract:
+      provides: [task_tree, target_files]
+      description: "Decomposed DAG task tree of atomic TaskBrief envelopes"
     verification_gate: "All sub-tasks must pass Trunks' verification gate with zero regressions."
 
   whis:
@@ -68,8 +88,12 @@ bots:
       - "schedule"
       - "manage_task"
       - "invoke_subagent"
-    input_contract: "CapsuleEnvelope (root_request, ledger, artifacts)"
-    output_contract: "Routed envelope dispatched to exactly one specialized operative owner"
+    input_contract:
+      requires: [root_request, ledger]
+      description: "CapsuleEnvelope (root_request, ledger, artifacts)"
+    output_contract:
+      provides: [routing_decision]
+      description: "Routed envelope dispatched to exactly one specialized operative owner"
     verification_gate: "All dispatched tasks have an assigned owner, clear deadline, and target outcome."
 
   trunks:
@@ -81,8 +105,12 @@ bots:
     allowed_tools:
       - "run_command"
       - "view_file"
-    input_contract: "CapsuleEnvelope (root_request, ledger, diff_reference)"
-    output_contract: "Deterministic PASS/FAIL verification receipt with exit codes and diff audit"
+    input_contract:
+      requires: [root_request, ledger, diff_reference]
+      description: "CapsuleEnvelope (root_request, ledger, diff_reference)"
+    output_contract:
+      provides: [verification_receipt]
+      description: "Deterministic PASS/FAIL verification receipt with exit codes and diff audit"
     verification_gate: "Exit code 0 on tests + linters, with explicit pass confirmation."
 
   goku:
@@ -95,8 +123,12 @@ bots:
       - "view_file"
       - "replace_file_content"
       - "write_to_file"
-    input_contract: "CapsuleEnvelope (root_request, ledger with rejection_history, target_files)"
-    output_contract: "DiffResult (modified files, git commit/diff ref, tacit discoveries appended to ledger)"
+    input_contract:
+      requires: [root_request, ledger, target_files]
+      description: "CapsuleEnvelope (root_request, ledger with rejection_history, target_files)"
+    output_contract:
+      provides: [diff_reference]
+      description: "DiffResult (modified files, git commit/diff ref, tacit discoveries appended to ledger)"
     verification_gate: "Self-executes code inspection and provides unit test coverage for modifications."
 
   android_18:
@@ -109,8 +141,12 @@ bots:
       - "view_file"
       - "replace_file_content"
       - "run_command"
-    input_contract: "CapsuleEnvelope (root_request, ledger, target_files)"
-    output_contract: "Cleaned diff reference with zero behavioral regressions"
+    input_contract:
+      requires: [root_request, ledger, target_files]
+      description: "CapsuleEnvelope (root_request, ledger, target_files)"
+    output_contract:
+      provides: [diff_reference]
+      description: "Cleaned diff reference with zero behavioral regressions"
     verification_gate: "Linter and existing test suites pass with exit code 0."
 
   android_17:
@@ -123,8 +159,12 @@ bots:
       - "view_file"
       - "run_command"
       - "replace_file_content"
-    input_contract: "CapsuleEnvelope (root_request, ledger, diff_reference)"
-    output_contract: "Security barrier audit receipt (zero secrets, zero high/critical CVEs)"
+    input_contract:
+      requires: [root_request, ledger, diff_reference]
+      description: "CapsuleEnvelope (root_request, ledger, diff_reference)"
+    output_contract:
+      provides: [security_receipt]
+      description: "Security barrier audit receipt (zero secrets, zero high/critical CVEs)"
     verification_gate: "Zero secrets in diff and zero high/critical dependency CVEs."
 
   bulma:
@@ -137,8 +177,12 @@ bots:
       - "view_file"
       - "write_to_file"
       - "replace_file_content"
-    input_contract: "CapsuleEnvelope (root_request, ledger)"
-    output_contract: "PRD TaskBrief envelope with measurable acceptance criteria and API schemas"
+    input_contract:
+      requires: [root_request, ledger]
+      description: "CapsuleEnvelope (root_request, ledger)"
+    output_contract:
+      provides: [prd_reference]
+      description: "PRD TaskBrief envelope with measurable acceptance criteria and API schemas"
     verification_gate: "PRD has explicit acceptance criteria and API schemas with zero scope creep."
 
   videl:
@@ -151,8 +195,12 @@ bots:
       - "view_file"
       - "write_to_file"
       - "replace_file_content"
-    input_contract: "CapsuleEnvelope (root_request, ledger)"
-    output_contract: "UX specification with state coverage, accessibility criteria, and error states"
+    input_contract:
+      requires: [root_request, ledger]
+      description: "CapsuleEnvelope (root_request, ledger)"
+    output_contract:
+      provides: [ux_spec_reference]
+      description: "UX specification with state coverage, accessibility criteria, and error states"
     verification_gate: "Every flow has measurable success criteria, complete state coverage, and testable accessibility requirements."
 
   vegeta:
@@ -166,8 +214,12 @@ bots:
       - "run_command"
       - "write_to_file"
       - "replace_file_content"
-    input_contract: "CapsuleEnvelope (root_request, ledger, target_files)"
-    output_contract: "Verified container build, DB migration scripts, and green CI manifests"
+    input_contract:
+      requires: [root_request, ledger, target_files]
+      description: "CapsuleEnvelope (root_request, ledger, target_files)"
+    output_contract:
+      provides: [diff_reference]
+      description: "Verified container build, DB migration scripts, and green CI manifests"
     verification_gate: "Container builds, DB migration rolls up/down, and CI YAML passes linting."
 
   goten:
@@ -180,8 +232,12 @@ bots:
       - "view_image"
       - "rg"
       - "apply_patch"
-    input_contract: "CapsuleEnvelope (root_request, ledger, sprite_asset_refs)"
-    output_contract: "Verified animation sequence and frame audit pass receipt"
+    input_contract:
+      requires: [root_request, ledger, sprite_asset_refs]
+      description: "CapsuleEnvelope (root_request, ledger, sprite_asset_refs)"
+    output_contract:
+      provides: [diff_reference]
+      description: "Verified animation sequence and frame audit pass receipt"
     verification_gate: "Run the volleyball frame audit and npm test -- --run src/test/volleyEngine.test.ts src/test/volleyGame.test.tsx; all checks must pass."
 
   android_16:
@@ -194,8 +250,12 @@ bots:
       - "rg"
       - "view_image"
       - "apply_patch"
-    input_contract: "CapsuleEnvelope (root_request, ledger, riv_asset_refs)"
-    output_contract: "Rig integration diff and state-machine contract pass receipt"
+    input_contract:
+      requires: [root_request, ledger, riv_asset_refs]
+      description: "CapsuleEnvelope (root_request, ledger, riv_asset_refs)"
+    output_contract:
+      provides: [diff_reference]
+      description: "Rig integration diff and state-machine contract pass receipt"
     verification_gate: "If a .riv exists, inspect its delivered artboard and state-machine contract; otherwise report the missing asset and preserve the fallback. Run npm run build and npm run verify."
 
   roshi:
@@ -208,8 +268,12 @@ bots:
       - "view_file"
       - "run_command"
       - "write_to_file"
-    input_contract: "CapsuleEnvelope (root_request, ledger, game_state_refs)"
-    output_contract: "Measured game tuning proposal backed by simulation run data"
+    input_contract:
+      requires: [root_request, ledger, game_state_refs]
+      description: "CapsuleEnvelope (root_request, ledger, game_state_refs)"
+    output_contract:
+      provides: [target_files, tuning_report]
+      description: "Measured game tuning proposal backed by simulation run data"
     verification_gate: "Every proposal cites a measurement run (sample size, MODEL vs REAL labeled), a stated hypothesis, and how to measure it."
 
   zarbon:
@@ -222,8 +286,12 @@ bots:
       - "search_web"
       - "view_file"
       - "write_to_file"
-    input_contract: "CapsuleEnvelope (root_request, ledger)"
-    output_contract: "Editorial brand identity, visual style guide, and framing receipt"
+    input_contract:
+      requires: [root_request, ledger]
+      description: "CapsuleEnvelope (root_request, ledger)"
+    output_contract:
+      provides: [diff_reference, style_guide_reference]
+      description: "Editorial brand identity, visual style guide, and framing receipt"
     verification_gate: "Brand proposal matches editorial elegance criteria and aligns with prestigious puzzle standards."
 
   hercule:
@@ -235,8 +303,12 @@ bots:
     allowed_tools:
       - "search_web"
       - "view_file"
-    input_contract: "CapsuleEnvelope (root_request, ledger)"
-    output_contract: "Distribution reality audit receipt asserting verified distribution wedges"
+    input_contract:
+      requires: [root_request, ledger]
+      description: "CapsuleEnvelope (root_request, ledger)"
+    output_contract:
+      provides: [audit_receipt]
+      description: "Distribution reality audit receipt asserting verified distribution wedges"
     verification_gate: "Must identify at least one concrete, testable organic distribution wedge before code is approved."
 
   king_kai:
@@ -251,8 +323,12 @@ bots:
       - "manage_task"
       - "manage_subagents"
       - "send_message"
-    input_contract: "CapsuleEnvelope (shift_id, claimed_files, active_diff_ref)"
-    output_contract: "Watchdog alignment audit (zero scope drift, zero rogue edits)"
+    input_contract:
+      requires: [shift_id, claimed_files, active_diff_ref]
+      description: "CapsuleEnvelope (shift_id, claimed_files, active_diff_ref)"
+    output_contract:
+      provides: [diff_reference, drift_report]
+      description: "Watchdog alignment audit (zero scope drift, zero rogue edits)"
     verification_gate: "Zero undeclared file modifications, strict compliance with the claimed Task Brief, and zero unbudgeted drift."
 
   cell:
@@ -267,8 +343,12 @@ bots:
       - "search_web"
       - "write_to_file"
       - "replace_file_content"
-    input_contract: "CapsuleEnvelope (root_request, ledger, attack_surface_refs)"
-    output_contract: "Red team exploit report and proof-of-concept audit receipt"
+    input_contract:
+      requires: [root_request, ledger, attack_surface_refs]
+      description: "CapsuleEnvelope (root_request, ledger, attack_surface_refs)"
+    output_contract:
+      provides: [exploit_report]
+      description: "Red team exploit report and proof-of-concept audit receipt"
     verification_gate: "Must produce reproducible exploit proofs of concept (PoCs) and verify system resilience under adversarial load."
 
   beerus:
@@ -281,6 +361,10 @@ bots:
       - "view_file"
       - "run_command"
       - "ask_question"
-    input_contract: "CapsuleEnvelope (root_request, ledger, diff_reference)"
-    output_contract: "Divine Inquisition Verdict (PASS or Hakai threats with required defenses)"
+    input_contract:
+      requires: [root_request, ledger, diff_reference]
+      description: "CapsuleEnvelope (root_request, ledger, diff_reference)"
+    output_contract:
+      provides: [verdict_receipt]
+      description: "Divine Inquisition Verdict (PASS or Hakai threats with required defenses)"
     verification_gate: "Must answer or resolve all critical divine inquisitions; zero unhandled edge cases or unverified assumptions."

@@ -4,8 +4,8 @@ alias: Bulma (Chief Product Architect)
 role: Product Architect & Rapid Prototyper
 description: Transforms founder visions into razor-sharp PRDs, MVP scopes, user flows, and API specifications.
 model_tier: pro
-input_contract: "CapsuleEnvelope (root_request, ledger)"
-output_contract: "PRD TaskBrief envelope with measurable acceptance criteria and API schemas"
+input_contract: {requires: [root_request, ledger], description: "CapsuleEnvelope (root_request, ledger)"}
+output_contract: {provides: [prd_reference], description: "PRD TaskBrief envelope with measurable acceptance criteria and API schemas"}
 ---
 
 
