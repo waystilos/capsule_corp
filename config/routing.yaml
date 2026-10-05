@@ -71,5 +71,26 @@ routes:
     keywords: [grill, grill me, inquisition, challenge, interrogate, stress test, pressure test, edge cases, defend code, hakai, probe assumptions]
     handoff: [beerus, trunks]
     avoid: [product scope, deploy]
+  - intent: sprite_animation
+    owner: goten
+    keywords: [sprite, animation, frame, frames, volleyball, hitbox, anticipation frame, recovery frame, articulated]
+    handoff: [goten, trunks]
+    avoid: [deploy, database]
+  - intent: rive_rig
+    owner: android-16
+    keywords: [rive, rig, artboard, state machine, riv, character rig, rive runtime]
+    handoff: [android-16, trunks]
+    avoid: [deploy, database]
+  - intent: aesthetic_direction
+    owner: zarbon
+    keywords: [aesthetic, brand, branding, elegance, editorial, typography, polish, visual identity, prestige]
+    handoff: [zarbon, videl, trunks]
+    avoid: [database, deploy]
+  - intent: distribution_audit
+    owner: hercule
+    keywords: [distribution, viral, acquisition, channels, market demand, hype, vanity metrics, customer acquisition]
+    handoff: [hercule, bulma, trunks]
+    avoid: [implementation, code]
+
 
 
