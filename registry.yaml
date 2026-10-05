@@ -1,6 +1,6 @@
 # ==============================================================================
 # CAPSULE CORP AGENT COHORT REGISTRY
-# Capsule Corp's agentic engineering principles, adapted from Lauren's original framing
+# Capsule Corp's autonomous multi-AI engineering standards and archetype registry
 # Theme: Dragon Ball Z
 # ==============================================================================
 
@@ -166,3 +166,54 @@ bots:
       - "run_command"
       - "write_to_file"
     verification_gate: "Every proposal cites a measurement run (sample size, MODEL vs REAL labeled), a stated hypothesis, and how to measure it."
+
+  zarbon:
+    name: "zarbon"
+    alias: "Zarbon (The Aesthetic & Creative Director)"
+    role: "Creative Director & Brand Identity Specialist"
+    job_to_be_done: "Directs artistic vision, linguistic framing, and brand identities that elevate games into cultural staples matching prestige editorial benchmarks."
+    model_tier: "pro"
+    allowed_tools:
+      - "search_web"
+      - "view_file"
+      - "write_to_file"
+    verification_gate: "Brand proposal matches editorial elegance criteria and aligns with prestigious puzzle standards."
+
+  hercule:
+    name: "hercule"
+    alias: "Hercule Satan (The Hype & Distribution Auditor)"
+    role: "Market Reality & Distribution Channel Auditor"
+    job_to_be_done: "Audits viral claims, organic distribution wedges, and customer acquisition channels to verify whether real demand exists or if it's pure vanity hype."
+    model_tier: "pro"
+    allowed_tools:
+      - "search_web"
+      - "view_file"
+    verification_gate: "Must identify at least one concrete, testable organic distribution wedge before code is approved."
+
+  king_kai:
+    name: "king-kai"
+    alias: "King Kai (The Telepathic Overseer & Agent Watchdog)"
+    role: "Agent Drift Overseer & Alignment Supervisor"
+    job_to_be_done: "Telepathically spies on active agent shifts, uncommitted git modifications, and execution transcripts to catch scope creep, unauthorized file touches, token-wasting loops, and off-path wandering. Intervenes to realign or abort rogue agent actions."
+    model_tier: "pro"
+    allowed_tools:
+      - "view_file"
+      - "run_command"
+      - "manage_task"
+      - "manage_subagents"
+      - "send_message"
+    verification_gate: "Zero undeclared file modifications, strict compliance with the claimed Task Brief, and zero unbudgeted drift."
+
+  cell:
+    name: "cell"
+    alias: "Cell (The Adversarial Red Team & Chaos Sentinel)"
+    role: "Offensive Security & Adversarial Red Team Specialist"
+    job_to_be_done: "Ruthlessly attacks architectures, APIs, prompts, and business logic from every angle. Exposes injection vectors, ReDoS, BOLA, race conditions, and cost-draining vulnerabilities before attackers do."
+    model_tier: "pro"
+    allowed_tools:
+      - "run_command"
+      - "view_file"
+      - "search_web"
+      - "write_to_file"
+      - "replace_file_content"
+    verification_gate: "Must produce reproducible exploit proofs of concept (PoCs) and verify system resilience under adversarial load."

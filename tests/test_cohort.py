@@ -29,6 +29,9 @@ from route_request import route_request
 from doctor import run_doctor
 from check_project import run_project_checks, format_check_report
 from room import clock_in, clock_out, clear_room, detect_environment, load_room_data, prune_stale_shifts, heartbeat
+from spy_watchdog import audit_agent_drift, format_watchdog_report
+from validate_idea import evaluate_idea, save_validation_contract
+from red_team import run_red_team_audit, audit_file_for_attack_vectors, format_red_team_report
 from capsule.cli import _installed_resource_candidates, cmd_list
 
 
@@ -759,6 +762,220 @@ class TestCapsuleRoom(unittest.TestCase):
             self.assertEqual(len(data["active_shifts"]), 0)
 
 
+class TestKingKaiWatchdog(unittest.TestCase):
+    def test_watchdog_detects_rogue_modifications_when_no_agent_clocked_in(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=root, check=True)
+            (root / "untracked.py").write_text("print('hello')\n", encoding="utf-8")
+
+            report = audit_agent_drift(root)
+            self.assertEqual(report["verdict"], "FAIL")
+            self.assertEqual(report["status"], "ROGUE_ACTIVITY")
+            self.assertEqual(report["issues"][0]["type"], "ROGUE_ACTIVITY")
+
+    def test_watchdog_detects_scope_drift_when_agent_modifies_unclaimed_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=root, check=True)
+            (root / "claimed.py").write_text("def foo(): pass\n", encoding="utf-8")
+            subprocess.run(["git", "add", "claimed.py"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-m", "init", "-q"], cwd=root, check=True)
+
+            # Goku clocks in claiming only claimed.py
+            clock_in(root, agent="goku", files=["claimed.py"], task="Update foo")
+
+            # Agent touches claimed.py AND creates unbudgeted unbudgeted.py
+            (root / "claimed.py").write_text("def foo(): return 42\n", encoding="utf-8")
+            (root / "unbudgeted.py").write_text("def rogue(): pass\n", encoding="utf-8")
+
+            report = audit_agent_drift(root)
+            self.assertEqual(report["verdict"], "FAIL")
+            self.assertEqual(report["status"], "DRIFT_DETECTED")
+            self.assertIn("unbudgeted.py", report["unclaimed_files"])
+
+    def test_watchdog_passes_when_agent_modifies_only_claimed_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=root, check=True)
+            (root / "claimed.py").write_text("def foo(): pass\n", encoding="utf-8")
+            subprocess.run(["git", "add", "claimed.py"], cwd=root, check=True)
+            subprocess.run(["git", "commit", "-m", "init", "-q"], cwd=root, check=True)
+
+            # Goku clocks in claiming claimed.py
+            clock_in(root, agent="goku", files=["claimed.py"], task="Update foo")
+            (root / "claimed.py").write_text("def foo(): return 100\n", encoding="utf-8")
+
+            report = audit_agent_drift(root)
+            self.assertEqual(report["verdict"], "PASS")
+            self.assertEqual(report["status"], "ALIGNED")
+            self.assertEqual(len(report["unclaimed_files"]), 0)
+
+    def test_watchdog_routes_to_king_kai(self):
+        route = route_request("spy on active agents and make sure they don't wander off the path")
+        self.assertEqual(route["owner"], "king-kai")
+        self.assertEqual(route["status"], "routed")
+
+    def test_check_project_drift_integration(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.name", "Test"], cwd=root, check=True)
+            subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=root, check=True)
+            pass_cmd = f"{sys.executable} -c 'import sys; sys.exit(0)'"
+
+            # Clean repo with clocked in shift
+            clock_in(root, agent="goku", files=[], task="Idle task")
+            res = run_project_checks(
+                root,
+                test_cmd_override=pass_cmd,
+                skip_secrets=True,
+                check_drift=True,
+            )
+            align_check = next((c for c in res["checks"] if c["name"] == "Agent Alignment"), None)
+            self.assertIsNotNone(align_check)
+            self.assertEqual(align_check["status"], "PASSED")
+
+
+class TestBulmaHerculeValidation(unittest.TestCase):
+    def test_evaluate_idea_go_verdict(self):
+        idea = "A micro-SaaS that monitors PostgreSQL connection spikes and auto-alerts on Discord"
+        res = evaluate_idea(idea)
+        self.assertEqual(res["verdict"], "GO")
+        self.assertGreaterEqual(res["score"], 7.5)
+        self.assertTrue(res["dimensions"]["spreadsheet_test"]["passed"])
+        self.assertTrue(res["dimensions"]["distribution_wedge"]["passed"])
+
+    def test_evaluate_idea_kill_verdict_on_saturation(self):
+        idea = "A thin chatgpt wrapper and todo habit tracker for students with ads and social media"
+        res = evaluate_idea(idea)
+        self.assertEqual(res["verdict"], "KILL")
+        self.assertLess(res["score"], 6.0)
+
+    def test_evaluate_idea_too_short_raises(self):
+        with self.assertRaises(ValueError):
+            evaluate_idea("short")
+
+    def test_save_validation_contract(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            idea = "Database connection pool monitor for Kubernetes clusters with Slack alerts"
+            eval_data = evaluate_idea(idea, target_dir=root)
+            saved = save_validation_contract(eval_data, root)
+            self.assertTrue(saved.exists())
+            content = saved.read_text(encoding="utf-8")
+            self.assertIn("Capsule Corp Pre-Code Validation Contract", content)
+            self.assertIn("Bulma's Razor Evaluation", content)
+            self.assertIn("Hercule's Distribution & Hype Audit", content)
+            self.assertIn("The 14-Day Falsification Metric", content)
+
+    def test_routing_routes_to_bulma_for_idea_validation(self):
+        res = route_request("validate this new product idea before building")
+        self.assertEqual(res["owner"], "bulma")
+        self.assertEqual(res["status"], "routed")
+
+    def test_distribution_and_hype_audit(self):
+        idea = "A CLI tool that integrates with GitHub Actions to audit docker performance"
+        res = evaluate_idea(idea)
+        self.assertEqual(res["distribution"]["status"], "HEALTHY_WEDGE")
+        self.assertTrue(any("GitHub" in e or "CLI" in e for e in res["distribution"]["ecosystem_embeds"]))
+
+
+class TestCellRedTeam(unittest.TestCase):
+    def test_cell_in_registry(self):
+        reg_path = CAPSULE_ROOT / "registry.yaml"
+        data = yaml.safe_load(reg_path.read_text(encoding="utf-8"))
+        self.assertIn("cell", data["bots"])
+        cell = data["bots"]["cell"]
+        self.assertEqual(cell["name"], "cell")
+        self.assertIn("Offensive Security", cell["role"])
+        self.assertIn("verification_gate", cell)
+
+    def test_detect_prompt_injection(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            vuln_file = root / "agent_caller.py"
+            vuln_file.write_text(
+                'prompt = f"System: answer helpfully. User input: {user_query}"\n',
+                encoding="utf-8"
+            )
+            findings = audit_file_for_attack_vectors(vuln_file, root, skip_test_files=False)
+            self.assertTrue(any(f["category"] == "PROMPT_INJECTION" for f in findings))
+            self.assertTrue(any(f["severity"] == "CRITICAL" for f in findings))
+
+    def test_detect_ssrf(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            vuln_file = root / "proxy.py"
+            vuln_file.write_text(
+                'response = requests.get(target_url)\n',
+                encoding="utf-8"
+            )
+            findings = audit_file_for_attack_vectors(vuln_file, root, skip_test_files=False)
+            self.assertTrue(any(f["category"] == "SSRF" for f in findings))
+
+    def test_detect_path_traversal(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            vuln_file = root / "fileserver.py"
+            vuln_file.write_text(
+                'f = open(os.path.join(base_dir, user_filename))\n',
+                encoding="utf-8"
+            )
+            findings = audit_file_for_attack_vectors(vuln_file, root, skip_test_files=False)
+            self.assertTrue(any(f["category"] == "PATH_TRAVERSAL" for f in findings))
+
+    def test_detect_redos(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            vuln_file = root / "parser.py"
+            vuln_file.write_text(
+                'EMAIL_REGEX = r"^([a-zA-Z0-9_.-]+)+@domain.com$"\n',
+                encoding="utf-8"
+            )
+            findings = audit_file_for_attack_vectors(vuln_file, root, skip_test_files=False)
+            self.assertTrue(any(f["category"] == "REDOS_DOS" for f in findings))
+
+    def test_detect_insecure_transport(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            vuln_file = root / "api_client.py"
+            vuln_file.write_text(
+                'requests.get("https://internal.api", verify=False)\n',
+                encoding="utf-8"
+            )
+            findings = audit_file_for_attack_vectors(vuln_file, root, skip_test_files=False)
+            self.assertTrue(any(f["category"] == "AUTHORIZATION_TRANSPORT" for f in findings))
+
+    def test_clean_repo_passes_as_resilient(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            safe_file = root / "safe.py"
+            safe_file.write_text(
+                'def add(a: int, b: int) -> int:\n    return a + b\n',
+                encoding="utf-8"
+            )
+            report = run_red_team_audit(root)
+            self.assertEqual(report["verdict"], "RESILIENT")
+            self.assertEqual(report["summary"]["total_findings"], 0)
+            rendered = format_red_team_report(report)
+            self.assertIn("DEFENSES HOLD", rendered)
+
+    def test_routing_routes_to_cell_for_offensive_security(self):
+        res = route_request("run a penetration test and attack prompt injection points")
+        self.assertEqual(res["owner"], "cell")
+        self.assertEqual(res["status"], "routed")
+        self.assertEqual(res["intent"], "offensive_security")
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
 

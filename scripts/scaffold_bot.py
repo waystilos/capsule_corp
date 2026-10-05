@@ -73,11 +73,11 @@ DBZ_RESERVE_ARCHETYPES = {
     },
 }
 
-BOT_NAME_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+BOT_NAME_PATTERN = re.compile(r"^[a-z0-9-]+$")
 
 
 def validate_bot_name(name: str) -> None:
-    if not BOT_NAME_PATTERN.fullmatch(name):
+    if not name or name.startswith("-") or name.endswith("-") or "--" in name or not BOT_NAME_PATTERN.fullmatch(name):
         raise ValueError("name must contain only lowercase letters, numbers, and single hyphens")
 
 

@@ -121,6 +121,7 @@ def run_project_checks(
     lint_cmd_override: Optional[str] = None,
     typecheck_cmd_override: Optional[str] = None,
     skip_secrets: bool = False,
+    check_drift: bool = False,
 ) -> Dict[str, Any]:
     """Run all configured and detected checks for a project."""
     root_dir = root_dir.resolve()
@@ -246,6 +247,45 @@ def run_project_checks(
                 "output": "",
             })
 
+    # 5. Agent Alignment & Drift Audit (King Kai's Watchdog)
+    if check_drift:
+        try:
+            try:
+                from .spy_watchdog import audit_agent_drift
+            except ImportError:
+                from spy_watchdog import audit_agent_drift
+
+            drift_report = audit_agent_drift(root_dir)
+            if drift_report["verdict"] == "FAIL":
+                has_failure = True
+                status = "FAILED"
+                summary = f"{len(drift_report['issues'])} agent drift / rogue issue(s) detected"
+                output = "\n".join(f"- {i['type']}: {i['message']}" for i in drift_report["issues"])
+            elif drift_report["verdict"] == "WARN":
+                status = "WARNING"
+                summary = f"Drift warning: {len(drift_report['issues'])} minor issue(s)"
+                output = "\n".join(f"- {i['type']}: {i['message']}" for i in drift_report["issues"])
+            else:
+                status = "PASSED"
+                summary = "Agent shifts aligned with claimed scope"
+                output = ""
+
+            results.append({
+                "name": "Agent Alignment",
+                "status": status,
+                "command": "capsule spy",
+                "summary": summary,
+                "output": output,
+            })
+        except Exception as exc:
+            results.append({
+                "name": "Agent Alignment",
+                "status": "SKIPPED",
+                "command": "capsule spy",
+                "summary": f"Skipped: {exc}",
+                "output": "",
+            })
+
     executed_checks = [c for c in results if c["name"] in ("Tests", "Lint", "Typecheck") and c["status"] in ("PASSED", "FAILED")]
     if has_failure:
         verdict = "FAIL"
@@ -311,6 +351,7 @@ def main():
     parser.add_argument("--lint-cmd", help="Explicit lint command override")
     parser.add_argument("--typecheck-cmd", help="Explicit typecheck command override")
     parser.add_argument("--skip-secrets", action="store_true", help="Skip git diff secret scanner")
+    parser.add_argument("--check-drift", action="store_true", help="Run King Kai's agent drift watchdog audit")
     args = parser.parse_args()
 
     target = Path(args.target_dir).resolve()
@@ -324,6 +365,7 @@ def main():
         lint_cmd_override=args.lint_cmd,
         typecheck_cmd_override=args.typecheck_cmd,
         skip_secrets=args.skip_secrets,
+        check_drift=args.check_drift,
     )
 
     if args.json:

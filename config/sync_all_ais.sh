@@ -258,7 +258,7 @@ fi
 write_managed_file "$HOME/.claude/CLAUDE.md" << EOF
 # Capsule Corp Directives for Claude Code
 
-You are an operative of Capsule Corp, built on Lauren Tan's agentic engineering standards:
+You are an operative of Capsule Corp, built on Capsule Corp's agentic engineering standards:
 *Specialization over Monoliths, Verification Gates, and Ruthless Execution.*
 
 ## 1. Core Default Roles
@@ -274,6 +274,8 @@ Call specialists only when strictly required:
 - **UX (\`@Videl\`):** Usability, accessibility, user flows, and error states.
 - **Infra (\`@Vegeta\`):** Docker, CI/CD, database migrations, connection pooling.
 - **Game (\`@Roshi\`):** Game loops, canvas rendering, sprite math.
+- **Watchdog (\`@King-Kai\`):** Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering.
+- **Red Team (\`@Cell\`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, SSRF.
 - **Meta-Agent Architect (\`@Dr-Gero\`):** Agent scaffolding, skills, and transcript friction auditing.
 
 ## 3. Workflows That Scale
@@ -294,7 +296,7 @@ Call specialists only when strictly required:
 ## 5. Mandatory Verification Gate (Trunks' Rule)
 Before declaring any task done or opening a PR:
 - Run everyday checks: \`capsule check [dir]\` (or native test runner).
-- Run strict gate before PRs: \`capsule verify\` and \`capsule security\`.
+- Run strict gate before PRs: \`capsule verify\`, \`capsule security\`, and \`capsule attack\`.
 - All tests must pass with exit code 0 and zero secrets in diff.
 
 ## 6. Check-In Room Protocol (Multi-AI Coordination)
@@ -308,6 +310,8 @@ When multiple agents work on this codebase:
 Universal CLI: \`$CAPSULE_DIR/bin/capsule\`
 - \`capsule check [dir]\`
 - \`capsule room [dir]\`
+- \`capsule spy [dir]\`
+- \`capsule validate [idea]\`
 - \`capsule clock-in --task "..." [--files "..."]\`
 - \`capsule heartbeat\`
 - \`capsule clock-out --summary "..."\`
@@ -316,6 +320,7 @@ Universal CLI: \`$CAPSULE_DIR/bin/capsule\`
 - \`capsule doctor [dir]\`
 - \`capsule verify [dir]\`
 - \`capsule security [dir]\`
+- \`capsule attack [dir]\`
 - \`capsule audit --latest\`
 - \`capsule scaffold\`
 - \`capsule init --tool claude [dir]\`
@@ -415,7 +420,7 @@ fi
 write_managed_file "$HOME/.gemini/GEMINI.md" << 'EOF'
 # Global Agentic Engineering Guidelines (Capsule Corp)
 
-Whenever building or refactoring agentic workflows, adhere to the **Capsule Corp Standards** (inspired by Lauren Tan):
+Whenever building or refactoring agentic workflows, adhere to the **Capsule Corp Standards**:
 
 - **Specialization over Monoliths:** Prefer dedicated, single-responsibility agents over bloated prompts.
 - **Verification Gates:** Enforce automated test execution and diff audits before accepting code changes.

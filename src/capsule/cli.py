@@ -130,14 +130,18 @@ def cmd_test() -> int:
 def main(argv: Optional[List[str]] = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args or args[0] in {"-h", "--help"}:
-        print("Usage: capsule {check|room|clock-in|clock-out|heartbeat|list|route|doctor|test|scaffold|audit|verify|security|init|sync} [options]")
+        print("Usage: capsule {check|validate|room|spy|clock-in|clock-out|heartbeat|list|route|doctor|test|scaffold|audit|verify|security|attack|init|sync} [options]")
         return 0
 
     command, extra = args[0], args[1:]
     if command == "check":
         return run_module("scripts.check_project", extra)
+    if command == "validate":
+        return run_module("scripts.validate_idea", extra)
     if command in {"room", "conference"}:
         return run_module("scripts.room", ["status"] + extra)
+    if command in {"spy", "watchdog"}:
+        return run_module("scripts.spy_watchdog", extra)
     if command == "clock-in":
         return run_module("scripts.room", ["clock-in"] + extra)
     if command == "clock-out":
@@ -160,6 +164,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return run_module("scripts.verify_project", extra)
     if command == "security":
         return run_module("scripts.security_audit", extra)
+    if command in {"attack", "redteam"}:
+        return run_module("scripts.red_team", extra)
     if command == "init":
         return run_module("scripts.init_project", extra)
     if command == "sync":

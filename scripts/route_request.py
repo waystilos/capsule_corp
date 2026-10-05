@@ -54,6 +54,10 @@ BOT_TO_ROLE: Dict[str, str] = {
     "vegeta": "Infrastructure Specialist",
     "roshi": "Game Specialist",
     "dr-gero": "Meta-Agent Architect",
+    "king-kai": "Agent Drift Overseer",
+    "hercule": "Market Reality & Hype Auditor",
+    "zarbon": "Aesthetic & Polish Specialist",
+    "cell": "Red Team & Adversarial Chaos",
 }
 
 
@@ -72,6 +76,10 @@ WORKFLOW_ROLE: Dict[str, str] = {
     "vegeta": "Infra",
     "roshi": "Game",
     "dr-gero": "Meta-Agent",
+    "king-kai": "Watchdog",
+    "hercule": "Hype Auditor",
+    "zarbon": "Polish",
+    "cell": "Red Team",
 }
 
 

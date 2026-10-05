@@ -51,3 +51,20 @@ routes:
     keywords: [game, gameplay, game feel, fun, difficulty, difficulty curve, too hard, too easy, frustrating, tune, tuning, playtest, balance, juice, progression, streak, star thresholds, core loop, reward]
     handoff: [roshi, goku, trunks]
     avoid: [prd, accessibility, usability, wireframe, deploy]
+  - intent: agent_supervision
+    owner: king-kai
+    keywords: [spy, monitor, watchdog, supervise, drift, off path, rogue, align, alignment, unbudgeted, overseer, wandering]
+    handoff: [king-kai, trunks]
+    avoid: [product feature, implement]
+  - intent: idea_validation
+    owner: bulma
+    keywords: [validate, validation, is this worth building, idea, market validation, kill or go, validate idea]
+    handoff: [bulma, hercule, trunks]
+    avoid: [write code, deploy]
+  - intent: offensive_security
+    owner: cell
+    keywords: [attack, red team, redteam, penetration test, pen test, exploit, fuzz, chaos, adversary, adversarial, red-team]
+    handoff: [cell, android-17, trunks]
+    avoid: [product scope, ux]
+
+

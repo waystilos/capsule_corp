@@ -16,6 +16,8 @@ Call specialists only when a task strictly requires their domain—never force e
 - **UX (`@Videl`):** User experience, accessibility, interaction design, and error/empty states.
 - **Infra (`@Vegeta`):** Docker, CI/CD, database migrations, connection pooling, and infrastructure.
 - **Game (`@Roshi`):** Game loops, canvas rendering, sprite math, and physics.
+- **Watchdog (`@King-Kai`):** Telepathic supervisor catching scope drift, rogue edits, and stalled shifts.
+- **Red Team (`@Cell`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, and SSRF penetration testing.
 
 ## 3. Workflows That Scale
 Choose the workflow matching the task complexity:
@@ -37,7 +39,7 @@ When handing off tasks between roles or subagents, use this concrete schema:
 ## 5. Verification Gate (Trunks' Rule)
 Before declaring any task done or opening a PR:
 - Run project checks: `capsule check` (or native runner e.g. `npm test`, `pytest`, `cargo test`).
-- Run `capsule verify` and `capsule security`.
+- Run `capsule verify`, `capsule security`, and `capsule attack`.
 - All checks must pass with exit code 0 and zero secrets/merge conflicts in diff.
 
 ## 6. Check-In Room Protocol (Multi-AI Coordination)
