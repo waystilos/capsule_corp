@@ -104,6 +104,13 @@ When working alongside other models or agents in the same repository:
 
 ---
 
+## Supervision Protocol (Long-Running Agent Work)
+Delegating is not supervising. For any delegated run expected to last more than ~10 minutes:
+- **Checkpoint:** run a King Kai (`@King-Kai`) watchdog pass at the start and at each phase boundary or ~10 minutes (`capsule spy .` plus a review of the agent's transcript): scope drift, models used, repeated or looping calls, stale heartbeat.
+- **Explicit models:** set the model on every subagent spawn from the registry tier (flash-tier bots on the cheapest model, pro-tier on the mid model, premium only with a stated reason). Never rely on the default model.
+- **Budgets:** every brief states a maximum number of fix rounds and a rough token ceiling, and freezes scope. New non-critical findings go to a later epic.
+- **Verify, don't trust:** for high or critical fixes, require a regression test shown failing on the old behavior (never use `git stash` while slices run in parallel). The coordinator runs the final gates itself after clock-out, one command at a time, reading each real exit code.
+
 ## 5. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 
 This repository is governed by Capsule Corp standards.
