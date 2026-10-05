@@ -130,7 +130,7 @@ def cmd_test() -> int:
 def main(argv: Optional[List[str]] = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args or args[0] in {"-h", "--help"}:
-        print("Usage: capsule {check|validate|room|spy|clock-in|clock-out|heartbeat|list|route|doctor|test|scaffold|audit|verify|security|attack|init|sync} [options]")
+        print("Usage: capsule {check|validate|room|spy|clock-in|clock-out|heartbeat|list|route|doctor|test|scaffold|audit|verify|security|attack|grill|init|sync} [options]")
         return 0
 
     command, extra = args[0], args[1:]
@@ -166,6 +166,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         return run_module("scripts.security_audit", extra)
     if command in {"attack", "redteam"}:
         return run_module("scripts.red_team", extra)
+    if command in {"grill", "inquisition"}:
+        return run_module("scripts.grill_code", extra)
     if command == "init":
         return run_module("scripts.init_project", extra)
     if command == "sync":

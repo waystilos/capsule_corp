@@ -19,6 +19,7 @@ Usage:
   capsule verify [dir]      Trunks' verification gate (tests + diff integrity check)
   capsule security [dir]    Android 17's security scan (secrets, CVEs, static code audit)
   capsule attack [dir]      Cell's adversarial red team attack scan (injection, SSRF, ReDoS, BOLA)
+  capsule grill [dir]       Lord Beerus' architectural inquisition & code griller (swallowed errors, timeouts, edge cases)
   capsule init [dir]        Bootstrap any startup repo with Copilot, Codex, Claude, Gemini configs
   capsule sync              Sync skills and rules globally across all AIs
   capsule test              Run unit tests for Capsule Corp scripts
@@ -153,6 +154,11 @@ def cmd_attack(args):
     return run_child([sys.executable, str(script)] + args)
 
 
+def cmd_grill(args):
+    script = SCRIPTS_DIR / "grill_code.py"
+    return run_child([sys.executable, str(script)] + args)
+
+
 def cmd_init(args):
     script = SCRIPTS_DIR / "init_project.py"
     return run_child([sys.executable, str(script)] + args)
@@ -209,6 +215,8 @@ def main():
         exit_code = cmd_security(extra_args)
     elif subcommand in ("attack", "redteam"):
         exit_code = cmd_attack(extra_args)
+    elif subcommand in ("grill", "inquisition"):
+        exit_code = cmd_grill(extra_args)
     elif subcommand == "init":
         exit_code = cmd_init(extra_args)
     elif subcommand == "sync":

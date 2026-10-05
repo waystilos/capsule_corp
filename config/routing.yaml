@@ -66,5 +66,10 @@ routes:
     keywords: [attack, red team, redteam, penetration test, pen test, exploit, fuzz, chaos, adversary, adversarial, red-team]
     handoff: [cell, android-17, trunks]
     avoid: [product scope, ux]
+  - intent: code_inquisition
+    owner: beerus
+    keywords: [grill, grill me, inquisition, challenge, interrogate, stress test, pressure test, edge cases, defend code, hakai, probe assumptions]
+    handoff: [beerus, trunks]
+    avoid: [product scope, deploy]
 
 

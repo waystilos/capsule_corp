@@ -41,6 +41,7 @@ capsule test         # Cohort test suite
 capsule verify .     # Trunks' strict verification gate
 capsule security .   # Android 17's security scanner
 capsule attack .     # Cell's adversarial red team attack scan
+capsule grill .      # Lord Beerus' architectural inquisition & code griller
 capsule spy .        # King Kai's watchdog for agent scope drift & rogue edits
 ```
 
@@ -193,6 +194,7 @@ Specialists are called only when a task strictly requires their specific experti
 | **@Dr-Gero** | **Meta-Agent Architect** | System Scaffolding & Evals | Scaffolding new agents, authoring skills, and auditing execution transcripts for agent friction. |
 | **@Goten** | **Sprite Animation Specialist** | Articulated Sprite Sequences | Frame timing, anticipation/recovery frames, clear gameplay hitbox reading. |
 | **@Android-16** | **Rive Rig Specialist** | Vector Rig & State Contract | Validating delivered Rive character rigs, artboard bindings, and state-machine inputs. |
+| **@Beerus** | **God of Destruction & Supreme Inquisitor** | Architectural Inquisition & Code Griller | Ruthless interrogation of PRs and architecture: edge cases, swallowed errors, missing timeouts, and Hakai-level code grilling. |
 
 ---
 
@@ -279,7 +281,7 @@ Then leverage the native cohort integration:
 
 ### D. In Google Antigravity / Gemini
 In your chat or CLI session:
-* The full cohort (`bulma`, `goku`, `trunks`, `piccolo`, `whis`, `android-17`, `cell`, `king-kai`, `android-18`, `videl`, `vegeta`, `roshi`, `hercule`, `zarbon`, `dr-gero`, `goten`, and `android-16`) is natively registered.
+* The full cohort (`bulma`, `goku`, `trunks`, `piccolo`, `whis`, `android-17`, `cell`, `king-kai`, `beerus`, `android-18`, `videl`, `vegeta`, `roshi`, `hercule`, `zarbon`, `dr-gero`, `goten`, and `android-16`) is natively registered.
 * Simply say: *"Bulma, scope this feature"* or *"Cell, attack this service"* or *"King Kai, inspect active shifts for rogue modifications"*.
 * Initialize projects with `capsule init --tool gemini /path/to/project` (or `--tool agy`) to generate `GEMINI.md`.
 
@@ -318,6 +320,7 @@ capsule doctor [project_dir]
 capsule verify [project_dir]
 capsule security [project_dir]
 capsule attack [project_dir]
+capsule grill [project_dir]        # Lord Beerus' architectural inquisition & code griller
 
 # 7. Configure one AI tool by default (or multiple)
 capsule init --tool codex /path/to/project
@@ -461,7 +464,8 @@ capsule-corp/
 │   ├── android_16.md         # Android 16: Rive Rig Integration Specialist
 │   ├── hercule.md            # Hercule: Hype & Distribution Auditor
 │   ├── zarbon.md             # Zarbon: Creative Director & Polish
-│   └── roshi.md              # Master Roshi: Game Designer & Difficulty Tuner
+│   ├── roshi.md              # Master Roshi: Game Designer & Difficulty Tuner
+│   └── beerus.md             # Lord Beerus: God of Destruction & Supreme Inquisitor
 ├── skills/                   # Progressive disclosure runbooks (synced to all AIs)
 │   ├── scaffold-agent/       # Dr. Gero's bot designer
 │   ├── audit-transcripts/    # Dr. Gero's session log friction auditor
@@ -470,8 +474,9 @@ capsule-corp/
 │   ├── check_project.py      # Everyday project check engine (capsule check)
 │   ├── route_request.py      # Request triage & workflow suggestion (capsule route)
 │   ├── security_audit.py     # Android 17's security scanner (capsule security)
-│   ├── attack_project.py     # Cell's adversarial red team attack scan (capsule attack)
-│   ├── spy_room.py           # King Kai's watchdog auditor (capsule spy)
+│   ├── red_team.py           # Cell's adversarial red team attack scan (capsule attack)
+│   ├── grill_code.py         # Lord Beerus' architectural inquisition (capsule grill)
+│   ├── spy_watchdog.py       # King Kai's watchdog auditor (capsule spy)
 │   ├── validate_idea.py      # Pre-code demand validation (capsule validate)
 │   ├── init_project.py       # Multi-AI project bootstrap utility (capsule init)
 │   ├── scaffold_bot.py       # Bot creation script (capsule new)

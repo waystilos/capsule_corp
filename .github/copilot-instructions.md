@@ -29,6 +29,7 @@ Call specialists only when a task strictly requires their domain:
 - **Meta-Agent Architect (`@Dr-Gero`):** System scaffolding, skill creation, transcript friction auditing, and agent evals.
 - **Animation (`@Goten`):** Articulated sprite sequences, frame timing, and clear gameplay hitbox reading.
 - **Rig Integration (`@Android-16`):** Rive character rig validation, artboard and state-machine contract checks.
+- **Inquisitor / Grill Me (`@Beerus`):** Ruthless architectural inquisition, edge-case probing, stress testing, and Hakai-level code grilling.
 
 ### Workflows That Scale
 - **Small Fix:** Builder → Verification (`capsule check`). Avoid coordination overhead.
@@ -72,6 +73,7 @@ When handing off tasks between roles or subagents, use this concrete schema:
      - `capsule verify [dir]` (Trunks' strict verification gate)
      - `capsule security [dir]` (Android 17's secrets and CVE scanner)
      - `capsule attack [dir]` (Cell's adversarial red team attack scan)
+     - `capsule grill [dir]` (Lord Beerus' architectural inquisition & code griller)
      - `capsule doctor [dir]` (environment diagnostics)
      - `capsule list`
      - `capsule sync`

@@ -196,6 +196,7 @@ Call specialists only when strictly required:
 - **Meta-Agent Architect (\`@Dr-Gero\`):** Agent scaffolding, skills, and transcript friction auditing.
 - **Animation (\`@Goten\`):** Articulated sprite sequences, frame timing, clear gameplay hitbox reading.
 - **Rig Integration (\`@Android-16\`):** Rive character rig validation, artboard and state-machine contract checks.
+- **Inquisitor / Grill Me (\`@Beerus\`):** Ruthless architectural inquisition, edge-case probing, stress testing, and Hakai-level code grilling.
 
 ## 3. Workflows That Scale
 - **Small Fix:** Builder → Verification (\`capsule check\`). Avoid orchestration overhead.
@@ -215,7 +216,7 @@ Call specialists only when strictly required:
 ## 5. Mandatory Verification Gate (Trunks' Rule)
 Before declaring any task complete or submitting code changes:
 - Run project checks: \`capsule check [project_dir]\` (or native test runner).
-- Run strict gate before PRs: \`capsule verify [project_dir]\` and \`capsule security [project_dir]\`.
+- Run strict gate before PRs: \`capsule verify [project_dir]\`, \`capsule security [project_dir]\`, and \`capsule grill [project_dir]\`.
 - Verify exit code is 0 and no exposed secrets or merge conflicts are in the diff.
 
 ## 6. Check-In Room Protocol (Multi-AI Coordination)
@@ -237,6 +238,8 @@ Universal CLI available at: \`$CAPSULE_DIR/bin/capsule\`
 - \`capsule doctor [dir]\`
 - \`capsule verify [dir]\`
 - \`capsule security [dir]\`
+- \`capsule attack [dir]\`
+- \`capsule grill [dir]\`
 - \`capsule audit --latest\`
 - \`capsule scaffold\`
 - \`capsule init [dir]\`
@@ -287,6 +290,7 @@ Call specialists only when strictly required:
 - **Meta-Agent Architect (\`@Dr-Gero\`):** Agent scaffolding, skills, and transcript friction auditing.
 - **Animation (\`@Goten\`):** Articulated sprite sequences, frame timing, clear gameplay hitbox reading.
 - **Rig Integration (\`@Android-16\`):** Rive character rig validation, artboard and state-machine contract checks.
+- **Inquisitor / Grill Me (\`@Beerus\`):** Ruthless architectural inquisition, edge-case probing, stress testing, and Hakai-level code grilling.
 
 ## 3. Workflows That Scale
 - **Small Fix:** Builder → Verification (\`capsule check\`). Avoid orchestration overhead.
@@ -306,7 +310,7 @@ Call specialists only when strictly required:
 ## 5. Mandatory Verification Gate (Trunks' Rule)
 Before declaring any task done or opening a PR:
 - Run everyday checks: \`capsule check [dir]\` (or native test runner).
-- Run strict gate before PRs: \`capsule verify\`, \`capsule security\`, and \`capsule attack\`.
+- Run strict gate before PRs: \`capsule verify\`, \`capsule security\`, \`capsule attack\`, and \`capsule grill\`.
 - All tests must pass with exit code 0 and zero secrets in diff.
 
 ## 6. Check-In Room Protocol (Multi-AI Coordination)
@@ -331,6 +335,7 @@ Universal CLI: \`$CAPSULE_DIR/bin/capsule\`
 - \`capsule verify [dir]\`
 - \`capsule security [dir]\`
 - \`capsule attack [dir]\`
+- \`capsule grill [dir]\`
 - \`capsule audit --latest\`
 - \`capsule scaffold\`
 - \`capsule init --tool claude [dir]\`
