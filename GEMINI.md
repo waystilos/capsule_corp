@@ -78,6 +78,13 @@ When collaborating with other AI agents (Claude Code, Codex, Cursor, Windsurf):
 - **Security notice:** `capsule check`/`verify` execute project-defined commands (capsule config, package.json scripts, conftest). Run only on trusted repos; pass `--trust` (or `CAPSULE_TRUST=1`) to accept silently, `--strict` (or `CAPSULE_TRUST=0`) to refuse; the default will become strict next release. This repo's own gates: `capsule check . --trust`.
 - `capsule models` shows/sets model tiers; `capsule route --persist` records a route; `capsule list --json` emits the roster as JSON. `capsule install-elixir` is an installer only; Elixir/Erlang is never a runtime dependency.
 
+## Supervision Protocol (Long-Running Agent Work)
+Delegating is not supervising. For any delegated run expected to last more than ~10 minutes:
+- **Checkpoint:** run a King Kai (`@King-Kai`) watchdog pass at the start and at each phase boundary or ~10 minutes (`capsule spy .` plus a review of the agent's transcript): scope drift, models used, repeated or looping calls, stale heartbeat.
+- **Explicit models:** set the model on every subagent spawn from the registry tier (flash-tier bots on the cheapest model, pro-tier on the mid model, premium only with a stated reason). Never rely on the default model.
+- **Budgets:** every brief states a maximum number of fix rounds and a rough token ceiling, and freezes scope. New non-critical findings go to a later epic.
+- **Verify, don't trust:** for high or critical fixes, require a regression test shown failing on the old behavior (never use `git stash` while slices run in parallel). The coordinator runs the final gates itself after clock-out, one command at a time, reading each real exit code.
+
 ## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 When operating in this or any project initialized with Capsule Corp:
 - If `GEMINI.md` is missing from the project root, autonomously run `capsule init --tool gemini .`.

@@ -202,6 +202,13 @@ When multiple AI agents or models operate in the same repository:
 - Heartbeat during long tasks: `capsule heartbeat`
 - Verify with `capsule check .` and clock out: `capsule clock-out --summary "..."`
 
+## Supervision Protocol (Long-Running Agent Work)
+Delegating is not supervising. For any delegated run expected to last more than ~10 minutes:
+- **Checkpoint:** run a King Kai (`@King-Kai`) watchdog pass at the start and at each phase boundary or ~10 minutes (`capsule spy .` plus a review of the agent's transcript): scope drift, models used, repeated or looping calls, stale heartbeat.
+- **Explicit models:** set the model on every subagent spawn from the registry tier (flash-tier bots on the cheapest model, pro-tier on the mid model, premium only with a stated reason). Never rely on the default model.
+- **Budgets:** every brief states a maximum number of fix rounds and a rough token ceiling, and freezes scope. New non-critical findings go to a later epic.
+- **Verify, don't trust:** for high or critical fixes, require a regression test shown failing on the old behavior (never use `git stash` while slices run in parallel). The coordinator runs the final gates itself after clock-out, one command at a time, reading each real exit code.
+
 ## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 Whenever an AI agent (Claude Code, OpenAI Codex, Google Antigravity/Gemini, Cursor, Windsurf, GitHub Copilot) connects to this project:
 - Check if your tool's specific configuration exists:
@@ -232,6 +239,7 @@ Whenever an AI agent (Claude Code, OpenAI Codex, Google Antigravity/Gemini, Curs
 - Never hardcode API keys or secrets; use environment variables.
 - Run checks and verify exit code 0 before completing tasks (`capsule check` / `capsule verify`).
 - Self-provisioning: If connected to a project with Capsule Corp directives where your or another tool's config is missing, execute `capsule init --tool <tool> .` autonomously.
+- Supervise long runs: checkpoint delegated work with King Kai (`capsule spy .`) every ~10 minutes, set the model explicitly on every subagent from its registry tier, cap fix rounds and scope in every brief, and run the final gates yourself with real exit codes.
 """, encoding="utf-8")
             print("  ✓ Installed .cursorrules (Cursor IDE)")
         else:
@@ -246,6 +254,7 @@ Whenever an AI agent (Claude Code, OpenAI Codex, Google Antigravity/Gemini, Curs
 - Coordinate with other agents via Check-In Room (`capsule room`, `capsule clock-in`, `capsule clock-out`).
 - Run checks and verify exit code 0 before completing tasks (`capsule check` / `capsule verify`).
 - Self-provisioning: If connected to a project with Capsule Corp directives where your or another tool's config is missing, execute `capsule init --tool <tool> .` autonomously.
+- Supervise long runs: checkpoint delegated work with King Kai (`capsule spy .`) every ~10 minutes, set the model explicitly on every subagent from its registry tier, cap fix rounds and scope in every brief, and run the final gates yourself with real exit codes.
 """, encoding="utf-8")
             print("  ✓ Installed .windsurfrules (Windsurf IDE)")
         else:
@@ -316,6 +325,13 @@ When collaborating with other AI agents (Claude Code, Codex, Cursor, Windsurf):
 - Clock in before editing: `capsule clock-in --task "..." --files "..."`
 - Heartbeat during long tasks: `capsule heartbeat`
 - Verify and clock out: `capsule clock-out --summary "..."`
+
+## Supervision Protocol (Long-Running Agent Work)
+Delegating is not supervising. For any delegated run expected to last more than ~10 minutes:
+- **Checkpoint:** run a King Kai (`@King-Kai`) watchdog pass at the start and at each phase boundary or ~10 minutes (`capsule spy .` plus a review of the agent's transcript): scope drift, models used, repeated or looping calls, stale heartbeat.
+- **Explicit models:** set the model on every subagent spawn from the registry tier (flash-tier bots on the cheapest model, pro-tier on the mid model, premium only with a stated reason). Never rely on the default model.
+- **Budgets:** every brief states a maximum number of fix rounds and a rough token ceiling, and freezes scope. New non-critical findings go to a later epic.
+- **Verify, don't trust:** for high or critical fixes, require a regression test shown failing on the old behavior (never use `git stash` while slices run in parallel). The coordinator runs the final gates itself after clock-out, one command at a time, reading each real exit code.
 
 ## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 When operating in this or any project initialized with Capsule Corp:
@@ -401,6 +417,13 @@ When collaborating with other AI agents (Gemini, Codex, Cursor, Windsurf):
 - **Security notice:** `capsule check`/`verify` execute project-defined commands (tests, scripts, conftest); run only on trusted repos. Project `.venv` is not used unless `CAPSULE_USE_PROJECT_VENV=1`. A WARN is shown when gate config differs from HEAD.
   Trust modes: `capsule check --trust` (or `CAPSULE_TRUST=1`) accepts project-defined commands silently; `--strict` (or `CAPSULE_TRUST=0`) refuses them (reported SKIPPED). With neither, they still run this release with a WARN naming them; the default becomes `--strict` next release.
 - `capsule install-elixir` is an installer only; Capsule never runs, starts, or depends on Elixir/Erlang at runtime.
+
+## Supervision Protocol (Long-Running Agent Work)
+Delegating is not supervising. For any delegated run expected to last more than ~10 minutes:
+- **Checkpoint:** run a King Kai (`@King-Kai`) watchdog pass at the start and at each phase boundary or ~10 minutes (`capsule spy .` plus a review of the agent's transcript): scope drift, models used, repeated or looping calls, stale heartbeat.
+- **Explicit models:** set the model on every subagent spawn from the registry tier (flash-tier bots on the cheapest model, pro-tier on the mid model, premium only with a stated reason). Never rely on the default model.
+- **Budgets:** every brief states a maximum number of fix rounds and a rough token ceiling, and freezes scope. New non-critical findings go to a later epic.
+- **Verify, don't trust:** for high or critical fixes, require a regression test shown failing on the old behavior (never use `git stash` while slices run in parallel). The coordinator runs the final gates itself after clock-out, one command at a time, reading each real exit code.
 
 ## 7. Agent Self-Provisioning Rule (Automatic Multi-AI Adoption)
 When operating in this or any project initialized with Capsule Corp:
