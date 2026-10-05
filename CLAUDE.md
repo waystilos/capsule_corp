@@ -20,13 +20,17 @@ Work is organized around four core roles, with specialized agents called only on
 ### Optional Specialists (On-Demand Only)
 Call specialists only when a task strictly requires their domain:
 - **Security (`@Android-17`):** Secrets, OWASP patterns, CVEs, CORS, and auth flaws.
+- **Red Team (`@Cell`):** Offensive security, penetration testing, prompt injection fuzzing, SSRF, ReDoS, BOLA.
+- **Watchdog (`@King-Kai`):** Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering.
 - **Refactoring (`@Android-18`):** Dead code elimination, component extraction, and technical debt with zero behavioral changes.
 - **UX (`@Videl`):** Usability, accessibility, user flows, error and loading states.
 - **Infra (`@Vegeta`):** Dockerfiles, CI/CD pipelines, database migrations, connection pooling, and indexing.
 - **Game (`@Roshi`):** Canvas mechanics, game loops, sprite math, and physics.
-- **Watchdog (`@King-Kai`):** Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering.
-- **Red Team (`@Cell`):** Offensive security, penetration testing, prompt injection fuzzing, SSRF, ReDoS, BOLA.
+- **Hype & Distribution (`@Hercule`):** Cuts through vanity hype, audits organic distribution wedges, and verifies user demand.
+- **Polish (`@Zarbon`):** Aesthetic elegance, typography, micro-interactions, theme design, and editorial brand framing.
 - **Meta-Agent Architect (`@Dr-Gero`):** Agent scaffolding, skill creation, transcript friction auditing.
+- **Animation (`@Goten`):** Articulated sprite sequences, frame timing, and clear gameplay hitbox reading.
+- **Rig Integration (`@Android-16`):** Rive character rig validation, artboard and state-machine contract checks.
 
 ### Routing Policy
 Routing via `./bin/capsule route "<request>"` provides a **heuristic suggestion**. The host AI should choose the workflow scale based on the task:

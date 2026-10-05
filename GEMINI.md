@@ -11,12 +11,17 @@ All AI agents operating in this repository (Google Antigravity, Gemini CLI, agy)
 ## 2. Optional Specialists (On-Demand Only)
 Call specialists only when strictly required:
 - **Security (`@Android-17`):** Secrets, OWASP risks, auth flaws.
-- **Refactoring (`@Android-18`):** Dead code cleanup and technical debt.
+- **Red Team (`@Cell`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, and SSRF penetration testing.
+- **Watchdog (`@King-Kai`):** Telepathic supervisor catching scope drift, rogue edits, and stalled shifts.
+- **Refactoring (`@Android-18`):** Dead code cleanup and technical debt without behavioral changes.
 - **UX (`@Videl`):** User experience, accessibility, interaction design.
 - **Infra (`@Vegeta`):** Docker, CI/CD, database migrations, connection pooling.
 - **Game (`@Roshi`):** Game loops, canvas rendering, sprite math.
-- **Watchdog (`@King-Kai`):** Telepathic supervisor catching scope drift, rogue edits, and stalled shifts.
-- **Red Team (`@Cell`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, and SSRF penetration testing.
+- **Hype & Distribution (`@Hercule`):** Cuts through vanity hype, audits organic distribution wedges, and verifies user demand.
+- **Polish (`@Zarbon`):** Aesthetic elegance, typography, micro-interactions, theme design, and editorial brand framing.
+- **Meta-Agent Architect (`@Dr-Gero`):** System scaffolding, skill creation, transcript friction auditing, and agent evals.
+- **Animation (`@Goten`):** Articulated sprite sequences, frame timing, and clear gameplay hitbox reading.
+- **Rig Integration (`@Android-16`):** Rive character rig validation, artboard and state-machine contract checks.
 
 ## 3. Workflows That Scale
 - **Small Fix:** Builder → Verification (`capsule check`).

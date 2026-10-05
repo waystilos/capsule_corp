@@ -185,11 +185,17 @@ All AI agents operating within this workspace follow the **Capsule Corp Standard
 ## 2. Optional Specialists (On-Demand Only)
 Call specialists only when strictly required:
 - **Security (\`@Android-17\`):** Auth, secrets, OWASP risks, and CVEs.
+- **Red Team (\`@Cell\`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, SSRF.
+- **Watchdog (\`@King-Kai\`):** Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering.
 - **Refactoring (\`@Android-18\`):** Dead code cleanup and technical debt without behavioral changes.
 - **UX (\`@Videl\`):** Usability, accessibility, user flows, and error states.
 - **Infra (\`@Vegeta\`):** Docker, CI/CD, database migrations, connection pooling.
 - **Game (\`@Roshi\`):** Game loops, canvas rendering, sprite math.
+- **Hype & Distribution (\`@Hercule\`):** Cuts through vanity hype, audits organic distribution wedges, and verifies user demand.
+- **Polish (\`@Zarbon\`):** Aesthetic elegance, typography, micro-interactions, theme design, and editorial brand framing.
 - **Meta-Agent Architect (\`@Dr-Gero\`):** Agent scaffolding, skills, and transcript friction auditing.
+- **Animation (\`@Goten\`):** Articulated sprite sequences, frame timing, clear gameplay hitbox reading.
+- **Rig Integration (\`@Android-16\`):** Rive character rig validation, artboard and state-machine contract checks.
 
 ## 3. Workflows That Scale
 - **Small Fix:** Builder → Verification (\`capsule check\`). Avoid orchestration overhead.
@@ -270,13 +276,17 @@ You are an operative of Capsule Corp, built on Capsule Corp's agentic engineerin
 ## 2. Optional Specialists (On-Demand Only)
 Call specialists only when strictly required:
 - **Security (\`@Android-17\`):** Auth, secrets, OWASP risks, and CVEs.
+- **Red Team (\`@Cell\`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, SSRF.
+- **Watchdog (\`@King-Kai\`):** Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering.
 - **Refactoring (\`@Android-18\`):** Dead code cleanup and technical debt without behavioral changes.
 - **UX (\`@Videl\`):** Usability, accessibility, user flows, and error states.
 - **Infra (\`@Vegeta\`):** Docker, CI/CD, database migrations, connection pooling.
 - **Game (\`@Roshi\`):** Game loops, canvas rendering, sprite math.
-- **Watchdog (\`@King-Kai\`):** Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering.
-- **Red Team (\`@Cell\`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, SSRF.
+- **Hype & Distribution (\`@Hercule\`):** Cuts through vanity hype, audits organic distribution wedges, and verifies user demand.
+- **Polish (\`@Zarbon\`):** Aesthetic elegance, typography, micro-interactions, theme design, and editorial brand framing.
 - **Meta-Agent Architect (\`@Dr-Gero\`):** Agent scaffolding, skills, and transcript friction auditing.
+- **Animation (\`@Goten\`):** Articulated sprite sequences, frame timing, clear gameplay hitbox reading.
+- **Rig Integration (\`@Android-16\`):** Rive character rig validation, artboard and state-machine contract checks.
 
 ## 3. Workflows That Scale
 - **Small Fix:** Builder → Verification (\`capsule check\`). Avoid orchestration overhead.

@@ -66,8 +66,12 @@ Claude Code supports specialized subagents defined in `.claude/agents/`:
   - **`@android-18`**: Refactoring and dead code cleanup.
   - **`@videl`**: UX, accessibility, and user flows.
   - **`@vegeta`**: Docker, CI/CD, and database migrations.
-  - **`@zarbon`**: Visual elegance, typography, and micro-interactions.
+  - **`@roshi`**: Game feel, canvas mechanics, sprite math, and physics.
   - **`@hercule`**: Launch marketing, README hooks, and distribution copy.
+  - **`@zarbon`**: Visual elegance, typography, and micro-interactions.
+  - **`@dr-gero`**: System scaffolding, skill creation, transcript friction auditing.
+  - **`@goten`**: Sprite animation sequences and hitbox frame timing.
+  - **`@android-16`**: Rive vector character rig validation and state-machine checks.
 
 ### C. Standard Task Brief Handoff
 Pass tasks to Claude Code using the standard Task Brief envelope:

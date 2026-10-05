@@ -42,6 +42,22 @@ Define user states, empty states, and required API contracts.
 As @Android-17, review the diff in src/auth/jwt.ts for token expiration flaws, secret leakage, and OWASP vulnerabilities.
 ```
 
+```text
+As @Cell, probe this API endpoint for prompt injection, SSRF, and catastrophic regex backtracking.
+```
+
+```text
+As @King-Kai, audit active shifts to verify no rogue or out-of-scope edits have occurred.
+```
+
+```text
+As @Hercule, audit the organic distribution wedge and verify real customer demand before we build.
+```
+
+```text
+As @Zarbon, polish the typography, micro-interactions, and visual elegance of this interface.
+```
+
 ### B. Copilot Edits with Goku & Android 18
 - Use **@Goku mode** for new features: "Focus only on this function. No speculative helpers."
 - Use **@Android-18 mode** for cleanups: "Refactor this legacy utility into a TypeScript pure function without changing observable behavior."
