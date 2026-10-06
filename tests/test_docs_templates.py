@@ -28,7 +28,7 @@ def documented(text):
     return {m for m in CMD_RE.findall(text) if m not in NOT_COMMANDS}
 
 
-REQUIRED = {"send", "inbox", "ack", "models", "install-elixir"}
+REQUIRED = {"send", "inbox", "ack", "models"}
 
 
 class TestDocsMatchCli(unittest.TestCase):
@@ -36,7 +36,7 @@ class TestDocsMatchCli(unittest.TestCase):
         self.cli = dispatcher_commands()
 
     def test_dispatcher_parsed(self):
-        self.assertTrue({"check", "verify", "room", "send", "install-elixir"} <= self.cli)
+        self.assertTrue({"check", "verify", "room", "send"} <= self.cli)
 
     def test_init_templates_commands_exist(self):
         text = (ROOT / "scripts" / "init_project.py").read_text(encoding="utf-8")
@@ -52,11 +52,10 @@ class TestDocsMatchCli(unittest.TestCase):
     def test_repo_docs_match_template_essentials(self):
         for name in DOC_FILES:
             text = (ROOT / name).read_text(encoding="utf-8")
-            for cmd in ("send", "inbox", "ack", "models", "install-elixir"):
+            for cmd in ("send", "inbox", "ack", "models"):
                 self.assertIn("capsule " + cmd, text, f"{name} missing `capsule {cmd}`")
             low = text.lower()
             self.assertIn("untrusted", low, name)
-            self.assertIn("installer only", low, name)
             self.assertIn("--trust", text, name)
             self.assertIn("CAPSULE_TRUST", text, name)
 

@@ -12,9 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from scripts import install_elixir, init_project, audit_transcripts  # noqa: E402
-
-NO_ELIXIR = {"elixir": None, "erlang": None, "path": None}
+from scripts import init_project, audit_transcripts  # noqa: E402
 
 
 def run_quiet(fn, *args, **kwargs):
@@ -22,66 +20,6 @@ def run_quiet(fn, *args, **kwargs):
     with mock.patch("sys.stdout", out), mock.patch("sys.stderr", err):
         rc = fn(*args, **kwargs)
     return rc, out.getvalue(), err.getvalue()
-
-
-class InstallElixirTests(unittest.TestCase):
-    def _patch(self, commands, manager="apt"):
-        return (
-            mock.patch.object(install_elixir, "get_installed_versions", return_value=NO_ELIXIR),
-            mock.patch.object(install_elixir, "detect_installer", return_value=(manager, commands, "plan")),
-        )
-
-    def test_json_without_yes_refuses_and_runs_nothing(self):
-        p1, p2 = self._patch([["sudo", "apt-get", "update"]])
-        with p1, p2, mock.patch.object(install_elixir.subprocess, "run") as run:
-            rc, out, _ = run_quiet(install_elixir.run_install, json_mode=True)
-        self.assertNotEqual(rc, 0)
-        run.assert_not_called()
-        self.assertEqual(json.loads(out)["status"], "error")
-
-    def test_declining_prompt_is_nonzero(self):
-        p1, p2 = self._patch([["brew", "install", "elixir"]], "homebrew")
-        with p1, p2, mock.patch("builtins.input", return_value="n"), \
-                mock.patch.object(install_elixir.subprocess, "run") as run:
-            rc, _, _ = run_quiet(install_elixir.run_install)
-        self.assertNotEqual(rc, 0)
-        run.assert_not_called()
-
-    def test_asdf_plugin_add_failure_is_tolerated(self):
-        cmds = [["asdf", "plugin", "add", "erlang"], ["asdf", "install", "erlang", "latest"]]
-        p1, p2 = self._patch(cmds, "asdf")
-        calls = []
-
-        def fake_run(cmd, check=False):
-            calls.append((cmd, check))
-            return mock.Mock(returncode=0)
-
-        with p1, p2, mock.patch.object(install_elixir.subprocess, "run", side_effect=fake_run):
-            run_quiet(install_elixir.run_install, yes=True)
-        self.assertEqual(len(calls), 2)
-        self.assertFalse(calls[0][1])
-        self.assertTrue(calls[1][1])
-
-    def test_missing_sudo_errors(self):
-        p1, p2 = self._patch([["sudo", "apt-get", "update"]])
-        with p1, p2, mock.patch.object(install_elixir.shutil, "which", return_value=None), \
-                mock.patch.object(install_elixir.os, "geteuid", create=True, return_value=1000), \
-                mock.patch.object(install_elixir.subprocess, "run") as run:
-            rc, _, err = run_quiet(install_elixir.run_install, yes=True)
-        self.assertEqual(rc, 1)
-        self.assertIn("sudo", err)
-        run.assert_not_called()
-
-    def test_root_strips_sudo(self):
-        with mock.patch.object(install_elixir.os, "geteuid", create=True, return_value=0):
-            cmds, err = install_elixir.adjust_for_privileges([["sudo", "apt-get", "update"]])
-        self.assertIsNone(err)
-        self.assertEqual(cmds, [["apt-get", "update"]])
-
-    def test_ps1_wrapper_forwards_json(self):
-        text = (ROOT / "scripts" / "install_elixir.ps1").read_text(encoding="utf-8")
-        self.assertIn("[switch]$Json", text)
-        self.assertIn('"--json"', text)
 
 
 class InitProjectTests(unittest.TestCase):

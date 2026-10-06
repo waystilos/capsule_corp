@@ -151,7 +151,7 @@ def cmd_test() -> int:
 def main(argv: Optional[List[str]] = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if not args or args[0] in {"-h", "--help"}:
-        print("Usage: capsule {check|validate|room|spy|clock-in|clock-out|heartbeat|send|inbox|ack|list|route|models|doctor|test|scaffold|audit|verify|security|attack|grill|init|sync|install-elixir} [options]")
+        print("Usage: capsule {check|validate|room|spy|clock-in|clock-out|heartbeat|send|inbox|ack|list|route|models|doctor|test|scaffold|audit|verify|security|attack|grill|init|sync} [options]")
         return 0
 
     command, extra = args[0], args[1:]
@@ -195,8 +195,6 @@ def main(argv: Optional[List[str]] = None) -> int:
         return run_module("scripts.grill_code", extra)
     if command == "init":
         return run_module("scripts.init_project", extra)
-    if command in {"install-elixir", "setup-elixir"}:
-        return run_module("scripts.install_elixir", extra)
     if command == "sync":
         if os.name == "nt":
             print("capsule sync currently requires Git Bash or WSL on Windows.", file=sys.stderr)
