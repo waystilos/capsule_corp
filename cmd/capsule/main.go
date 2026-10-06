@@ -619,11 +619,12 @@ func cmdScaffold(args []string) {
 
 func cmdInit(args []string) {
 	fs := flag.NewFlagSet("init", flag.ExitOnError)
-	tool := fs.String("tool", "all", "Target AI assistant (gemini, claude, cursor, windsurf, codex, all)")
+	tool := fs.String("tool", "all", "Target AI assistant (gemini, claude, copilot, cursor, windsurf, codex, all)")
+	force := fs.Bool("force", false, "Overwrite existing config files")
 	_ = fs.Parse(args)
 
 	wd, _ := os.Getwd()
-	created, err := initcmd.InitProject(wd, *tool)
+	created, skipped, err := initcmd.InitProject(wd, *tool, *force)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing: %v\n", err)
 		os.Exit(1)
@@ -631,6 +632,9 @@ func cmdInit(args []string) {
 	fmt.Printf("✓ Initialized %d configuration files:\n", len(created))
 	for _, c := range created {
 		fmt.Printf("  • %s\n", c)
+	}
+	for _, s := range skipped {
+		fmt.Printf("  ⚠ skipped existing %s (use --force to overwrite)\n", s)
 	}
 }
 
