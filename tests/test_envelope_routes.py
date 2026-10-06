@@ -26,6 +26,16 @@ def run_chain(chain, entry):
     return env
 
 
+def read_agent_md(path: Path) -> str:
+    content = path.read_text(encoding="utf-8")
+    raw = content.strip().replace("\\", "/")
+    if not path.is_symlink() and "bots/" in raw:
+        target = (path.parent / content.strip()).resolve()
+        if target.is_file():
+            return target.read_text(encoding="utf-8")
+    return content
+
+
 class TestRegistryContracts(unittest.TestCase):
     def test_every_contract_is_machine_checkable(self):
         for key, spec in REGISTRY["bots"].items():
@@ -42,7 +52,7 @@ class TestRegistryContracts(unittest.TestCase):
                 path = ROOT / folder / f"{key if folder == 'bots' else spec['name']}.md"
                 if not path.exists():
                     continue  # .claude/agents files are renamed/synced separately
-                fm = yaml.safe_load(path.read_text(encoding="utf-8").split("---")[1])
+                fm = yaml.safe_load(read_agent_md(path).split("---")[1])
                 self.assertEqual(fm["input_contract"]["requires"], spec["input_contract"]["requires"], path.name)
                 self.assertEqual(fm["output_contract"]["provides"], spec["output_contract"]["provides"], path.name)
 

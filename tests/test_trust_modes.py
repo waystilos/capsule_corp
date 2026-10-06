@@ -165,7 +165,7 @@ class TestCorruptRoom(unittest.TestCase):
             root = Path(d)
             (root / ".capsule").mkdir()
             (root / ".capsule" / "room.json").write_text("{not json")
-            p = subprocess.run([str(CAPSULE_ROOT / "bin" / "capsule"), "room", str(root)],
+            p = subprocess.run([sys.executable, str(CAPSULE_ROOT / "bin" / "capsule"), "room", str(root)],
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             self.assertNotEqual(p.returncode, 0)
             self.assertIn("room.json", p.stdout + p.stderr)

@@ -83,6 +83,7 @@ class ChainTests(unittest.TestCase):
         self.assertEqual(len(again.ledger), 4)
         self.assertTrue(again.legacy_ledger)
 
+    @unittest.skipIf(os.name == "nt", "symlinks")
     def test_symlink_rejected(self):
         link = self.base / "link.jsonl"
         os.symlink(self.path, link)

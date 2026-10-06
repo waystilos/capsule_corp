@@ -106,6 +106,7 @@ class InboxTests(unittest.TestCase):
         self.assertFalse(f.exists())
         send_message(self.root, "bob", "hi again", sender="alice")
 
+    @unittest.skipIf(os.name == "nt", "symlinks need privileges on Windows")
     def test_reset_removes_symlink_without_following(self):
         victim = self.root / "victim.txt"
         victim.write_text("keep")

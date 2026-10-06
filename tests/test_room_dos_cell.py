@@ -123,6 +123,7 @@ class TestC9Caps(unittest.TestCase):
 
 
 class TestC10SafeReads(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "symlinks need privileges on Windows")
     def test_room_json_symlink_not_followed_or_copied(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -148,6 +149,7 @@ class TestC10SafeReads(unittest.TestCase):
             self.assertEqual(res.returncode, 1)
             self.assertIn("not a regular file", res.stderr)
 
+    @unittest.skipIf(os.name == "nt", "symlinks need privileges on Windows")
     def test_session_json_symlink_and_fifo_ignored(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -164,6 +166,7 @@ class TestC10SafeReads(unittest.TestCase):
                     tokens = run_with_timeout(lambda: room._read_session_file(root / ".capsule" / "session.json"))
                 self.assertEqual(tokens["tokens"], {})
 
+    @unittest.skipIf(os.name == "nt", "symlinks need privileges on Windows")
     def test_inbox_symlink_refused(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -183,6 +186,7 @@ class TestC10SafeReads(unittest.TestCase):
             with self.assertRaises(MessagingError):
                 run_with_timeout(lambda: read_inbox(root, "goku"))
 
+    @unittest.skipIf(os.name == "nt", "symlinks need privileges on Windows")
     def test_envelope_symlink_refused(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)

@@ -66,25 +66,40 @@ class AuditTranscriptTests(unittest.TestCase):
         self.assertEqual(result["tool_usage"], {"t": 1})
 
 
+def read_agent_md(path: Path) -> str:
+    content = path.read_text(encoding="utf-8")
+    raw = content.strip().replace("\\", "/")
+    if not path.is_symlink() and "bots/" in raw:
+        target = (path.parent / content.strip()).resolve()
+        if target.is_file():
+            return target.read_text(encoding="utf-8")
+    return content
+
+
 class AgentsDedupeTests(unittest.TestCase):
     def test_no_duplicate_agent_symlink_targets_or_names(self):
         agents = ROOT / ".claude" / "agents"
         targets = {}
         for f in sorted(agents.glob("*.md")):
             self.assertNotIn("_", f.name, f.name)
-            key = os.path.realpath(str(f))
+            if f.is_symlink():
+                key = os.path.realpath(str(f))
+            else:
+                raw = f.read_text(encoding="utf-8").strip()
+                target = (f.parent / raw).resolve()
+                key = str(target) if target.is_file() else os.path.realpath(str(f))
             self.assertNotIn(key, targets, "%s duplicates %s" % (f.name, targets.get(key)))
             targets[key] = f.name
         names = []
         for key in targets:
-            m = re.search(r'^name:\s*"?([\w-]+)"?\s*$', Path(key).read_text(encoding="utf-8"), re.M)
+            m = re.search(r'^name:\s*"?([\w-]+)"?\s*$', read_agent_md(Path(key)), re.M)
             self.assertIsNotNone(m, key)
             names.append(m.group(1))
         self.assertEqual(len(names), len(set(names)))
 
     def test_agent_files_match_frontmatter_name(self):
         for f in (ROOT / ".claude" / "agents").glob("*.md"):
-            m = re.search(r'^name:\s*"?([\w-]+)"?\s*$', f.read_text(encoding="utf-8"), re.M)
+            m = re.search(r'^name:\s*"?([\w-]+)"?\s*$', read_agent_md(f), re.M)
             self.assertEqual(m.group(1) + ".md", f.name)
 
 
