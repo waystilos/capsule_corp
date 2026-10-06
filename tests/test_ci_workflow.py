@@ -10,6 +10,7 @@ class CiWorkflowTests(unittest.TestCase):
 
     def test_text_key_steps(self):
         for needle in (
+            "python -m pip install -r requirements.txt",
             "python -m unittest discover -s tests -t .",
             "python bin/capsule check . --trust",
             "shellcheck config/*.sh",
@@ -30,6 +31,7 @@ class CiWorkflowTests(unittest.TestCase):
         for os_name in ("ubuntu-latest", "windows-latest", "macos-latest"):
             self.assertIn(os_name, oses)
         self.assertIn("lint-and-installers", data["jobs"])
+        self.assertNotIn("macos-13", oses)  # retired runner: jobs on it queue forever
 
 
 if __name__ == "__main__":
