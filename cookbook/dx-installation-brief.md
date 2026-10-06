@@ -42,44 +42,44 @@ go build -o bin/capsule-go ./cmd/capsule
 
 ### Optional global command
 
-The repository now provides a standard Python package entry point so developers can choose an isolated install:
+Install the compiled binary directly into your `$GOPATH/bin` or standard system path:
 
 ```bash
-python3 -m pip install --user /path/to/capsule-corp
+go install ./cmd/capsule
 capsule doctor
 ```
 
-Document `pipx install /path/to/capsule-corp` as the preferred isolated installation when `pipx` is available. The local `./bin/capsule` path remains the fallback and should not depend on a global install.
+The local `./bin/capsule` path remains the zero-configuration fallback and works autonomously without any global installation.
 
-## New command: `capsule doctor`
+## Command: `capsule doctor`
 
 `doctor` is read-only and exits non-zero only when the local runner cannot function. It reports:
 
-- Python version and executable path.
-- Whether optional YAML support is available.
-- Whether Git is available when verification needs it.
+- Go toolchain version and runtime diagnostics.
+- Whether embedded assets and YAML registry load correctly.
+- Whether Git is available for workspace verification.
 - Whether `capsule` is on `PATH` and how to add it.
 - Whether the current directory looks like a supported project.
-- Which test/security tools are detected or unavailable.
+- Which verification and security tools are detected.
 - The exact next command to run.
 
 Example successful output:
 
 ```text
 Capsule Corp doctor: READY
-Runner: ./bin/capsule
-Python: 3.x (...)
+Runner: ./bin/capsule (Go standalone)
+Go: go1.26.0 darwin/arm64
 Git: available
 Project: detected
-Next: ./bin/capsule test
+Next: ./bin/capsule check .
 ```
 
 Example blocked output:
 
 ```text
 Capsule Corp doctor: NEEDS ATTENTION
-Problem: Python 3 was not found
-Fix: Install Python 3.11+ and rerun ./bin/capsule doctor
+Problem: Git was not found
+Fix: Install Git and rerun ./bin/capsule doctor
 ```
 
 ## Installation boundaries
@@ -97,7 +97,7 @@ Implement in this order:
 1. Add `capsule doctor` with deterministic checks and exit codes.
 2. Add packaging metadata and a console-script entry point without breaking `./bin/capsule`.
 3. Update the README and cookbook to use the doctor-first flow.
-4. Add integration tests for missing Python/YAML/Git/PATH conditions and successful local execution.
+4. Add integration tests for missing Go/Git/PATH conditions and successful local execution.
 5. Run `capsule test`, `capsule verify`, and `capsule security`.
 
 ## Acceptance criteria

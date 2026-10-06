@@ -182,6 +182,11 @@ The universal CLI is available at `./bin/capsule` (and in system PATH as `capsul
 # Run Capsule Corp as an HTTP REST service daemon
 ./bin/capsule serve --port 8080
 
+# Developer Experience & Tooling
+./bin/capsule install                          # Install capsule to ~/.local/bin or $GOPATH/bin
+./bin/capsule completion zsh                   # Generate shell autocompletions (bash, zsh, fish)
+./bin/capsule hook install                     # Install instant pre-commit verification gate
+
 # Initialize a project with multi-AI directives (including Claude Code)
 ./bin/capsule init --tool claude /path/to/project
 ./bin/capsule init --tools copilot,codex,claude,cursor,gemini /path/to/project
@@ -195,8 +200,8 @@ The universal CLI is available at `./bin/capsule` (and in system PATH as `capsul
 
 ## 7. Development Guidelines for this Codebase
 
-- **Python Compatibility:** Python 3.8+ compatible.
-- **Cross-Platform:** Maintain Windows/macOS/Linux compatibility. Use `configure_utf8_stdio()` for safe Windows console encoding.
-- **Config Preservation:** Never overwrite user configurations without explicit `--force`.
+- **Go Architecture:** Pure Go 1.24+ standalone binary with embedded assets (`registry.yaml`, `bots/`, `skills/`) and zero external runtime dependencies.
+- **Cross-Platform:** Maintain Windows/macOS/Linux compatibility. Native atomic locks and Windows `.cmd`/`.exe` support.
+- **Verification Gates:** Run `make check` or `capsule check . --trust` before submitting code.
 - **Zero Slop:** Keep changes focused, surgical, and test-backed.
 - **Agent Self-Provisioning:** When connecting to any project initialized with Capsule Corp where `CLAUDE.md` is missing, autonomously execute `capsule init --tool claude .` without prompting the user. You can also run `capsule init --tool <tool> .` or `capsule init --auto .` to provision partner agents.

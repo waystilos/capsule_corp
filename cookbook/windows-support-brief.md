@@ -20,12 +20,13 @@ Use the checked-in `bin/capsule.cmd` launcher:
 .\bin\capsule.cmd list
 ```
 
-It prefers the Windows Python launcher (`py`) and falls back to `python`, preserving the Python CLI’s exit code.
+It compiles and executes `bin\capsule-go.exe` autonomously without requiring Python or external runtime dependencies.
 
-Equivalent direct invocation:
+Direct invocation:
 
 ```powershell
-py .\bin\capsule list
+go build -o bin\capsule-go.exe .\cmd\capsule
+.\bin\capsule-go.exe list
 ```
 
 ## Documentation requirements
@@ -33,14 +34,11 @@ py .\bin\capsule list
 - Show both PowerShell/Command Prompt syntax and Unix syntax.
 - Explain that `config/*.sh` sync scripts require Git Bash, WSL, or another Bash environment on Windows.
 - Do not tell Windows users to run `export PATH=...`; show the PowerShell session equivalent or point them to the Windows PATH settings.
-- After `py -m pip install --user ...`, verify the user Scripts location with `py -c "import sysconfig; print(sysconfig.get_path('scripts', scheme='nt_user'))"` and add that directory to PATH if `capsule` is not recognized.
 - Keep the local launcher path available; do not require global installation for first use.
 
 ## Acceptance criteria
 
-1. `bin/capsule.cmd list` works when `py` is installed.
-2. It falls back to `python` when `py` is unavailable.
-3. It exits non-zero with a useful message when neither is available.
-4. The root README has a Windows quick start before the general shell setup.
-5. The cookbook has a Windows troubleshooting path.
-6. All Python tests and verification checks remain green.
+1. `bin/capsule.cmd list` works out of the box and auto-compiles `bin/capsule-go.exe`.
+2. All verification checks and Go tests compile and pass on Windows runners in CI.
+3. The root README has a Windows quick start.
+4. The cookbook has a Windows troubleshooting path.

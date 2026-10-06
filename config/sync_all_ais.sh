@@ -79,6 +79,96 @@ echo "=================================================================="
 echo " 🌐 CAPSULE CORP UNIVERSAL MULTI-AI SYNCHRONIZER"
 echo "=================================================================="
 
+# 0. Legacy Python Migration & Cleanup (for systems upgrading from Python)
+echo "🧹 Checking for legacy Python installations..."
+
+# 0.1 Check pip / pip3 / pyenv / pipx for legacy capsule-corp package
+if command -v pip >/dev/null 2>&1; then
+  if pip show capsule-corp >/dev/null 2>&1; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      echo "   · Would uninstall legacy Python package 'capsule-corp' via pip"
+    else
+      echo "   ⚡ Removing legacy Python package 'capsule-corp' via pip..."
+      pip uninstall -y capsule-corp >/dev/null 2>&1 || true
+    fi
+  fi
+fi
+
+if command -v pip3 >/dev/null 2>&1; then
+  if pip3 show capsule-corp >/dev/null 2>&1; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      echo "   · Would uninstall legacy Python package 'capsule-corp' via pip3"
+    else
+      echo "   ⚡ Removing legacy Python package 'capsule-corp' via pip3..."
+      pip3 uninstall -y capsule-corp >/dev/null 2>&1 || true
+    fi
+  fi
+fi
+
+if command -v pyenv >/dev/null 2>&1; then
+  if pyenv exec pip show capsule-corp >/dev/null 2>&1; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      echo "   · Would uninstall legacy Python package 'capsule-corp' via pyenv"
+    else
+      echo "   ⚡ Removing legacy Python package 'capsule-corp' via pyenv..."
+      pyenv exec pip uninstall -y capsule-corp >/dev/null 2>&1 || true
+      pyenv rehash >/dev/null 2>&1 || true
+    fi
+  fi
+fi
+
+if command -v pipx >/dev/null 2>&1; then
+  if pipx list 2>/dev/null | grep -q "capsule-corp"; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      echo "   · Would uninstall legacy Python package 'capsule-corp' via pipx"
+    else
+      echo "   ⚡ Removing legacy Python package 'capsule-corp' via pipx..."
+      pipx uninstall capsule-corp >/dev/null 2>&1 || true
+    fi
+  fi
+fi
+
+# 0.2 Check for broken Python capsule scripts/shims on PATH
+OLD_CAPSULE="$(command -v capsule 2>/dev/null || true)"
+if [[ -n "$OLD_CAPSULE" && -f "$OLD_CAPSULE" ]]; then
+  if grep -q "capsule.cli" "$OLD_CAPSULE" 2>/dev/null || grep -q "from capsule" "$OLD_CAPSULE" 2>/dev/null; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      echo "   · Would replace legacy Python executable at $OLD_CAPSULE with Go binary"
+    else
+      echo "   ⚡ Replacing legacy Python executable at $OLD_CAPSULE with Go binary..."
+      backup_target "$OLD_CAPSULE"
+      (cd "$CAPSULE_DIR" && go build -o "$OLD_CAPSULE" ./cmd/capsule)
+      echo "   ✓ Successfully upgraded $OLD_CAPSULE to Go binary"
+    fi
+  fi
+fi
+
+# 0.3 Build Go standalone binary if needed
+GO_BIN="$CAPSULE_DIR/bin/capsule-go"
+if [[ ! -f "$GO_BIN" ]]; then
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    echo "   · Would build Go binary at $GO_BIN"
+  else
+    echo "   🔨 Compiling Go standalone binary..."
+    (cd "$CAPSULE_DIR" && go build -o "$GO_BIN" ./cmd/capsule)
+    echo "   ✓ Built $GO_BIN"
+  fi
+fi
+
+# 0.4 Clean repository debris
+for debris in "$CAPSULE_DIR/.pytest_cache" "$CAPSULE_DIR/.venv"; do
+  if [[ -d "$debris" ]]; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      echo "   · Would clean legacy directory $debris"
+    else
+      rm -rf "$debris"
+      echo "   ✓ Cleaned legacy directory $(basename "$debris")"
+    fi
+  fi
+done
+
+echo ""
+
 # 1. Target Skill Directories for All AIs
 TARGET_SKILL_DIRS=(
   "$HOME/.gemini/config/skills"
@@ -399,7 +489,7 @@ if [ -f "$CLAUDE_SETTINGS_FILE" ]; then
   if ! grep -q "capsule" "$CLAUDE_SETTINGS_FILE"; then
     if [[ "$DRY_RUN" -eq 1 ]]; then
       echo "   · Would add capsule execution permissions to $CLAUDE_SETTINGS_FILE"
-    else
+    elif command -v python3 >/dev/null 2>&1; then
       python3 -c "
 import json
 from pathlib import Path

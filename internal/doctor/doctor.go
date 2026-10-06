@@ -1,8 +1,11 @@
 package doctor
 
 import (
+	"fmt"
 	"os/exec"
 	"strings"
+
+	"capsule-corp/internal/dx"
 )
 
 type DiagnosticItem struct {
@@ -69,6 +72,39 @@ func DiagnoseEnvironment(targetDir string) DoctorReport {
 			Name:    "Repository",
 			Status:  "WARN",
 			Details: "Target directory is not inside a git work tree",
+		})
+	}
+
+	// 4. Check if capsule is directly on PATH
+	if capsulePath, err := exec.LookPath("capsule"); err == nil {
+		rep.Items = append(rep.Items, DiagnosticItem{
+			Name:    "CLI (PATH)",
+			Status:  "OK",
+			Details: fmt.Sprintf("capsule command is directly available in PATH (%s)", capsulePath),
+		})
+	} else {
+		rep.Items = append(rep.Items, DiagnosticItem{
+			Name:    "CLI (PATH)",
+			Status:  "WARN",
+			Details: "capsule is not in PATH (run 'capsule install' or use ./bin/capsule)",
+		})
+	}
+
+	// 5. Check for legacy Python installations and broken shims
+	legacyWarnings := dx.CheckLegacyPython()
+	if len(legacyWarnings) > 0 {
+		for _, w := range legacyWarnings {
+			rep.Items = append(rep.Items, DiagnosticItem{
+				Name:    "Legacy Python",
+				Status:  "WARN",
+				Details: w,
+			})
+		}
+	} else {
+		rep.Items = append(rep.Items, DiagnosticItem{
+			Name:    "Legacy Python",
+			Status:  "OK",
+			Details: "No conflicting legacy Python shims or packages detected",
 		})
 	}
 

@@ -18,15 +18,10 @@ cd capsule-corp
 
 #### Prerequisites
 
-- Python 3.8 or newer
+- Go 1.24+ (compiles to a single zero-dependency binary with embedded assets)
 - Git, for diff and change verification
-- PyYAML for the full test suite and formatted registry output:
 
-  ```bash
-  python3 -m pip install PyYAML
-  ```
-
-Project-specific tools such as `pytest`, `npm`, `cargo`, or `go` are only needed when verifying a project that uses them.
+Project-specific tools such as `npm`, `cargo`, `go`, or `pytest` are only needed when verifying a project that uses them.
 
 #### Run the built-in checks
 
@@ -79,20 +74,26 @@ Apply global changes only after reviewing the preview:
 
 Forced replacements create timestamped backups. Do not run global sync on a shared machine without checking the target paths.
 
-#### Optional package installation
+#### Optional global installation & DX
 
-The repository provides a standard Python package entry point for developers who prefer a global command:
+Install the standalone binary into your system PATH with one command:
 
 ```bash
-python3 -m pip install --user /path/to/capsule-corp
-capsule list
+./bin/capsule install
+# or via Makefile
+make install
 ```
 
-When `pipx` is available, prefer an isolated install:
+Enable native shell autocompletions (Zsh, Bash, Fish):
 
 ```bash
-pipx install /path/to/capsule-corp
-capsule list
+capsule completion zsh > ~/.zfunc/_capsule
+```
+
+Install the instant Git pre-commit verification gate (~200ms diff audit):
+
+```bash
+capsule hook install
 ```
 
 The local `./bin/capsule` path remains available for source checkouts.
@@ -104,8 +105,8 @@ Implement the README section above and make the documented future path true.
 ### Acceptance criteria
 
 1. A fresh clone has a clearly visible first command using `./bin/capsule`.
-2. README names Python, Git, and PyYAML prerequisites and explains why each is needed.
-3. README documents local execution, temporary PATH setup, and permanent PATH setup without editing shell files automatically.
+2. README names Go and Git prerequisites and explains why each is needed.
+3. README documents local execution, temporary PATH setup, and permanent PATH setup via `capsule install` or `make install`.
 4. README distinguishes `init` from `sync` and documents `--force` and `--dry-run` safety behavior.
 5. README documents the exact `test`, `verify`, and `security` commands and their expected exit-code requirement.
 6. Add a `capsule doctor` command or revise the README until it no longer promises a command that does not exist.

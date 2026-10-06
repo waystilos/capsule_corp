@@ -35,6 +35,36 @@ go build -o bin/capsule-go ./cmd/capsule
 
 The `./bin/capsule` launcher (and `.\bin\capsule.cmd` on Windows) automatically compiles `capsule-go` on first invocation if not already built.
 
+### Developer Experience & Global Installation
+
+Install globally or into system PATH with one command:
+
+```bash
+./bin/capsule install       # Installs to ~/.local/bin or $GOPATH/bin
+# or via Makefile
+make install
+```
+
+Enable native shell autocompletions (Zsh, Bash, Fish):
+
+```bash
+# Zsh
+capsule completion zsh > ~/.zfunc/_capsule
+
+# Bash
+capsule completion bash > /etc/bash_completion.d/capsule
+
+# Fish
+capsule completion fish > ~/.config/fish/completions/capsule.fish
+```
+
+Install the instant Git pre-commit verification gate (~200ms diff & secrets check):
+
+```bash
+capsule hook install        # Installs .git/hooks/pre-commit
+capsule hook uninstall      # Removes hook
+```
+
 ### Run the built-in checks & runtime setup
 
 ```bash
@@ -157,21 +187,26 @@ By default, `init` installs only the integration you select and preserves unrela
 ./bin/capsule init --tool copilot --force /path/to/project
 ```
 
-### Sync AI-tool skills and rules safely
+### Sync AI-tool skills, rules, and migrate legacy Python installations
 
-Preview global changes before applying them:
+If you or your team previously installed the Python version of Capsule Corp (`pip install -e .`, `pipx`, or pyenv shims), `capsule sync` autonomously cleans up broken Python shims, uninstalls legacy packages, and upgrades your system to the compiled Go binary:
 
-```bash
-./bin/capsule sync --dry-run
-```
-
-Apply the changes only after reviewing the preview:
+Preview changes first:
 
 ```bash
-./bin/capsule sync --force
+capsule sync --dry-run
 ```
 
-Forced replacements create timestamped backups. Do not run global sync on a shared machine without checking the target paths.
+Apply global synchronization and migration:
+
+```bash
+capsule sync --force
+```
+
+What `capsule sync` performs:
+1. **Legacy Python De-provisioning:** Detects and uninstalls old `capsule-corp` packages from `pip`, `pip3`, `pipx`, and `pyenv`, cleans up broken script shims, runs `pyenv rehash`, and purges old `.pytest_cache`/`.venv` directories.
+2. **Go Binary Compilation & Installation:** Verifies that the native `capsule-go` executable is compiled and linked into your system PATH.
+3. **Multi-AI Rule & Skill Bridges:** Links universal skills, agents, and directives into Antigravity/Gemini (`~/.gemini/`), OpenAI Codex (`~/.codex/`), Anthropic Claude Code (`~/.claude/`), Cursor (`~/.cursorrules`), and Windsurf (`~/.windsurfrules`).
 
 For detailed situation-based workflows, see the [Capsule Corp Cookbook](cookbook/README.md).
 

@@ -8,11 +8,13 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"capsule-corp/internal/check"
 	"capsule-corp/internal/doctor"
+	"capsule-corp/internal/dx"
 	"capsule-corp/internal/grill"
 	"capsule-corp/internal/initcmd"
 	"capsule-corp/internal/messaging"
@@ -66,7 +68,11 @@ Core Commands:
   scaffold    Generate new bot definition markdown in bots/
   init        Initialize multi-AI tool configuration files
   doctor      Diagnose environment, compilers, and toolchain health
-  serve       Run Capsule Corp as an HTTP REST service daemon (--port)`)
+  serve       Run Capsule Corp as an HTTP REST service daemon (--port)
+  sync        Synchronize AI rules/skills and migrate legacy Python installations (--dry-run, --force)
+  hook        Install or uninstall Git pre-commit verification hook (install/uninstall)
+  completion  Generate shell autocompletions (bash, zsh, fish)
+  install     Install capsule binary into system PATH (~/.local/bin or $GOPATH/bin)`)
 }
 
 func main() {
@@ -147,6 +153,18 @@ func main() {
 
 	case "serve", "daemon":
 		cmdServe(args)
+
+	case "hook":
+		cmdHook(args)
+
+	case "completion":
+		cmdCompletion(args)
+
+	case "install":
+		cmdInstall()
+
+	case "sync":
+		cmdSync(args)
 
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\nRun 'capsule help' for available commands.\n", command)
@@ -672,3 +690,95 @@ func cmdServe(args []string) {
 		os.Exit(1)
 	}
 }
+
+func cmdHook(args []string) {
+	if len(args) == 0 || args[0] == "install" {
+		wd, _ := os.Getwd()
+		path, err := dx.InstallGitHook(wd)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error installing git hook: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("✓ Pre-commit verification hook installed at %s\n", path)
+	} else if args[0] == "uninstall" || args[0] == "remove" {
+		wd, _ := os.Getwd()
+		if err := dx.UninstallGitHook(wd); err != nil {
+			fmt.Fprintf(os.Stderr, "Error uninstalling git hook: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("✓ Pre-commit verification hook uninstalled.")
+	} else {
+		fmt.Println("Usage: capsule hook [install|uninstall]")
+	}
+}
+
+func cmdCompletion(args []string) {
+	shell := "bash"
+	if len(args) > 0 {
+		shell = strings.ToLower(args[0])
+	}
+	switch shell {
+	case "bash":
+		fmt.Print(dx.BashCompletion())
+	case "zsh":
+		fmt.Print(dx.ZshCompletion())
+	case "fish":
+		fmt.Print(dx.FishCompletion())
+	default:
+		fmt.Fprintf(os.Stderr, "Unsupported shell %q (supported: bash, zsh, fish)\n", shell)
+		os.Exit(1)
+	}
+}
+
+func cmdInstall() {
+	exe, err := os.Executable()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error locating executable: %v\n", err)
+		os.Exit(1)
+	}
+	installed, inPath, err := dx.InstallBinary(exe)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error installing binary: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("✓ Installed capsule to %s\n", installed)
+	if !inPath {
+		dir := filepath.Dir(installed)
+		fmt.Printf("\n⚠️ Notice: %s is not currently in your $PATH.\n", dir)
+		fmt.Printf("To add it, append this line to your shell configuration (.zshrc or .bashrc):\n")
+		fmt.Printf("  export PATH=\"%s:$PATH\"\n\n", dir)
+	} else {
+		fmt.Println("✓ capsule is available in your PATH.")
+	}
+}
+
+func cmdSync(args []string) {
+	wd := resourceRoot()
+
+	// 1. Run pure Go migration for legacy Python installations
+	rep := dx.MigrateLegacyPython(wd)
+	for _, act := range rep.Actions {
+		fmt.Printf("   ⚡ %s\n", act)
+	}
+
+	// 2. Invoke universal synchronizer config/sync_all_ais.sh
+	scriptPath := filepath.Join(wd, "config", "sync_all_ais.sh")
+	if _, err := os.Stat(scriptPath); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: sync script not found at %s\n", scriptPath)
+		os.Exit(1)
+	}
+
+	cmd := exec.Command("bash", append([]string{scriptPath}, args...)...)
+	cmd.Dir = wd
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	if err := cmd.Run(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			os.Exit(exitErr.ExitCode())
+		}
+		os.Exit(1)
+	}
+}
+
+

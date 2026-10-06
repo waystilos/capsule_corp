@@ -32,33 +32,24 @@ On Windows, use the checked-in launcher from PowerShell or Command Prompt:
 .\bin\capsule.cmd list
 ```
 
-If that fails, confirm that `py` or `python` is installed:
+If that fails, run the doctor command to diagnose your environment:
 
 ```powershell
-py --version
-python --version
+.\bin\capsule.cmd doctor
 ```
 
 The `config/*.sh` synchronization scripts require Git Bash, WSL, or another Bash environment on Windows.
 
 ### `capsule verify` says no test runner was found
 
-Add or configure the project’s native test runner. If this is a deliberate documentation/configuration-only check, use:
+Add or configure the project’s native test runner (Go, Node, Python, or Rust). If this is a deliberate documentation/configuration-only check, ensure the repository has a supported manifest (`go.mod`, `package.json`, `Cargo.toml`, etc.).
 
-```bash
-capsule verify --skip-tests /path/to/project
-```
+### `capsule security` reports exposed credentials
 
-### `capsule security` says the dependency audit is incomplete
-
-Install Capsule's optional audit tooling and rerun the command:
-
-```bash
-python3 -m pip install "/path/to/capsule-corp[security]"
-capsule security /path/to/project
-```
-
-An incomplete audit is reported separately from confirmed vulnerabilities; do not treat it as a clean security result.
+If `capsule security` detects secrets or high-entropy tokens:
+1. Move the secret to an environment variable or secure vault.
+2. Remove the hardcoded secret from tracked files.
+3. Rerun `./bin/capsule security .` to verify 0 exposed secrets remain.
 
 ### Sync refuses to replace a target
 
