@@ -28,6 +28,18 @@ cd capsule-corp
 
 The output should say that `./bin/capsule` is the supported local runner and show the optional PATH setup only after the first successful check.
 
+### Standalone compiled Go binary (Zero-dependency & Service Mode)
+
+For production environments, containerized agents, or CI pipelines, compile the standalone Go binary:
+
+```bash
+cd capsule-corp
+go build -o bin/capsule-go ./cmd/capsule
+./bin/capsule-go doctor
+./bin/capsule-go check .
+./bin/capsule-go serve --port 8080 # run as HTTP REST service
+```
+
 ### Optional global command
 
 The repository now provides a standard Python package entry point so developers can choose an isolated install:

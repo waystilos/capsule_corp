@@ -23,3 +23,7 @@ dist/
 # Capsule Corp local check-in room state
 .capsule/
 
+# Compiled Go binaries
+bin/capsule-go
+bin/capsule-go.exe
+
