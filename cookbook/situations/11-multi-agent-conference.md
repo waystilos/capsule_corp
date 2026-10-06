@@ -78,7 +78,7 @@ capsule spy .
 ```
 
 #### How `capsule spy` Works
-King Kai's watchdog (`scripts/spy_watchdog.py`) inspects the real workspace state and compares it against `.capsule/room.json` and agent inboxes:
+King Kai's watchdog (`capsule spy`) inspects the real workspace state and compares it against `.capsule/room.json` and agent inboxes:
 1. **Scope Drift:** Compares the actual `git status` dirty files against the agent's claimed `--files` list. Any unbudgeted file modification triggers a `SCOPE_DRIFT` failure.
 2. **Rogue Edits:** Detects uncommitted modifications when no agent is clocked in (`ROGUE_MODIFICATION`).
 3. **Stalled Shifts:** Flags any shift that has gone longer than 45 minutes without a `capsule heartbeat` (`STALE_HEARTBEAT`).

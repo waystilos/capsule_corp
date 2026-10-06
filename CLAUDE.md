@@ -179,6 +179,9 @@ The universal CLI is available at `./bin/capsule` (and in system PATH as `capsul
 # Run Lord Beerus' architectural inquisition & code griller
 ./bin/capsule grill [target_dir]
 
+# Run Capsule Corp as an HTTP REST service daemon
+./bin/capsule serve --port 8080
+
 # Initialize a project with multi-AI directives (including Claude Code)
 ./bin/capsule init --tool claude /path/to/project
 ./bin/capsule init --tools copilot,codex,claude,cursor,gemini /path/to/project
