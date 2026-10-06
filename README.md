@@ -13,27 +13,73 @@ A specialized cohort of autonomous AI agents modeled on **Dragon Ball Z** archet
 
 ## Getting Started
 
-Capsule Corp does not require a system-wide installation. Clone the repository and run the local executable:
+Capsule Corp is built in **Go 1.24+** and compiles to a zero-dependency standalone binary with sub-2ms startup and embedded assets (`registry.yaml`, `bots/`, `skills/`).
+
+### Quick Start (Installation to PATH)
+
+Clone the repository and install `capsule` into your system PATH:
 
 ```bash
-git clone <repository-url>
-cd capsule-corp
+git clone https://github.com/waystilos/capsule_corp.git
+cd capsule_corp
+make install
+```
+
+*(Alternatively, run `./bin/capsule install`, which automatically copies the binary to `~/.local/bin` or `$GOPATH/bin`).*
+
+Verify your installation:
+
+```bash
+capsule list
+capsule doctor
+```
+
+### Quick Try (Zero Installation)
+
+If you prefer to run Capsule locally without installing it to your system PATH:
+
+```bash
+git clone https://github.com/waystilos/capsule_corp.git
+cd capsule_corp
 ./bin/capsule list
 ```
 
-### Prerequisites & Installation
+The `./bin/capsule` launcher (and `.\bin\capsule.cmd` on Windows) automatically compiles the Go binary (`bin/capsule-go`) on its first run in <2 seconds.
 
-- **Go 1.24+**: Compiles to a single, zero-dependency static binary with sub-2ms startup and embedded assets (`registry.yaml`, `bots/`, `skills/`).
-- **Git**: Required for change and diff verification.
+### Developer Experience & Shell Autocompletion
 
-Build the standalone binary:
+Add tab-completion to your interactive shell:
 
 ```bash
-go build -o bin/capsule-go ./cmd/capsule
-./bin/capsule list
+# Zsh (macOS / Linux)
+capsule completion zsh >> ~/.zshrc
+
+# Bash
+capsule completion bash >> ~/.bashrc
+
+# Fish
+capsule completion fish > ~/.config/fish/completions/capsule.fish
 ```
 
-The `./bin/capsule` launcher (and `.\bin\capsule.cmd` on Windows) automatically compiles `capsule-go` on first invocation if not already built.
+Install the automated Git pre-commit verification gate into your repository:
+
+```bash
+capsule hook install
+```
+
+### Upgrading from Legacy Python Installations
+
+If you previously had the older Python version of Capsule Corp on your system, run the automated migration to remove broken Python shims, pip/pyenv packages, and stale caches:
+
+```bash
+capsule sync
+```
+
+You can also run `capsule doctor` at any time to verify your Go runtime, PATH, and confirm no conflicting legacy shims remain:
+
+```bash
+capsule doctor
+```
 
 ### Run the built-in checks & runtime setup
 
@@ -75,23 +121,6 @@ The launcher compiles and executes `bin\capsule-go.exe` autonomously.
 
 The `config/*.sh` synchronization scripts require Git Bash, WSL, or another Bash environment on Windows. Do not use the Unix `export PATH=...` command in PowerShell; configure Windows PATH through the environment-variable settings or use `.\bin\capsule.cmd` directly.
 
-### Make `capsule` available in your shell
-
-For the current shell session:
-
-```bash
-export PATH="$PWD/bin:$PATH"
-capsule list
-```
-
-To install the executable globally across your system:
-
-```bash
-go install ./cmd/capsule
-capsule list
-```
-
-Ensure `$GOPATH/bin` (typically `~/go/bin`) is in your system `PATH`.
 
 ### Security: `capsule check` and `verify` execute project code
 

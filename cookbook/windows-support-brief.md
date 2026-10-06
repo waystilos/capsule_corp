@@ -2,17 +2,17 @@
 
 ## Problem
 
-The Unix executable `./bin/capsule` is not a dependable Windows entry point. A Windows developer needs an explicit launcher and commands that work in PowerShell or Command Prompt.
+The Unix shell executable `./bin/capsule` is not a native Windows entry point. Windows developers need an explicit launcher and commands that work in PowerShell or Command Prompt.
 
 ## Crew assignments
 
-- **Goku:** maintain the Windows launcher and keep its exit code aligned with the Python CLI.
+- **Goku:** maintain the Windows launcher and keep its exit code aligned with the Go CLI.
 - **Bulma:** document the Windows first-run path in the root README and cookbook.
-- **Vegeta:** decide whether global PATH/package installation and sync should support native Windows or require Git Bash/WSL.
-- **Trunks:** verify commands on Windows or a Windows CI runner, including missing-Python errors.
-- **Android 17:** review the launcher and docs for unsafe downloads, shell injection, or credential guidance.
+- **Vegeta:** manage CI/CD matrix runners for Windows (`windows-latest`).
+- **Trunks:** verify commands on Windows CI runner with automated tests and gates.
+- **Android 17:** review the launcher and docs for unsafe path handling or shell injection.
 
-## Immediate fix
+## Implementation
 
 Use the checked-in `bin/capsule.cmd` launcher:
 
@@ -20,27 +20,19 @@ Use the checked-in `bin/capsule.cmd` launcher:
 .\bin\capsule.cmd list
 ```
 
-It prefers the Windows Python launcher (`py`) and falls back to `python`, preserving the Python CLI’s exit code.
-
-Equivalent direct invocation:
-
-```powershell
-py .\bin\capsule list
-```
+It compiles and executes `bin\capsule-go.exe` directly with native Windows process management, preserving standard exit codes.
 
 ## Documentation requirements
 
 - Show both PowerShell/Command Prompt syntax and Unix syntax.
 - Explain that `config/*.sh` sync scripts require Git Bash, WSL, or another Bash environment on Windows.
 - Do not tell Windows users to run `export PATH=...`; show the PowerShell session equivalent or point them to the Windows PATH settings.
-- After `py -m pip install --user ...`, verify the user Scripts location with `py -c "import sysconfig; print(sysconfig.get_path('scripts', scheme='nt_user'))"` and add that directory to PATH if `capsule` is not recognized.
 - Keep the local launcher path available; do not require global installation for first use.
 
 ## Acceptance criteria
 
-1. `bin/capsule.cmd list` works when `py` is installed.
-2. It falls back to `python` when `py` is unavailable.
-3. It exits non-zero with a useful message when neither is available.
-4. The root README has a Windows quick start before the general shell setup.
-5. The cookbook has a Windows troubleshooting path.
-6. All Python tests and verification checks remain green.
+1. `bin\capsule.cmd list` compiles and executes `bin\capsule-go.exe` on Windows.
+2. It exits non-zero with a useful message when Go is not installed during compile.
+3. The root README has a Windows quick start.
+4. The cookbook has a Windows troubleshooting path.
+5. All Go tests and verification checks remain green on `windows-latest`.

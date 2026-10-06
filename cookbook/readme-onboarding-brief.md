@@ -2,65 +2,93 @@
 
 ## Goal
 
-Someone who has never used Capsule Corp should understand what must be installed, run the CLI locally, connect a project, preview global changes, and verify the result without guessing.
+Someone who has never used Capsule Corp should understand what must be installed, run the CLI locally, install it to their system PATH, connect a project, preview global changes, and verify the result without guessing.
 
 ## Proposed README section
 
 ### Getting started
 
-Capsule Corp does not require a system-wide installation. Clone the repository and run the local executable:
+Capsule Corp is built in **Go 1.24+** and compiles to a zero-dependency static binary with sub-2ms startup and embedded assets (`registry.yaml`, `bots/`, `skills/`).
+
+#### Option 1: Quick Install to PATH (Recommended)
+
+Clone the repository and install `capsule` into your PATH:
 
 ```bash
-git clone <repository-url>
-cd capsule-corp
+git clone https://github.com/waystilos/capsule_corp.git
+cd capsule_corp
+make install
+```
+
+*(Or run `./bin/capsule install`, which copies the binary to `~/.local/bin` or `$GOPATH/bin`).*
+
+Verify installation:
+
+```bash
+capsule list
+capsule doctor
+```
+
+#### Option 2: Quick Try (Zero Installation)
+
+```bash
+git clone https://github.com/waystilos/capsule_corp.git
+cd capsule_corp
 ./bin/capsule list
 ```
 
+The `./bin/capsule` launcher (and `.\bin\capsule.cmd` on Windows) automatically compiles the Go binary (`bin/capsule-go`) on first run in <2 seconds.
+
 #### Prerequisites
 
-- Python 3.8 or newer
+- Go 1.24 or newer (zero runtime dependencies beyond Go standard library and Git)
 - Git, for diff and change verification
-- PyYAML for the full test suite and formatted registry output:
-
-  ```bash
-  python3 -m pip install PyYAML
-  ```
-
-Project-specific tools such as `pytest`, `npm`, `cargo`, or `go` are only needed when verifying a project that uses them.
 
 #### Run the built-in checks
 
 ```bash
-./bin/capsule test
-./bin/capsule verify .
-./bin/capsule security .
+capsule test
+capsule verify .
+capsule security .
+capsule attack .
+capsule grill .
 ```
 
-All three commands must exit with code 0 before treating the local setup as ready.
+All commands must exit with code 0 before treating the local setup as ready.
 
-#### Use `capsule` without `./bin/`
+#### Developer Experience & Completions
 
-For the current shell session:
+Add shell autocompletions:
 
 ```bash
-export PATH="$PWD/bin:$PATH"
-capsule list
+# Zsh
+capsule completion zsh >> ~/.zshrc
+
+# Bash
+capsule completion bash >> ~/.bashrc
+
+# Fish
+capsule completion fish > ~/.config/fish/completions/capsule.fish
 ```
 
-To make that permanent, add the equivalent `export PATH=...` line to the shell startup file you use. The repository’s sync command can help configure supported AI tools, but it should be previewed first.
+Install Git pre-commit verification gate:
+
+```bash
+capsule hook install
+```
 
 #### Connect a project
 
 ```bash
-./bin/capsule init --tool copilot /path/to/project
-./bin/capsule verify /path/to/project
-./bin/capsule security /path/to/project
+capsule init --tool copilot /path/to/project
+capsule verify /path/to/project
+capsule security /path/to/project
 ```
 
 `init` installs only the selected integration and preserves unrelated instruction files. Configure several tools explicitly with `--tools`. Replacing selected guidance requires an explicit choice:
 
 ```bash
-./bin/capsule init --tool copilot --force /path/to/project
+capsule init --tool copilot --force /path/to/project
 ```
 
 #### Sync AI-tool skills and rules safely
@@ -68,34 +96,16 @@ To make that permanent, add the equivalent `export PATH=...` line to the shell s
 Preview first:
 
 ```bash
-./bin/capsule sync --dry-run
+capsule sync --dry-run
 ```
 
-Apply global changes only after reviewing the preview:
+Apply global changes and migrate legacy Python installations:
 
 ```bash
-./bin/capsule sync --force
+capsule sync --force
 ```
 
-Forced replacements create timestamped backups. Do not run global sync on a shared machine without checking the target paths.
-
-#### Optional package installation
-
-The repository provides a standard Python package entry point for developers who prefer a global command:
-
-```bash
-python3 -m pip install --user /path/to/capsule-corp
-capsule list
-```
-
-When `pipx` is available, prefer an isolated install:
-
-```bash
-pipx install /path/to/capsule-corp
-capsule list
-```
-
-The local `./bin/capsule` path remains available for source checkouts.
+Forced replacements create timestamped backups.
 
 ## Goku handoff
 
@@ -103,14 +113,13 @@ Implement the README section above and make the documented future path true.
 
 ### Acceptance criteria
 
-1. A fresh clone has a clearly visible first command using `./bin/capsule`.
-2. README names Python, Git, and PyYAML prerequisites and explains why each is needed.
-3. README documents local execution, temporary PATH setup, and permanent PATH setup without editing shell files automatically.
+1. A fresh clone has a clearly visible first command using `make install` or `./bin/capsule list`.
+2. README names Go and Git prerequisites and explains why each is needed.
+3. README documents global execution, completions, and pre-commit hook setup without editing shell files automatically.
 4. README distinguishes `init` from `sync` and documents `--force` and `--dry-run` safety behavior.
-5. README documents the exact `test`, `verify`, and `security` commands and their expected exit-code requirement.
-6. Add a `capsule doctor` command or revise the README until it no longer promises a command that does not exist.
-7. Add or update tests for the package entry point, missing optional dependencies, PATH guidance, and safe first-run behavior.
-8. Run `capsule test`, `capsule verify`, and `capsule security` after the README and packaging changes.
+5. README documents the exact `test`, `verify`, `security`, `attack`, and `grill` commands and their expected exit-code requirement.
+6. `capsule doctor` diagnoses Go runtime, PATH availability, and legacy Python shim migrations.
+7. Run `capsule check . --trust` after the README and packaging changes.
 
 ### Non-goals
 

@@ -79,8 +79,8 @@ Pass tasks to Claude Code using the standard Task Brief envelope:
 ```markdown
 ### Task Brief
 - **Goal:** Implement email OTP authentication with rate limiting
-- **Scope:** src/auth/otp.py, tests/test_otp.py
-- **Constraints:** Python 3.8+ compatible, zero new external dependencies
+- **Scope:** internal/auth/otp.go, internal/auth/otp_test.go
+- **Constraints:** Go 1.24+ compatible, zero new external dependencies
 - **Acceptance Criteria:** Rate limit rejects 5+ requests/min; token expires after 5 mins
 - **Verification:** capsule check .
 ```
