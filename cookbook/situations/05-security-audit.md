@@ -30,6 +30,14 @@ For machine-readable attack findings:
 capsule attack --json /path/to/project
 ```
 
+## Run Lord Beerus (Architectural Inquisition & Grilling)
+
+```bash
+capsule grill /path/to/project
+```
+
+Lord Beerus audits the git diff and untracked files for architectural flaws: swallowed exceptions, missing HTTP/subprocess timeouts, and untested logic.
+
 ## Ask Android 17 (Defensive Audit)
 
 ```text
@@ -49,6 +57,14 @@ escalation, and edge-case payload fuzzing. Produce concrete proof-of-concept
 payloads and exploit chains that expose weaknesses before attackers do.
 ```
 
+## Ask Lord Beerus (Inquisition & Grilling)
+
+```text
+Act as Lord Beerus. Interrogate the architecture and code diff for structural
+weaknesses: swallowed errors, unbounded loops, missing network timeouts, and
+untested new symbols. Apply Hakai-level scrutiny.
+```
+
 ## If a scanner is unavailable
 
 Treat the result as incomplete, not clean. Install the project’s required audit tooling or record why the gate is blocked. A missing dependency scanner or security gate failure blocks release.
@@ -57,6 +73,7 @@ Treat the result as incomplete, not clean. Install the project’s required audi
 
 - No secrets are present in tracked, staged, or untracked project files (`capsule security`).
 - Cell's adversarial attack scan passes with zero high/critical vulnerabilities (`capsule attack`).
+- Lord Beerus' architectural inquisition passes with divine approval (`capsule grill`).
 - Dependency audit tooling ran successfully where a manifest exists.
 - High- and critical-severity findings are resolved or explicitly blocked from release.
 

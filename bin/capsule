@@ -207,9 +207,11 @@ def cmd_sync(args):
 
 def cmd_test():
     test_dir = CAPSULE_ROOT / "tests"
+    env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
     return subprocess.run(
-        [sys.executable, "-m", "unittest", "discover", "-s", str(test_dir), "-p", "test_*.py", "-v"],
-        cwd=str(CAPSULE_ROOT)
+        [sys.executable, "-X", "utf8", "-m", "unittest", "discover", "-s", str(test_dir), "-p", "test_*.py", "-v"],
+        cwd=str(CAPSULE_ROOT),
+        env=env,
     ).returncode
 
 

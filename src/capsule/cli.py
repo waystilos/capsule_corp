@@ -138,9 +138,11 @@ def cmd_list(args: Optional[List[str]] = None) -> int:
 def cmd_test() -> int:
     tests = resource_root() / "tests"
     if tests.exists():
+        env = dict(os.environ, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
         return subprocess.run(
-            [sys.executable, "-m", "unittest", "discover", "-s", str(tests), "-p", "test_*.py"],
+            [sys.executable, "-X", "utf8", "-m", "unittest", "discover", "-s", str(tests), "-p", "test_*.py"],
             cwd=str(resource_root()),
+            env=env,
         ).returncode
 
     print("Installed Capsule Corp package is ready; repository tests are not bundled.")

@@ -7,6 +7,7 @@ repository itself never contains anything secret-shaped.
 
 import contextlib
 import io
+import json
 import os
 import subprocess
 import sys
@@ -231,7 +232,7 @@ class DiffGateTests(unittest.TestCase):
                 (root / "link").symlink_to(target)
             except (OSError, NotImplementedError):
                 self.skipTest("symlinks unavailable")
-            write(root / "capsule.json", '{"test": "%s -c pass"}' % sys.executable)
+            write(root / "capsule.json", json.dumps({"test": f"{sys.executable} -c pass"}))
             res = check_project.run_project_checks(root)
             sec = [c for c in res["checks"] if c["name"] == "Secrets & Diff"][0]
             self.assertEqual(sec["status"], "INCOMPLETE")
@@ -480,10 +481,10 @@ class ProjectCodeExecutionTests(unittest.TestCase):
     def test_config_drift_warns_not_fails(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
-            write(root / "capsule.json", '{"test": "%s -c pass"}' % sys.executable)
+            write(root / "capsule.json", json.dumps({"test": f"{sys.executable} -c pass"}))
             git_init(root, commit=True)
             self.assertEqual(verify_project.config_drift_warnings(root), [])
-            write(root / "capsule.json", '{"test": "%s -c pass # changed"}' % sys.executable)
+            write(root / "capsule.json", json.dumps({"test": f"{sys.executable} -c pass # changed"}))
             self.assertEqual(len(verify_project.config_drift_warnings(root)), 1)
             res = check_project.run_project_checks(root)
             warn = [c for c in res["checks"] if c["name"] == "Config Integrity"]

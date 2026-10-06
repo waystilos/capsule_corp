@@ -29,6 +29,7 @@ capsule init --tool copilot /path/to/your-project
 capsule verify /path/to/your-project
 capsule security /path/to/your-project
 capsule attack /path/to/your-project
+capsule grill /path/to/your-project
 ```
 
 The initializer installs only the selected integration and preserves existing AI instructions. Use `--tools` for intentional multi-tool setup and `--force` only when replacing selected files is intentional.
@@ -39,7 +40,7 @@ Scale the workflow to the task rather than forcing every change through the whol
 
 - **Small Fix:** Builder (`@Goku`) → Verification (`capsule check`). Skip product and coordination overhead for typos, quick bugfixes, or CSS tweaks.
 - **Standard Feature:** Product (`@Bulma`, defines acceptance criteria) → Builder (`@Goku`) → Reviewer (`@Trunks`) → Verification (`capsule check`).
-- **Complex Epic:** Coordinator (`@Piccolo` / `@Whis`) decomposes into task trees → invokes optional specialists on-demand (`@Android-17` for security, `@Cell` for red team, `@King-Kai` for alignment, `@Videl` for UX, `@Vegeta` for infra, `@Android-18` for refactoring) → Builder (`@Goku`) → Reviewer (`@Trunks`) → Verification (`capsule check`).
+- **Complex Epic:** Coordinator (`@Piccolo` / `@Whis`) decomposes into task trees → invokes optional specialists on-demand (`@Android-17` for security, `@Cell` for red team, `@Beerus` for code grilling & edge cases, `@King-Kai` for alignment, `@Videl` for UX, `@Vegeta` for infra, `@Android-18` for refactoring) → Builder (`@Goku`) → Reviewer (`@Trunks`) → Verification (`capsule check`).
 
 ### The Standard Task Brief Envelope
 Use the same handoff pattern every time between agents and roles:

@@ -20,11 +20,12 @@ Before opening a pull request or tagging a release:
 capsule verify /path/to/project
 capsule security /path/to/project
 capsule attack /path/to/project
+capsule grill /path/to/project
 git status --short
 git diff --check
 ```
 
-Verification inspects staged, unstaged, and untracked files for conflict markers and common exposed-secret patterns. It also runs the project’s detected or configured test suite, while `capsule attack` launches Cell's adversarial probes.
+Verification inspects staged, unstaged, and untracked files for conflict markers and common exposed-secret patterns. It also runs the project’s detected or configured test suite, while `capsule attack` launches Cell's adversarial probes, and `capsule grill` executes Lord Beerus' architectural inquisition against swallowed errors and missing timeouts.
 
 If there is intentionally no test runner, make the decision explicit:
 
@@ -42,6 +43,14 @@ Run the native tests, inspect staged/unstaged/untracked changes,
 and report exact failing commands and file locations. Do not modify product code.
 ```
 
+## Ask Lord Beerus (Inquisitor & Code Griller)
+
+```text
+Act as Lord Beerus. Conduct a ruthless architectural inquisition of this pull request:
+probe for swallowed exceptions, missing timeouts, edge cases, untested code paths,
+and Hakai-level code smells.
+```
+
 ## Ask Android 18
 
 Only after behavior is covered:
@@ -53,7 +62,7 @@ Preserve observable behavior, avoid new dependencies, and prove the refactor wit
 
 ## You are ready when
 
-- Tests, verification, security, and adversarial attack checks exit 0.
+- Tests, verification, security, adversarial attack, and grill checks exit 0.
 - No unexplained files or generated artifacts are in the diff.
 - Review findings are either fixed or explicitly accepted.
 

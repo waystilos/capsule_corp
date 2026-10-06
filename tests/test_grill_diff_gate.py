@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Epic 3 / slice M (C1b, C8): grill's diff gate must not be dodgeable, and must not be ReDoS-able."""
 
+import os
 import subprocess
 import sys
 import tempfile
@@ -115,13 +116,15 @@ class DiffGateBypassTests(unittest.TestCase):
             self.assertEqual(run_grill_audit(root)["verdict"], "FAIL")
 
     def test_quoted_path_names_are_parsed(self):
+        self.assertEqual(grill_code._unquote_git_path('"a\\tb\\303\\251"'), "a\tbé")
+        if os.name == "nt":
+            self.skipTest("tabs illegal in NTFS paths")
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
             make_repo(root, {"README.md": "hi\n", "we ird\tname.py": "x = 1\n"})
             (root / "we ird\tname.py").write_text("x = 1\nrequests.get(url)\n", encoding="utf-8")
             report = run_grill_audit(root)
             self.assertIn("MISSING_HTTP_TIMEOUT", cats(report))
-            self.assertEqual(grill_code._unquote_git_path('"a\\tb\\303\\251"'), "a\tbé")
 
     def test_clean_change_is_pass(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -40,6 +40,7 @@ class SyncDryRunTests(unittest.TestCase):
         self.assertIn("Sync incomplete", res.stderr)
         self.assertNotIn("ALL AIs ARE NOW SYNCHRONIZED", res.stdout)
 
+    @unittest.skipIf(os.name == "nt", "symlinks need privileges on Windows")
     def test_conflicting_symlink_exits_one(self):
         self.assertEqual(self.run_sync().returncode, 0)
         link = next((self.home / ".agents" / "skills").iterdir())
