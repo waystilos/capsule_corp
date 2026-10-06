@@ -43,7 +43,6 @@ capsule security .       # Android 17's security scanner
 capsule attack .         # Cell's adversarial red team attack scan
 capsule grill .          # Lord Beerus' architectural inquisition & code griller
 capsule spy .            # King Kai's watchdog for agent scope drift & rogue edits
-capsule install-elixir   # Optional: install Elixir/Erlang via the OS package manager (see below)
 ```
 
 All commands should exit with code 0 before treating changes as ready.
@@ -128,26 +127,6 @@ python3 -m pip install "/path/to/capsule-corp[security]"
 ```
 
 The package provides the same `capsule init --tool ...` behavior on macOS, Windows, and Linux. The source checkout and `./bin/capsule`/`bin\capsule.cmd` launchers remain supported.
-
-### Elixir/Erlang installer (optional, not a runtime dependency)
-
-`capsule install-elixir` is an **installer only**. The agent system does not require, start, or use Elixir or Erlang at runtime today; nothing in Capsule talks to a BEAM process. Install it only if you want it for your own projects or for the future work sketched below.
-
-```bash
-capsule install-elixir --dry-run                 # show the plan, run nothing
-capsule install-elixir --yes                     # use the OS package manager (brew/apt/dnf/pacman/apk/zypper/winget/choco/scoop)
-capsule install-elixir --manager asdf --version 1.17.3 --yes   # version managers only on request
-```
-
-- The OS package manager is preferred. `mise`/`asdf` are used only with `--manager` (asdf compiles Erlang from source and edits `~/.tool-versions`; mise edits its global config).
-- Version managers never install `latest` silently: pass `--version` (it is also honored by winget and choco).
-- A plan is printed before anything runs, with an explicit warning when `sudo` is involved. Installation requires `--yes` or an interactive confirmation.
-- Tools are resolved with `shutil.which` and any binary located under the current working directory is rejected, so a project-local `elixir`, `brew`, or `sudo` is never executed.
-- The `.sh` and `.ps1` fallbacks (used only when Python is missing) refuse to install without `--yes` / `-Yes`, honor `--dry-run` / `-DryRun`, skip when Elixir is already installed, and `.ps1` honors `-Json`.
-
-#### Possible future direction: GenServer-per-agent mailboxes
-
-Not built. If Capsule ever adopts a BEAM service, one option is a GenServer per agent that owns that agent's mailbox, listening on a Unix domain socket. It would sit behind the same `capsule send` / `capsule inbox` / `capsule ack` CLI: the CLI would talk to the socket when it is present and fall back to the file-based inbox otherwise, so callers and the message format stay unchanged.
 
 ### Security: `capsule check` and `verify` execute project code
 

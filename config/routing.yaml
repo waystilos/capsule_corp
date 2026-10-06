@@ -46,7 +46,7 @@ routes:
     avoid: [new feature, product scope]
   - intent: infrastructure
     owner: vegeta
-    keywords: [docker, ci/cd, pipeline, deploy, infrastructure, database, migration, performance, index, runtime, install, setup, elixir, erlang]
+    keywords: [docker, ci/cd, pipeline, deploy, infrastructure, database, migration, performance, index, runtime, install, setup]
     handoff: [vegeta, android-17, trunks]
     entry: [target_files]
     avoid: [frontend, user experience]

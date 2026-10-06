@@ -12,8 +12,7 @@ class CiWorkflowTests(unittest.TestCase):
         for needle in (
             "python -m unittest discover -s tests -t .",
             "python bin/capsule check . --trust",
-            "install_elixir.ps1 -DryRun -Json",
-            "shellcheck config/*.sh scripts/*.sh",
+            "shellcheck config/*.sh",
             "bash -n",
         ):
             self.assertIn(needle, self.text)

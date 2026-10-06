@@ -609,6 +609,7 @@ class TestCapsuleRoom(unittest.TestCase):
                 target_dir=root,
                 agent="claude",
                 summary="Refactoring completed and verified",
+                token=shift["session_token"],
             )
             self.assertIsNotNone(out_shift)
             self.assertEqual(out_shift["summary"], "Refactoring completed and verified")
@@ -1090,7 +1091,7 @@ class TestLordBeerusGrill(unittest.TestCase):
             self.assertIn("Hakai Threat", grill_check[0]["summary"])
 
 
-class TestFunctionalEnvelopeAndElixirInstaller(unittest.TestCase):
+class TestFunctionalEnvelope(unittest.TestCase):
     def test_all_bots_have_explicit_model_tier_and_contracts(self):
         reg_path = CAPSULE_ROOT / "registry.yaml"
         data = yaml.safe_load(reg_path.read_text(encoding="utf-8"))
@@ -1129,25 +1130,6 @@ class TestFunctionalEnvelopeAndElixirInstaller(unittest.TestCase):
                 "model_tier: flash" in content or "model_tier: pro" in content,
                 f"Missing model_tier in frontmatter of {md.name}",
             )
-
-    def test_install_elixir_detect_and_dry_run(self):
-        from scripts.install_elixir import detect_installer, run_install
-
-        manager, commands, explanation = detect_installer()
-        self.assertTrue(isinstance(manager, str))
-        self.assertTrue(isinstance(commands, list))
-
-        # Test dry-run execution
-        exit_code = run_install(dry_run=True, force=True, yes=True, json_mode=True)
-        self.assertEqual(exit_code, 0)
-
-    def test_capsule_install_elixir_cli_dry_run(self):
-        cmd = [sys.executable, str(CAPSULE_ROOT / "bin" / "capsule"), "install-elixir", "--dry-run", "--force", "--json"]
-        proc = subprocess.run(cmd, capture_output=True, text=True, cwd=str(CAPSULE_ROOT))
-        self.assertEqual(proc.returncode, 0)
-        data = json.loads(proc.stdout)
-        self.assertEqual(data["status"], "dry_run")
-        self.assertIn("commands", data)
 
 
 class TestAll18BotsExhaustive(unittest.TestCase):
@@ -1214,129 +1196,6 @@ class TestAll18BotsExhaustive(unittest.TestCase):
             else:
                 bot_name = self.bots[bot_id]["name"]
                 self.assertIn(bot_name, owners, f"Bot {bot_name} not found in routing owners")
-
-
-class TestElixirInstallerCrossPlatform(unittest.TestCase):
-    """Exhaustively tests the Elixir/Erlang cross-platform installer across OS environments."""
-
-    @patch("shutil.which")
-    @patch("platform.system", return_value="Darwin")
-    def test_detect_darwin_with_brew(self, mock_sys, mock_which):
-        from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "/opt/homebrew/bin/brew" if cmd == "brew" else None
-        manager, cmds, _ = detect_installer()
-        self.assertEqual(manager, "homebrew")
-        # commands now carry the resolved absolute path (cwd-safe resolution)
-        self.assertEqual(cmds, [["/opt/homebrew/bin/brew", "install", "elixir"]])
-
-    @patch("shutil.which", return_value=None)
-    @patch("platform.system", return_value="Darwin")
-    def test_detect_darwin_without_brew(self, mock_sys, mock_which):
-        from scripts.install_elixir import detect_installer
-        manager, cmds, explanation = detect_installer()
-        self.assertEqual(manager, "unsupported")
-        self.assertIn("Homebrew", explanation)
-
-    @patch("shutil.which")
-    @patch("platform.system", return_value="Linux")
-    def test_detect_linux_apt(self, mock_sys, mock_which):
-        from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "/usr/bin/apt-get" if cmd == "apt-get" else None
-        manager, cmds, _ = detect_installer()
-        self.assertEqual(manager, "apt")
-        self.assertEqual(len(cmds), 2)
-        self.assertIn("apt-get", cmds[1][1])
-
-    @patch("shutil.which")
-    @patch("platform.system", return_value="Linux")
-    def test_detect_linux_dnf(self, mock_sys, mock_which):
-        from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "/usr/bin/dnf" if cmd == "dnf" else None
-        manager, cmds, _ = detect_installer()
-        self.assertEqual(manager, "dnf")
-        self.assertIn("dnf", cmds[0][1])
-
-    @patch("shutil.which")
-    @patch("platform.system", return_value="Linux")
-    def test_detect_linux_pacman(self, mock_sys, mock_which):
-        from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "/usr/bin/pacman" if cmd == "pacman" else None
-        manager, cmds, _ = detect_installer()
-        self.assertEqual(manager, "pacman")
-        self.assertIn("pacman", cmds[0][1])
-
-    @patch("shutil.which")
-    @patch("platform.system", return_value="Linux")
-    def test_detect_linux_apk(self, mock_sys, mock_which):
-        from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "/sbin/apk" if cmd == "apk" else None
-        manager, cmds, _ = detect_installer()
-        self.assertEqual(manager, "apk")
-        self.assertIn("apk", cmds[0][1])
-
-    @patch("shutil.which")
-    @patch("platform.system", return_value="Linux")
-    def test_detect_linux_zypper(self, mock_sys, mock_which):
-        from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "/usr/bin/zypper" if cmd == "zypper" else None
-        manager, cmds, _ = detect_installer()
-        self.assertEqual(manager, "zypper")
-        self.assertIn("zypper", cmds[0][1])
-
-    @patch("shutil.which")
-    @patch("platform.system", return_value="Windows")
-    def test_detect_windows_winget(self, mock_sys, mock_which):
-        from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "/win/winget.exe" if cmd == "winget" else None
-        manager, cmds, _ = detect_installer()
-        self.assertEqual(manager, "winget")
-        self.assertIn("winget", cmds[0][0])
-
-    @patch("shutil.which")
-    @patch("platform.system", return_value="Windows")
-    def test_detect_windows_choco(self, mock_sys, mock_which):
-        from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "/win/choco.exe" if cmd == "choco" else None
-        manager, cmds, _ = detect_installer()
-        self.assertEqual(manager, "chocolatey")
-        self.assertIn("choco", cmds[0][0])
-
-    @patch("shutil.which")
-    @patch("platform.system", return_value="Windows")
-    def test_detect_windows_scoop(self, mock_sys, mock_which):
-        from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "/win/scoop.cmd" if cmd == "scoop" else None
-        manager, cmds, _ = detect_installer()
-        self.assertEqual(manager, "scoop")
-        self.assertIn("scoop", cmds[0][0])
-
-    @patch("shutil.which")
-    def test_detect_version_manager_mise(self, mock_which):
-        from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "/usr/local/bin/mise" if cmd == "mise" else None
-        # mise/asdf are opt-in (--manager) and never install "latest" silently (--version)
-        manager, cmds, _ = detect_installer("mise", "1.17.3")
-        self.assertEqual(manager, "mise")
-        self.assertIn("mise", cmds[0][0])
-
-    @patch("shutil.which")
-    def test_detect_version_manager_asdf(self, mock_which):
-        from scripts.install_elixir import detect_installer
-        mock_which.side_effect = lambda cmd: "/usr/local/bin/asdf" if cmd == "asdf" else None
-        manager, cmds, _ = detect_installer("asdf", "1.17.3")
-        self.assertEqual(manager, "asdf")
-        self.assertIn("asdf", cmds[0][0])
-
-    @patch("scripts.install_elixir.get_installed_versions")
-    def test_run_install_already_installed_returns_zero(self, mock_versions):
-        from scripts.install_elixir import run_install
-        mock_versions.return_value = {
-            "elixir": "Elixir 1.19.5",
-            "erlang": "Erlang/OTP 28",
-            "path": "/usr/local/bin/elixir",
-        }
-        res = run_install(dry_run=False, force=False, json_mode=True)
-        self.assertEqual(res, 0)
 
 
 class TestFunctionalTaskEnvelope(unittest.TestCase):

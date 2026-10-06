@@ -416,7 +416,6 @@ When collaborating with other AI agents (Gemini, Codex, Cursor, Windsurf):
   `capsule clock-in` prints a per-shift session token; set `CAPSULE_SESSION_TOKEN` to act for that shift from another process. Unacked messages older than 30 minutes surface as warnings in `capsule spy`.
 - **Security notice:** `capsule check`/`verify` execute project-defined commands (tests, scripts, conftest); run only on trusted repos. Project `.venv` is not used unless `CAPSULE_USE_PROJECT_VENV=1`. A WARN is shown when gate config differs from HEAD.
   Trust modes: `capsule check --trust` (or `CAPSULE_TRUST=1`) accepts project-defined commands silently; `--strict` (or `CAPSULE_TRUST=0`) refuses them (reported SKIPPED). With neither, they still run this release with a WARN naming them; the default becomes `--strict` next release.
-- `capsule install-elixir` is an installer only; Capsule never runs, starts, or depends on Elixir/Erlang at runtime.
 
 ## Supervision Protocol (Long-Running Agent Work)
 Delegating is not supervising. For any delegated run expected to last more than ~10 minutes:
