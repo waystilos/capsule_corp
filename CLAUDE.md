@@ -195,7 +195,7 @@ The universal CLI is available at `./bin/capsule` (and in system PATH as `capsul
 
 ## 7. Development Guidelines for this Codebase
 
-- **Go Compatibility:** Go 1.24+ compatible, zero external runtime dependencies.
+- **Go Compatibility:** Go 1.26+ compatible, zero external runtime dependencies.
 - **Cross-Platform:** Maintain Windows/macOS/Linux compatibility with native binaries and launchers (`bin/capsule`, `bin/capsule.cmd`).
 - **Config Preservation:** Never overwrite user configurations without explicit `--force`.
 - **Zero Slop:** Keep changes focused, surgical, and test-backed.

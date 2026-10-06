@@ -80,7 +80,7 @@ Pass tasks to Claude Code using the standard Task Brief envelope:
 ### Task Brief
 - **Goal:** Implement email OTP authentication with rate limiting
 - **Scope:** internal/auth/otp.go, internal/auth/otp_test.go
-- **Constraints:** Go 1.24+ compatible, zero new external dependencies
+- **Constraints:** Go 1.26+ compatible, zero new external dependencies
 - **Acceptance Criteria:** Rate limit rejects 5+ requests/min; token expires after 5 mins
 - **Verification:** capsule check .
 ```

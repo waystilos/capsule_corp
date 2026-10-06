@@ -13,7 +13,7 @@ A specialized cohort of autonomous AI agents modeled on **Dragon Ball Z** archet
 
 ## Getting Started
 
-Capsule Corp is built in **Go 1.24+** and compiles to a zero-dependency standalone binary with sub-2ms startup and embedded assets (`registry.yaml`, `bots/`, `skills/`).
+Capsule Corp is built in **Go 1.26+** and compiles to a zero-dependency standalone binary with sub-2ms startup and embedded assets (`registry.yaml`, `bots/`, `skills/`).
 
 ### Quick Start (Installation to PATH)
 

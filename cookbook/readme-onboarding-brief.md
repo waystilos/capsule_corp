@@ -8,7 +8,7 @@ Someone who has never used Capsule Corp should understand what must be installed
 
 ### Getting started
 
-Capsule Corp is built in **Go 1.24+** and compiles to a zero-dependency static binary with sub-2ms startup and embedded assets (`registry.yaml`, `bots/`, `skills/`).
+Capsule Corp is built in **Go 1.26+** and compiles to a zero-dependency static binary with sub-2ms startup and embedded assets (`registry.yaml`, `bots/`, `skills/`).
 
 #### Option 1: Quick Install to PATH (Recommended)
 
@@ -41,7 +41,7 @@ The `./bin/capsule` launcher (and `.\bin\capsule.cmd` on Windows) automatically 
 
 #### Prerequisites
 
-- Go 1.24 or newer (zero runtime dependencies beyond Go standard library and Git)
+- Go 1.26 or newer (zero runtime dependencies beyond Go standard library and Git)
 - Git, for diff and change verification
 
 #### Run the built-in checks
