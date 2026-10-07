@@ -63,7 +63,8 @@ routes:
     avoid: [prd, accessibility, usability, wireframe, deploy]
   - intent: agent_supervision
     owner: king-kai
-    keywords: [spy, monitor, watchdog, supervise, drift, off path, rogue, align, alignment, unbudgeted, overseer, wandering]
+    strong_keywords: [spy, watchdog, scope drift, rogue edits, rogue edit, agent drift, off path, wandering, unbudgeted edits, unbudgeted drift]
+    keywords: [spy, monitor, watchdog, supervise, drift, off path, rogue, align, alignment, unbudgeted, overseer, wandering, telemetry, scope creep, shift health, ghost edits, ghost edit]
     handoff: [king-kai, trunks]
     entry: [shift_id, claimed_files, active_diff_ref]
     avoid: [product feature, implement]

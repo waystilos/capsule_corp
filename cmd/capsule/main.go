@@ -89,7 +89,7 @@ func main() {
 		printUsage()
 
 	case "room", "conference":
-		cmdRoom()
+		cmdRoom(args)
 
 	case "clock-in":
 		cmdClockIn(args)
@@ -125,7 +125,7 @@ func main() {
 		cmdVerify(args)
 
 	case "security":
-		cmdSecurity()
+		cmdSecurity(args)
 
 	case "attack", "redteam":
 		cmdAttack(args)
@@ -134,7 +134,7 @@ func main() {
 		cmdGrill(args)
 
 	case "spy", "watchdog":
-		cmdSpy()
+		cmdSpy(args)
 
 	case "validate":
 		cmdValidate(args)
@@ -146,7 +146,7 @@ func main() {
 		cmdInit(args)
 
 	case "doctor":
-		cmdDoctor()
+		cmdDoctor(args)
 
 	case "test":
 		cmdTest()
@@ -172,9 +172,21 @@ func main() {
 	}
 }
 
-func cmdRoom() {
-	wd, _ := os.Getwd()
-	rd, err := room.LoadRoomData(wd)
+func resolveTargetDir(fsArgs []string) string {
+	targetDir := "."
+	if len(fsArgs) > 0 {
+		targetDir = fsArgs[0]
+	}
+	absDir, err := filepath.Abs(targetDir)
+	if err != nil {
+		return targetDir
+	}
+	return absDir
+}
+
+func cmdRoom(args []string) {
+	absDir := resolveTargetDir(args)
+	rd, err := room.LoadRoomData(absDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error loading room: %v\n", err)
 		os.Exit(1)
@@ -239,8 +251,8 @@ func cmdClockIn(args []string) {
 		}
 	}
 
-	wd, _ := os.Getwd()
-	shift, token, conflicts, err := room.ClockIn(wd, *agent, *role, *task, fileList, *force)
+	targetDir := resolveTargetDir(fs.Args())
+	shift, token, conflicts, err := room.ClockIn(targetDir, *agent, *role, *task, fileList, *force)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error clocking in: %v\n", err)
 		if len(conflicts) > 0 {
@@ -268,8 +280,8 @@ func cmdClockOut(args []string) {
 	agent := fs.String("agent", "", "Agent ID")
 	_ = fs.Parse(args)
 
-	wd, _ := os.Getwd()
-	entry, err := room.ClockOut(wd, *session, *agent, *summary)
+	targetDir := resolveTargetDir(fs.Args())
+	entry, err := room.ClockOut(targetDir, *session, *agent, *summary)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error clocking out: %v\n", err)
 		os.Exit(1)
@@ -284,8 +296,8 @@ func cmdHeartbeat(args []string) {
 	agent := fs.String("agent", "", "Agent ID")
 	_ = fs.Parse(args)
 
-	wd, _ := os.Getwd()
-	shift, err := room.Heartbeat(wd, *session, *agent)
+	targetDir := resolveTargetDir(fs.Args())
+	shift, err := room.Heartbeat(targetDir, *session, *agent)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error updating heartbeat: %v\n", err)
 		os.Exit(1)
@@ -305,12 +317,12 @@ func cmdSend(args []string) {
 		os.Exit(1)
 	}
 
-	wd, _ := os.Getwd()
+	targetDir := resolveTargetDir(fs.Args())
 	if *from == "" {
 		*from = room.DetectEnvironment().AgentID
 	}
 
-	msg, err := messaging.Send(wd, *from, *to, *body, nil)
+	msg, err := messaging.Send(targetDir, *from, *to, *body, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error sending message: %v\n", err)
 		os.Exit(1)
@@ -328,8 +340,8 @@ func cmdInbox(args []string) {
 		*agent = room.DetectEnvironment().AgentID
 	}
 
-	wd, _ := os.Getwd()
-	msgs, err := messaging.ReadInbox(wd, *agent, *unread)
+	targetDir := resolveTargetDir(fs.Args())
+	msgs, err := messaging.ReadInbox(targetDir, *agent, *unread)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading inbox: %v\n", err)
 		os.Exit(1)
@@ -348,20 +360,23 @@ func cmdInbox(args []string) {
 
 func cmdAck(args []string) {
 	if len(args) < 1 {
-		fmt.Fprintln(os.Stderr, "Usage: capsule ack <message_id> [--agent <id>]")
+		fmt.Fprintln(os.Stderr, "Usage: capsule ack <message_id> [--agent <id>] [dir]")
 		os.Exit(1)
 	}
 	msgID := args[0]
 	var agent string
+	var extraArgs []string
 	for i := 1; i < len(args); i++ {
 		if args[i] == "--agent" && i+1 < len(args) {
 			agent = args[i+1]
-			break
+			i++
+		} else {
+			extraArgs = append(extraArgs, args[i])
 		}
 	}
 
-	wd, _ := os.Getwd()
-	if err := messaging.Ack(wd, agent, msgID); err != nil {
+	targetDir := resolveTargetDir(extraArgs)
+	if err := messaging.Ack(targetDir, agent, msgID); err != nil {
 		fmt.Fprintf(os.Stderr, "Error acknowledging message: %v\n", err)
 		os.Exit(1)
 	}
@@ -456,14 +471,22 @@ func cmdModels(args []string) {
 }
 
 func cmdCheck(args []string) {
-	trust := true
-	for _, a := range args {
-		if a == "--strict" {
-			trust = false
-		}
+	fs := flag.NewFlagSet("check", flag.ExitOnError)
+	strict := fs.Bool("strict", false, "Refuse untrusted execution / strict mode")
+	checkDrift := fs.Bool("check-drift", false, "Force King Kai watchdog drift audit even with 0 active shifts")
+	_ = fs.Parse(args)
+
+	targetDir := "."
+	if len(fs.Args()) > 0 {
+		targetDir = fs.Args()[0]
 	}
-	wd, _ := os.Getwd()
-	report := check.RunProjectChecks(wd, trust)
+	absDir, err := filepath.Abs(targetDir)
+	if err != nil {
+		absDir = targetDir
+	}
+
+	trust := !*strict
+	report := check.RunProjectChecks(absDir, trust, *checkDrift)
 
 	fmt.Println("Capsule Corp Verification Check:")
 	if report.DiffAudit != nil {
@@ -481,7 +504,10 @@ func cmdCheck(args []string) {
 		if c.Passed {
 			fmt.Printf("  [PASS] %s (%v)\n", c.Name, c.Duration)
 		} else {
-			fmt.Printf("  [FAIL] %s: %s\n", c.Name, strings.Join(c.Errors, "; "))
+			fmt.Printf("  [FAIL] %s:\n", c.Name)
+			for _, e := range c.Errors {
+				fmt.Printf("         • %s\n", e)
+			}
 		}
 	}
 
@@ -491,12 +517,14 @@ func cmdCheck(args []string) {
 }
 
 func cmdVerify(args []string) {
+	// capsule verify is the strict gate: enforce check-drift
+	args = append(args, "--check-drift")
 	cmdCheck(args)
 }
 
-func cmdSecurity() {
-	wd, _ := os.Getwd()
-	findings, err := security.ScanRepository(wd)
+func cmdSecurity(args []string) {
+	absDir := resolveTargetDir(args)
+	findings, err := security.ScanRepository(absDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Security scan error: %v\n", err)
 		os.Exit(1)
@@ -554,27 +582,77 @@ func cmdGrill(args []string) {
 	fmt.Println("========================================================================")
 }
 
-func cmdSpy() {
-	wd, _ := os.Getwd()
-	rep, err := watchdog.InspectWorkplace(wd)
+func cmdSpy(args []string) {
+	fs := flag.NewFlagSet("spy", flag.ExitOnError)
+	asJSON := fs.Bool("json", false, "Output machine-readable JSON report")
+	strict := fs.Bool("strict", false, "Fail with exit code 1 on warnings as well as hard drift")
+	_ = fs.Parse(args)
+
+	targetDir := "."
+	if len(fs.Args()) > 0 {
+		targetDir = fs.Args()[0]
+	}
+	absDir, err := filepath.Abs(targetDir)
+	if err != nil {
+		absDir = targetDir
+	}
+
+	rep, err := watchdog.InspectWorkplace(absDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error inspecting workplace: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("========================================================================")
-	fmt.Println(" 🪐 KING KAI TELEPATHIC SUPERVISOR (WATCHDOG)")
-	fmt.Println("========================================================================")
-	fmt.Printf(" Active Shifts Audited: %d\n", rep.ActiveShiftsChecked)
-	if rep.Clean {
-		fmt.Println(" Workplace Status: 100% HEALTHY (No scope drift or stalled shifts).")
+	if *asJSON {
+		var buf bytes.Buffer
+		enc := json.NewEncoder(&buf)
+		enc.SetEscapeHTML(false)
+		enc.SetIndent("", "  ")
+		_ = enc.Encode(rep)
+		fmt.Print(buf.String())
 	} else {
-		fmt.Println(" Warnings:")
-		for _, w := range rep.Warnings {
-			fmt.Printf("   ⚠️  %s\n", w)
+		fmt.Println("========================================================================")
+		fmt.Println(" 🪐 KING KAI TELEPATHIC SUPERVISOR (WATCHDOG)")
+		fmt.Println("========================================================================")
+		fmt.Printf(" Status:                 %s (Verdict: %s)\n", rep.Status, rep.Verdict)
+		fmt.Printf(" Workspace:              %s\n", rep.TargetDir)
+		fmt.Printf(" Active Shifts Audited:  %d\n", rep.ActiveShiftsChecked)
+		if len(rep.ClaimedFiles) > 0 {
+			fmt.Printf(" Claimed Files:          %s\n", strings.Join(rep.ClaimedFiles, ", "))
+		} else {
+			fmt.Println(" Claimed Files:          None")
 		}
+		if len(rep.DirtyFiles) > 0 {
+			fmt.Printf(" Dirty Files:            %s\n", strings.Join(rep.DirtyFiles, ", "))
+		} else {
+			fmt.Println(" Dirty Files:            Clean working tree")
+		}
+		fmt.Println("------------------------------------------------------------------------")
+
+		if rep.Verdict == "PASS" {
+			fmt.Println(" Workplace Status: 100% HEALTHY (Zero scope drift or stalled shifts).")
+		} else {
+			fmt.Println(" DISCOVERED DEVIATIONS:")
+			for idx, iss := range rep.Issues {
+				badge := "🚨"
+				if iss.Severity == "WARN" {
+					badge = "⚠️ "
+				}
+				fmt.Printf("   %s [%d] %s: %s\n", badge, idx+1, iss.Type, iss.Message)
+				if len(iss.UnclaimedFiles) > 0 {
+					fmt.Printf("       Out-of-Bounds: %s\n", strings.Join(iss.UnclaimedFiles, ", "))
+				}
+				if iss.Fix != "" {
+					fmt.Printf("       Remediation:   %s\n", iss.Fix)
+				}
+			}
+		}
+		fmt.Println("========================================================================")
 	}
-	fmt.Println("========================================================================")
+
+	if rep.Verdict == "FAIL" || (*strict && rep.Verdict == "WARN") {
+		os.Exit(1)
+	}
 }
 
 func cmdValidate(args []string) {
@@ -623,8 +701,8 @@ func cmdInit(args []string) {
 	force := fs.Bool("force", false, "Overwrite existing config files")
 	_ = fs.Parse(args)
 
-	wd, _ := os.Getwd()
-	created, skipped, err := initcmd.InitProject(wd, *tool, *force)
+	targetDir := resolveTargetDir(fs.Args())
+	created, skipped, err := initcmd.InitProject(targetDir, *tool, *force)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing: %v\n", err)
 		os.Exit(1)
@@ -638,9 +716,9 @@ func cmdInit(args []string) {
 	}
 }
 
-func cmdDoctor() {
-	wd, _ := os.Getwd()
-	rep := doctor.DiagnoseEnvironment(wd)
+func cmdDoctor(args []string) {
+	absDir := resolveTargetDir(args)
+	rep := doctor.DiagnoseEnvironment(absDir)
 	fmt.Println("Capsule Corp Doctor Diagnostics:")
 	for _, item := range rep.Items {
 		fmt.Printf("  [%s] %-12s: %s\n", item.Status, item.Name, item.Details)

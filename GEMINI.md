@@ -12,7 +12,7 @@ All AI agents operating in this repository (Google Antigravity, Gemini CLI, agy)
 Call specialists only when strictly required:
 - **Security (`@Android-17`):** Secrets, OWASP risks, auth flaws.
 - **Red Team (`@Cell`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, and SSRF penetration testing.
-- **Watchdog (`@King-Kai`):** Telepathic supervisor catching scope drift, rogue edits, and stalled shifts.
+- **Watchdog (`@King-Kai`):** Autonomous telepathic alignment supervisor. Spies on active shifts, git modifications, and transcripts to catch scope drift, rogue edits, and stalled shifts. Executes `capsule spy .` autonomously at shift start, phase boundaries, and verification gate without waiting for human prompts.
 - **Refactoring (`@Android-18`):** Dead code cleanup and technical debt without behavioral changes.
 - **UX (`@Videl`):** User experience, accessibility, interaction design.
 - **Infra (`@Vegeta`):** Docker, CI/CD, database migrations, connection pooling.
@@ -25,9 +25,9 @@ Call specialists only when strictly required:
 - **Inquisitor / Grill Me (`@Beerus`):** Ruthless architectural inquisition, edge-case probing, stress testing, and Hakai-level code grilling.
 
 ## 3. Workflows That Scale
-- **Small Fix:** Builder → Verification (`capsule check`).
-- **Standard Feature:** Product → Builder → Reviewer → Verification (`capsule check`).
-- **Complex Epic:** Coordinator → Builder → Reviewer → Verification (`capsule check`).
+- **Small Fix:** Builder → Verification (`capsule check`, `capsule spy`).
+- **Standard Feature:** Product → Builder → Reviewer → Verification (`capsule check`, `capsule spy`).
+- **Complex Epic:** Coordinator (runs King-Kai checkpoints at phase boundaries) → Builder → Reviewer → Verification (`capsule check`, `capsule spy`).
 
 ## 4. Functional Task Envelope & Model Tiering Protocol
 Handoffs between roles adhere to a pure **functional programming paradigm** ($\text{Output} = \text{Agent}(\text{Envelope})$) with zero conversational baggage:
@@ -53,12 +53,12 @@ Handoffs between roles adhere to a pure **functional programming paradigm** ($\t
 ## 5. Verification Gate (Trunks' Rule)
 Before declaring any task done or opening a PR:
 - Run project checks: `capsule check` (or native runner e.g. `npm test`, `pytest`, `cargo test`).
-- Run `capsule verify`, `capsule security`, `capsule attack`, and `capsule grill`.
-- All tests must pass with exit code 0 and zero secrets in diff.
+- Run `capsule verify`, `capsule security`, `capsule attack`, `capsule grill`, and `capsule spy`.
+- All tests must pass with exit code 0 and zero secrets/unbudgeted drift in diff.
 
 ## 6. Check-In Room Protocol (Multi-AI Coordination)
 When collaborating with other AI agents (Claude Code, Codex, Cursor, Windsurf):
-- **Inspect Active Shifts:** Run `capsule room` to see which agents and models are active and what files are currently claimed.
+- **Inspect Active Shifts & Hygiene:** Run `capsule room` and `capsule spy .` before beginning work to inspect active shifts, claimed files, and ensure zero pre-existing ghost edits.
 - **Clock In:** Claim your active task and files before modifying code:
   ```bash
   capsule clock-in --task "Task description" --files "path/to/file1,path/to/file2"
@@ -67,10 +67,10 @@ When collaborating with other AI agents (Claude Code, Codex, Cursor, Windsurf):
   ```bash
   capsule heartbeat
   ```
-- **Verify:** Run `capsule check .` after implementation.
+- **Verify:** Run `capsule check .` and `capsule spy .` after implementation to verify correctness and zero scope drift.
 - **Clock Out:** Conclude your shift once verified:
   ```bash
-  capsule clock-out --summary "Completed and verified"
+  capsule clock-out --summary "Completed and verified with exit code 0"
   ```
 *(Stale shifts >2 hours without heartbeat or clock-out auto-expire; history is capped at 15 items to prevent log bloat.)*
 

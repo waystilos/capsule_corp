@@ -21,7 +21,7 @@ Work is organized around four core roles, with specialized agents called only on
 Call specialists only when a task strictly requires their domain:
 - **Security (`@Android-17`):** Secrets, OWASP patterns, CVEs, CORS, and auth flaws.
 - **Red Team (`@Cell`):** Offensive security, penetration testing, prompt injection fuzzing, SSRF, ReDoS, BOLA.
-- **Watchdog (`@King-Kai`):** Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering.
+- **Watchdog (`@King-Kai`):** Autonomous telepathic alignment supervisor. Spies on active shifts, git modifications, and transcripts to catch scope drift, rogue edits, and stalled shifts. Executes `capsule spy .` autonomously at shift start, phase boundaries, and verification gate without waiting for human prompts.
 - **Refactoring (`@Android-18`):** Dead code elimination, component extraction, and technical debt with zero behavioral changes.
 - **UX (`@Videl`):** Usability, accessibility, user flows, error and loading states.
 - **Infra (`@Vegeta`):** Dockerfiles, CI/CD pipelines, database migrations, connection pooling, and indexing.
@@ -35,9 +35,9 @@ Call specialists only when a task strictly requires their domain:
 
 ### Routing Policy
 Routing via `./bin/capsule route "<request>"` provides a **heuristic suggestion**. The host AI should choose the workflow scale based on the task:
-- **Small Fix:** Builder → Verification (`capsule check`). Skip product and coordinator overhead.
-- **Standard Feature:** Product (defines acceptance criteria) → Builder → Reviewer → Verification (`capsule check`).
-- **Complex Epic:** Coordinator (deconstructs & calls specialists) → Builder → Reviewer → Verification (`capsule check`).
+- **Small Fix:** Builder → Verification (`capsule check`, `capsule spy`). Skip product and coordinator overhead.
+- **Standard Feature:** Product (defines acceptance criteria) → Builder → Reviewer → Verification (`capsule check`, `capsule spy`).
+- **Complex Epic:** Coordinator (runs King-Kai checkpoints at phase boundaries) → Builder → Reviewer → Verification (`capsule check`, `capsule spy`).
 
 ---
 
@@ -76,6 +76,7 @@ Specialist agents are registered in `.claude/agents/` (and globally in `~/.claud
 ### Skills & Slash Commands (`.claude/skills/`)
 Custom skills are accessible as slash commands:
 - `/verification-gate`: Trunks' automated test matrix and diff inspection runbook.
+- `/watchdog-spy`: King Kai's telepathic surveillance runbook to detect scope drift, rogue edits, and stalled shifts.
 - `/audit-transcripts`: Dr. Gero's session log analyzer to eliminate agent friction.
 - `/scaffold-agent`: Dr. Gero's interview and generation runbook for new agents.
 
@@ -84,7 +85,7 @@ Custom skills are accessible as slash commands:
 ## 4. Mandatory Verification Gate (Trunks' Rule)
 
 Before declaring any task complete, submitting code, or opening a PR:
-1. Run everyday project checks (tests, linter, typechecker, secrets):
+1. Run everyday project checks (tests, linter, typechecker, secrets, agent alignment):
    ```bash
    ./bin/capsule check . --trust
    ```
@@ -93,10 +94,14 @@ Before declaring any task complete, submitting code, or opening a PR:
    ```bash
    ./bin/capsule verify . --trust
    ./bin/capsule security .
+   ./bin/capsule attack .
+   ./bin/capsule grill .
+   ./bin/capsule spy .
    ```
 3. **Acceptance Criteria:**
    - All tests exit with code `0`.
    - Zero secrets or merge conflict markers in diff.
+   - Zero scope drift, unbudgeted edits, or rogue touches (`capsule spy` PASS).
    - Zero critical/high dependency CVEs.
 
 ---
@@ -104,7 +109,7 @@ Before declaring any task complete, submitting code, or opening a PR:
 ## 5. Check-In Room Protocol (Multi-AI Coordination)
 
 When multiple agents or models work on the same repository:
-1. **Check Active Shifts:** Run `./bin/capsule room` before starting to see who is on shift and check for claimed files.
+1. **Check Active Shifts & Workspace Hygiene:** Run `./bin/capsule room` and `./bin/capsule spy .` before starting to see who is on shift, inspect claimed files, and ensure zero pre-existing ghost edits.
 2. **Clock In:** Claim your shift and target files before writing code:
    ```bash
    ./bin/capsule clock-in --task "Task description" --files "file1,file2"
@@ -114,7 +119,7 @@ When multiple agents or models work on the same repository:
    ```bash
    ./bin/capsule heartbeat
    ```
-4. **Verify:** Run `./bin/capsule check .` after modifications.
+4. **Verify:** Run `./bin/capsule check .` and `./bin/capsule spy .` after modifications to assert zero drift.
 5. **Clock Out:** Conclude your shift with a completion summary once verified:
    ```bash
    ./bin/capsule clock-out --summary "Task completed and verified with exit code 0"

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -35,6 +36,21 @@ type Message struct {
 type AckRecord struct {
 	Ack    string    `json:"ack"`
 	SentAt time.Time `json:"sent_at"`
+}
+
+// agentIDPattern bounds agent IDs that become inbox file names. Must start with an
+// alphanumeric (rejects "..", hidden files, and the reserved "_" prefix) and contain no
+// path separators.
+var agentIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
+
+// inboxPath validates agentID and returns its inbox file path. A single leading "@"
+// (as in `capsule send --to @goku`) is accepted and stripped.
+func inboxPath(targetDir, agentID string) (string, string, error) {
+	agentID = strings.TrimPrefix(agentID, "@")
+	if !agentIDPattern.MatchString(agentID) {
+		return "", "", fmt.Errorf("invalid agent id %q: must match %s", agentID, agentIDPattern.String())
+	}
+	return filepath.Join(targetDir, ".capsule", "inbox", agentID+".jsonl"), agentID, nil
 }
 
 func ensureInboxDir(targetDir string) (string, error) {
@@ -77,16 +93,15 @@ func StoreEnvelope(targetDir string, envelopeData []byte) (string, error) {
 
 // Send delivers a message to an agent's inbox file.
 func Send(targetDir, fromAgent, toAgent, body string, envelopeData []byte) (*Message, error) {
-	inboxDir, err := ensureInboxDir(targetDir)
+	path, toAgent, err := inboxPath(targetDir, sanitize.Scrub(toAgent, false, false))
 	if err != nil {
+		return nil, err
+	}
+	if _, err := ensureInboxDir(targetDir); err != nil {
 		return nil, err
 	}
 
 	fromAgent = sanitize.Scrub(fromAgent, false, false)
-	toAgent = sanitize.Scrub(toAgent, false, false)
-	if toAgent == "" {
-		return nil, fmt.Errorf("recipient agent cannot be empty")
-	}
 
 	body = sanitize.Scrub(body, true, false)
 	if len(body) > MaxBodyLen {
@@ -120,8 +135,7 @@ func Send(targetDir, fromAgent, toAgent, body string, envelopeData []byte) (*Mes
 		return nil, err
 	}
 
-	inboxPath := filepath.Join(inboxDir, toAgent+".jsonl")
-	f, err := os.OpenFile(inboxPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, err
 	}
@@ -136,8 +150,11 @@ func Send(targetDir, fromAgent, toAgent, body string, envelopeData []byte) (*Mes
 
 // ReadInbox parses all messages and acknowledges in an agent's inbox.
 func ReadInbox(targetDir, agentID string, unreadOnly bool) ([]Message, error) {
-	inboxPath := filepath.Join(targetDir, ".capsule", "inbox", agentID+".jsonl")
-	data, err := os.ReadFile(inboxPath)
+	path, _, err := inboxPath(targetDir, agentID)
+	if err != nil {
+		return nil, err
+	}
+	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return []Message{}, nil
 	}
@@ -170,7 +187,7 @@ func ReadInbox(targetDir, agentID string, unreadOnly bool) ([]Message, error) {
 		}
 	}
 
-	var results []Message
+	results := []Message{}
 	for _, id := range orderedIDs {
 		m := messages[id]
 		m.Acked = acks[id]
@@ -213,6 +230,9 @@ func Ack(targetDir, agentID, msgID string) error {
 		}
 		agentID = found
 	} else {
+		if _, _, err := inboxPath(targetDir, agentID); err != nil {
+			return err
+		}
 		// Check if message is actually in this agent's inbox, otherwise auto-locate
 		msgs, _ := ReadInbox(targetDir, agentID, false)
 		hasMsg := false
@@ -229,7 +249,10 @@ func Ack(targetDir, agentID, msgID string) error {
 		}
 	}
 
-	inboxPath := filepath.Join(targetDir, ".capsule", "inbox", agentID+".jsonl")
+	path, _, err := inboxPath(targetDir, agentID)
+	if err != nil {
+		return err
+	}
 	ackRec := AckRecord{
 		Ack:    msgID,
 		SentAt: time.Now().UTC(),
@@ -238,7 +261,7 @@ func Ack(targetDir, agentID, msgID string) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(inboxPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		return err
 	}

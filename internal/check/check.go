@@ -9,7 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"capsule-corp/internal/room"
 	"capsule-corp/internal/secretpatterns"
+	"capsule-corp/internal/watchdog"
 )
 
 type CheckResult struct {
@@ -104,7 +106,9 @@ func RunCommand(targetDir, name, commandStr string) CheckResult {
 }
 
 // RunProjectChecks detects project ecosystem and executes standard gates.
-func RunProjectChecks(targetDir string, trustMode bool) CheckReport {
+// If an active agent shift exists in the Check-In Room, or if checkDrift is explicitly true,
+// it automatically enforces King Kai's Agent Alignment & Scope Drift audit.
+func RunProjectChecks(targetDir string, trustMode bool, checkDrift ...bool) CheckReport {
 	report := CheckReport{
 		OverallPassed: true,
 	}
@@ -116,7 +120,48 @@ func RunProjectChecks(targetDir string, trustMode bool) CheckReport {
 		report.OverallPassed = false
 	}
 
-	// 2. Detect Go ecosystem
+	// 2. Agent Alignment & Drift Audit (King Kai's Watchdog Gate)
+	// Automatically activates when an active agent shift exists in the Check-In Room,
+	// or when explicitly requested via checkDrift.
+	forceDrift := len(checkDrift) > 0 && checkDrift[0]
+	autoDrift := false
+	rd, err := room.LoadRoomData(targetDir)
+	if err == nil && len(rd.ActiveShifts) > 0 {
+		autoDrift = true
+	}
+
+	if forceDrift || autoDrift {
+		alignStart := time.Now()
+		alignRes := CheckResult{
+			Name:   "Agent Alignment (King Kai Watchdog)",
+			Passed: true,
+		}
+		spyReport, spyErr := watchdog.InspectWorkplace(targetDir)
+		alignRes.Duration = time.Since(alignStart)
+		if spyErr != nil {
+			alignRes.Passed = false
+			alignRes.Errors = append(alignRes.Errors, fmt.Sprintf("Watchdog audit error: %v", spyErr))
+			report.OverallPassed = false
+		} else if spyReport.Verdict == "FAIL" {
+			alignRes.Passed = false
+			for _, iss := range spyReport.Issues {
+				if iss.Severity == "FAIL" {
+					msg := fmt.Sprintf("[%s] %s", iss.Type, iss.Message)
+					if len(iss.UnclaimedFiles) > 0 {
+						msg += fmt.Sprintf(" (Off-path files: %s)", strings.Join(iss.UnclaimedFiles, ", "))
+					}
+					if iss.Fix != "" {
+						msg += fmt.Sprintf(" => Fix: %s", iss.Fix)
+					}
+					alignRes.Errors = append(alignRes.Errors, msg)
+				}
+			}
+			report.OverallPassed = false
+		}
+		report.Checks = append(report.Checks, alignRes)
+	}
+
+	// 3. Detect Go ecosystem
 	if _, err := os.Stat(filepath.Join(targetDir, "go.mod")); err == nil {
 		testRes := RunCommand(targetDir, "Go Tests", "go test ./...")
 		report.Checks = append(report.Checks, testRes)
@@ -132,7 +177,7 @@ func RunProjectChecks(targetDir string, trustMode bool) CheckReport {
 		return report
 	}
 
-	// 3. Detect Node ecosystem
+	// 4. Detect Node ecosystem
 	if _, err := os.Stat(filepath.Join(targetDir, "package.json")); err == nil {
 		testRes := RunCommand(targetDir, "NPM Tests", "npm test")
 		report.Checks = append(report.Checks, testRes)
@@ -142,7 +187,7 @@ func RunProjectChecks(targetDir string, trustMode bool) CheckReport {
 		return report
 	}
 
-	// 4. Detect Python ecosystem
+	// 5. Detect Python ecosystem
 	if _, err := os.Stat(filepath.Join(targetDir, "pyproject.toml")); err == nil {
 		testRes := RunCommand(targetDir, "Python Tests", "pytest")
 		report.Checks = append(report.Checks, testRes)
@@ -152,7 +197,7 @@ func RunProjectChecks(targetDir string, trustMode bool) CheckReport {
 		return report
 	}
 
-	// 5. Detect Rust ecosystem
+	// 6. Detect Rust ecosystem
 	if _, err := os.Stat(filepath.Join(targetDir, "Cargo.toml")); err == nil {
 		testRes := RunCommand(targetDir, "Cargo Test", "cargo test")
 		report.Checks = append(report.Checks, testRes)

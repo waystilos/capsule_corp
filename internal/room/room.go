@@ -2,8 +2,10 @@ package room
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -81,18 +83,30 @@ type Conflict struct {
 
 // DetectEnvironment identifies the active AI assistant or falls back to system user.
 func DetectEnvironment() EnvInfo {
-	if os.Getenv("GEMINI_CLI") != "" || os.Getenv("ANTIGRAVITY") != "" {
+	if os.Getenv("GEMINI_CLI") != "" || os.Getenv("ANTIGRAVITY") != "" || os.Getenv("ANTIGRAVITY_AGENT") != "" || os.Getenv("ANTIGRAVITY_APP_DATA_DIR") != "" || os.Getenv("ANTIGRAVITY_CONVERSATION_ID") != "" {
 		model := os.Getenv("GEMINI_MODEL")
 		if model == "" {
 			model = os.Getenv("ANTIGRAVITY_MODEL")
 		}
 		if model == "" {
-			model = "Unknown"
+			model = "Antigravity Agent"
 		}
 		return EnvInfo{
 			AgentID:   "gemini",
 			AgentName: "Antigravity / Gemini",
 			Provider:  "Google",
+			Model:     model,
+		}
+	}
+	if os.Getenv("GITHUB_COPILOT") != "" || os.Getenv("COPILOT_AGENT") != "" {
+		model := os.Getenv("COPILOT_MODEL")
+		if model == "" {
+			model = "GitHub Copilot"
+		}
+		return EnvInfo{
+			AgentID:   "copilot",
+			AgentName: "GitHub Copilot",
+			Provider:  "GitHub",
 			Model:     model,
 		}
 	}
@@ -343,11 +357,6 @@ func ClockIn(targetDir, agentID, role, task string, files []string, force bool) 
 		}
 		PruneStaleShifts(rd)
 
-		conflicts = CheckConflicts(rd, files, "")
-		if len(conflicts) > 0 && !force {
-			return fmt.Errorf("file collision detected: claimed files overlap with active shift(s)")
-		}
-
 		env := DetectEnvironment()
 		if agentID == "" {
 			agentID = env.AgentID
@@ -362,6 +371,35 @@ func ClockIn(targetDir, agentID, role, task string, files []string, force bool) 
 		task = sanitize.Scrub(task, false, false)
 		if len(task) > MaxTaskLen {
 			task = task[:MaxTaskLen]
+		}
+
+		sd, _ := LoadSessionData(targetDir)
+		if sd.Tokens == nil {
+			sd.Tokens = make(map[string]string)
+		}
+		if sd.ByAgent == nil {
+			sd.ByAgent = make(map[string]string)
+		}
+
+		// Check if this agent already has an active shift to allow updating claims
+		var existingShiftID string
+		if sid, ok := sd.ByAgent[agentID]; ok {
+			if _, active := rd.ActiveShifts[sid]; active {
+				existingShiftID = sid
+			}
+		}
+		if existingShiftID == "" {
+			for sid, s := range rd.ActiveShifts {
+				if s.AgentID == agentID {
+					existingShiftID = sid
+					break
+				}
+			}
+		}
+
+		conflicts = CheckConflicts(rd, files, existingShiftID)
+		if len(conflicts) > 0 && !force {
+			return fmt.Errorf("file collision detected: claimed files overlap with active shift(s)")
 		}
 
 		cleanFiles := make([]string, 0, len(files))
@@ -394,12 +432,17 @@ func ClockIn(targetDir, agentID, role, task string, files []string, force bool) 
 			LastSeenAt:  now,
 		}
 
+		// Retire previous shift for this agent if present to prevent zombie shifts
+		if existingShiftID != "" {
+			delete(rd.ActiveShifts, existingShiftID)
+			delete(sd.Tokens, existingShiftID)
+		}
+
 		rd.ActiveShifts[shiftID] = shift
 		if err := SaveRoomData(targetDir, rd); err != nil {
 			return err
 		}
 
-		sd, _ := LoadSessionData(targetDir)
 		sd.ShiftID = shiftID
 		sd.AgentID = agentID
 		sd.Tokens[shiftID] = token
@@ -415,8 +458,66 @@ func ClockIn(targetDir, agentID, role, task string, files []string, force bool) 
 	return createdShift, token, conflicts, err
 }
 
+// ErrInvalidToken is returned when a session token does not match any active shift.
+var ErrInvalidToken = errors.New("invalid or expired session token")
+
+// shiftResolver picks the target shift ID from loaded room and session state.
+type shiftResolver func(rd *RoomData, sd *SessionData) (string, error)
+
+// legacyResolver is the local CLI lookup: explicit shift ID, then agent, then the
+// last session, then any shift owned by the detected environment agent.
+func legacyResolver(sessionID, agentID string, fallbackOnMissing bool) shiftResolver {
+	return func(rd *RoomData, sd *SessionData) (string, error) {
+		target := sessionID
+		if target == "" {
+			if agentID != "" {
+				target = sd.ByAgent[agentID]
+			} else {
+				target = sd.ShiftID
+			}
+		}
+		_, active := rd.ActiveShifts[target]
+		if target == "" || (fallbackOnMissing && !active) {
+			env := DetectEnvironment()
+			for sid, s := range rd.ActiveShifts {
+				if s.AgentID == env.AgentID {
+					return sid, nil
+				}
+			}
+		}
+		return target, nil
+	}
+}
+
+// tokenResolver maps a clock-in session token to its shift with a constant-time
+// comparison. It never falls back to another shift.
+func tokenResolver(token string) shiftResolver {
+	return func(rd *RoomData, sd *SessionData) (string, error) {
+		if token == "" {
+			return "", ErrInvalidToken
+		}
+		for shiftID, t := range sd.Tokens {
+			if t != "" && subtle.ConstantTimeCompare([]byte(t), []byte(token)) == 1 {
+				if _, ok := rd.ActiveShifts[shiftID]; ok {
+					return shiftID, nil
+				}
+			}
+		}
+		return "", ErrInvalidToken
+	}
+}
+
 // ClockOut completes an active shift and writes a history entry.
 func ClockOut(targetDir, sessionID, agentID, summary string) (*HistoryEntry, error) {
+	return clockOut(targetDir, summary, legacyResolver(sessionID, agentID, true))
+}
+
+// ClockOutByToken completes only the shift owned by the given session token.
+func ClockOutByToken(targetDir, token, summary string) (*HistoryEntry, error) {
+	return clockOut(targetDir, summary, tokenResolver(token))
+}
+
+func clockOut(targetDir, summary string, resolve shiftResolver) (*HistoryEntry, error) {
 	var entry *HistoryEntry
 	err := WithRoomLock(targetDir, func() error {
 		rd, err := LoadRoomData(targetDir)
@@ -426,24 +527,9 @@ func ClockOut(targetDir, sessionID, agentID, summary string) (*HistoryEntry, err
 		PruneStaleShifts(rd)
 
 		sd, _ := LoadSessionData(targetDir)
-		targetShiftID := sessionID
-		if targetShiftID == "" {
-			if agentID != "" {
-				targetShiftID = sd.ByAgent[agentID]
-			} else {
-				targetShiftID = sd.ShiftID
-			}
-		}
-
-		if targetShiftID == "" || rd.ActiveShifts[targetShiftID].ShiftID == "" {
-			// Find shift by matching agent
-			env := DetectEnvironment()
-			for sid, s := range rd.ActiveShifts {
-				if s.AgentID == env.AgentID {
-					targetShiftID = sid
-					break
-				}
-			}
+		targetShiftID, err := resolve(rd, sd)
+		if err != nil {
+			return err
 		}
 
 		shift, exists := rd.ActiveShifts[targetShiftID]
@@ -455,6 +541,12 @@ func ClockOut(targetDir, sessionID, agentID, summary string) (*HistoryEntry, err
 		delete(sd.Tokens, targetShiftID)
 		if sd.ShiftID == targetShiftID {
 			sd.ShiftID = ""
+		}
+		if sd.AgentID == shift.AgentID {
+			sd.AgentID = ""
+		}
+		if sd.ByAgent != nil && sd.ByAgent[shift.AgentID] == targetShiftID {
+			delete(sd.ByAgent, shift.AgentID)
 		}
 
 		summary = sanitize.Scrub(summary, false, false)
@@ -496,6 +588,15 @@ func ClockOut(targetDir, sessionID, agentID, summary string) (*HistoryEntry, err
 
 // Heartbeat refreshes the last seen timestamp of the active shift.
 func Heartbeat(targetDir, sessionID, agentID string) (*Shift, error) {
+	return heartbeat(targetDir, legacyResolver(sessionID, agentID, false))
+}
+
+// HeartbeatByToken refreshes only the shift owned by the given session token.
+func HeartbeatByToken(targetDir, token string) (*Shift, error) {
+	return heartbeat(targetDir, tokenResolver(token))
+}
+
+func heartbeat(targetDir string, resolve shiftResolver) (*Shift, error) {
 	var updated *Shift
 	err := WithRoomLock(targetDir, func() error {
 		rd, err := LoadRoomData(targetDir)
@@ -503,22 +604,9 @@ func Heartbeat(targetDir, sessionID, agentID string) (*Shift, error) {
 			return err
 		}
 		sd, _ := LoadSessionData(targetDir)
-		targetShiftID := sessionID
-		if targetShiftID == "" {
-			if agentID != "" {
-				targetShiftID = sd.ByAgent[agentID]
-			} else {
-				targetShiftID = sd.ShiftID
-			}
-		}
-		if targetShiftID == "" {
-			env := DetectEnvironment()
-			for sid, s := range rd.ActiveShifts {
-				if s.AgentID == env.AgentID {
-					targetShiftID = sid
-					break
-				}
-			}
+		targetShiftID, err := resolve(rd, sd)
+		if err != nil {
+			return err
 		}
 
 		shift, exists := rd.ActiveShifts[targetShiftID]

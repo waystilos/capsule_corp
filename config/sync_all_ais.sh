@@ -273,7 +273,7 @@ All AI agents operating within this workspace follow the **Capsule Corp Standard
 Call specialists only when strictly required:
 - **Security (\`@Android-17\`):** Auth, secrets, OWASP risks, and CVEs.
 - **Red Team (\`@Cell\`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, SSRF.
-- **Watchdog (\`@King-Kai\`):** Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering.
+- **Watchdog (\`@King-Kai\`):** Autonomous telepathic alignment supervisor. Spies on active shifts, git modifications, and transcripts to catch scope drift, rogue edits, and stalled shifts. Executes \`capsule spy .\` autonomously at shift start, phase boundaries, and verification gate.
 - **Refactoring (\`@Android-18\`):** Dead code cleanup and technical debt without behavioral changes.
 - **UX (\`@Videl\`):** Usability, accessibility, user flows, and error states.
 - **Infra (\`@Vegeta\`):** Docker, CI/CD, database migrations, connection pooling.
@@ -286,9 +286,9 @@ Call specialists only when strictly required:
 - **Inquisitor / Grill Me (\`@Beerus\`):** Ruthless architectural inquisition, edge-case probing, stress testing, and Hakai-level code grilling.
 
 ## 3. Workflows That Scale
-- **Small Fix:** Builder → Verification (\`capsule check\`). Avoid orchestration overhead.
-- **Standard Feature:** Product (defines acceptance criteria) → Builder → Reviewer → Verification (\`capsule check\`).
-- **Complex Epic:** Coordinator (splits work & calls specialists) → Builder → Reviewer → Verification (\`capsule check\`).
+- **Small Fix:** Builder → Verification (\`capsule check\`, \`capsule spy\`). Avoid orchestration overhead.
+- **Standard Feature:** Product (defines acceptance criteria) → Builder → Reviewer → Verification (\`capsule check\`, \`capsule spy\`).
+- **Complex Epic:** Coordinator (runs King-Kai checkpoints at phase boundaries) → Builder → Reviewer → Verification (\`capsule check\`, \`capsule spy\`).
 
 ## 4. Standard Task Brief Envelope
 \`\`\`markdown
@@ -303,15 +303,15 @@ Call specialists only when strictly required:
 ## 5. Mandatory Verification Gate (Trunks' Rule)
 Before declaring any task complete or submitting code changes:
 - Run project checks: \`capsule check [project_dir]\` (or native test runner).
-- Run strict gate before PRs: \`capsule verify [project_dir]\`, \`capsule security [project_dir]\`, and \`capsule grill [project_dir]\`.
-- Verify exit code is 0 and no exposed secrets or merge conflicts are in the diff.
+- Run strict gate before PRs: \`capsule verify [project_dir]\`, \`capsule security [project_dir]\`, \`capsule attack [project_dir]\`, \`capsule grill [project_dir]\`, and \`capsule spy [project_dir]\`.
+- Verify exit code is 0 and no exposed secrets, rogue edits, or unbudgeted scope drift are in the diff.
 
 ## 6. Check-In Room Protocol (Multi-AI Coordination)
 When multiple AI agents or models operate in the same repository:
-- Run \`capsule room\` to inspect active shifts and claimed files.
+- Run \`capsule room\` and \`capsule spy .\` to inspect active shifts, claimed files, and ensure zero ghost edits.
 - Clock in before editing: \`capsule clock-in --task "..." --files "..."\`
 - Refresh activity for long shifts: \`capsule heartbeat\`
-- Verify with \`capsule check .\` and clock out: \`capsule clock-out --summary "..."\`
+- Verify with \`capsule check .\` and \`capsule spy .\`, then clock out: \`capsule clock-out --summary "..."\`
 
 ## 7. Cohort CLI
 Universal CLI available at: \`$CAPSULE_DIR/bin/capsule\`
@@ -367,7 +367,7 @@ You are an operative of Capsule Corp, built on Capsule Corp's agentic engineerin
 Call specialists only when strictly required:
 - **Security (\`@Android-17\`):** Auth, secrets, OWASP risks, and CVEs.
 - **Red Team (\`@Cell\`):** Adversarial attacks, prompt injection fuzzing, ReDoS, BOLA, SSRF.
-- **Watchdog (\`@King-Kai\`):** Spying on active shifts, detecting scope drift, rogue edits, and off-path wandering.
+- **Watchdog (\`@King-Kai\`):** Autonomous telepathic alignment supervisor. Spies on active shifts, git modifications, and transcripts to catch scope drift, rogue edits, and stalled shifts. Executes \`capsule spy .\` autonomously at shift start, phase boundaries, and verification gate.
 - **Refactoring (\`@Android-18\`):** Dead code cleanup and technical debt without behavioral changes.
 - **UX (\`@Videl\`):** Usability, accessibility, user flows, and error states.
 - **Infra (\`@Vegeta\`):** Docker, CI/CD, database migrations, connection pooling.
@@ -380,9 +380,9 @@ Call specialists only when strictly required:
 - **Inquisitor / Grill Me (\`@Beerus\`):** Ruthless architectural inquisition, edge-case probing, stress testing, and Hakai-level code grilling.
 
 ## 3. Workflows That Scale
-- **Small Fix:** Builder → Verification (\`capsule check\`). Avoid orchestration overhead.
-- **Standard Feature:** Product (defines acceptance criteria) → Builder → Reviewer → Verification (\`capsule check\`).
-- **Complex Epic:** Coordinator (splits work & calls specialists) → Builder → Reviewer → Verification (\`capsule check\`).
+- **Small Fix:** Builder → Verification (\`capsule check\`, \`capsule spy\`). Avoid orchestration overhead.
+- **Standard Feature:** Product (defines acceptance criteria) → Builder → Reviewer → Verification (\`capsule check\`, \`capsule spy\`).
+- **Complex Epic:** Coordinator (runs King-Kai checkpoints at phase boundaries) → Builder → Reviewer → Verification (\`capsule check\`, \`capsule spy\`).
 
 ## 4. Standard Task Brief Envelope
 \`\`\`markdown
@@ -397,15 +397,15 @@ Call specialists only when strictly required:
 ## 5. Mandatory Verification Gate (Trunks' Rule)
 Before declaring any task done or opening a PR:
 - Run everyday checks: \`capsule check [dir]\` (or native test runner).
-- Run strict gate before PRs: \`capsule verify\`, \`capsule security\`, \`capsule attack\`, and \`capsule grill\`.
-- All tests must pass with exit code 0 and zero secrets in diff.
+- Run strict gate before PRs: \`capsule verify\`, \`capsule security\`, \`capsule attack\`, \`capsule grill\`, and \`capsule spy\`.
+- All tests must pass with exit code 0, zero secrets, and zero scope drift in diff.
 
 ## 6. Check-In Room Protocol (Multi-AI Coordination)
 When multiple agents work on this codebase:
-- Check active shifts: \`capsule room\`
+- Check active shifts & hygiene: \`capsule room\` and \`capsule spy .\`
 - Clock in before editing: \`capsule clock-in --task "..." --files "..."\`
 - Refresh activity for long shifts: \`capsule heartbeat\`
-- Verify and clock out: \`capsule clock-out --summary "..."\`
+- Verify with \`capsule check .\` and \`capsule spy .\`, then clock out: \`capsule clock-out --summary "..."\`
 
 ## 7. Cohort CLI
 Universal CLI: \`$CAPSULE_DIR/bin/capsule\`

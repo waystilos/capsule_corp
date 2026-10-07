@@ -2,6 +2,8 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
+	"mime"
 	"net/http"
 	"strings"
 	"time"
@@ -49,7 +51,16 @@ func (s *Server) routes() {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost && !isJSONContentType(r.Header.Get("Content-Type")) {
+		respondError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
 	s.Mux.ServeHTTP(w, r)
+}
+
+func isJSONContentType(ct string) bool {
+	mt, _, err := mime.ParseMediaType(ct)
+	return err == nil && mt == "application/json"
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -102,9 +113,10 @@ func (s *Server) handleClockIn(w http.ResponseWriter, r *http.Request) {
 }
 
 type ClockOutRequest struct {
-	SessionID string `json:"session_id"`
-	AgentID   string `json:"agent_id"`
-	Summary   string `json:"summary"`
+	SessionToken string `json:"session_token"`
+	SessionID    string `json:"session_id"`
+	AgentID      string `json:"agent_id"`
+	Summary      string `json:"summary"`
 }
 
 func (s *Server) handleClockOut(w http.ResponseWriter, r *http.Request) {
@@ -117,8 +129,16 @@ func (s *Server) handleClockOut(w http.ResponseWriter, r *http.Request) {
 		respondError(w, http.StatusBadRequest, "Invalid JSON payload")
 		return
 	}
-	entry, err := room.ClockOut(s.TargetDir, req.SessionID, req.AgentID, req.Summary)
+	if req.SessionToken == "" {
+		respondError(w, http.StatusUnauthorized, "session_token is required")
+		return
+	}
+	entry, err := room.ClockOutByToken(s.TargetDir, req.SessionToken, req.Summary)
 	if err != nil {
+		if errors.Is(err, room.ErrInvalidToken) {
+			respondError(w, http.StatusUnauthorized, err.Error())
+			return
+		}
 		respondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -126,8 +146,9 @@ func (s *Server) handleClockOut(w http.ResponseWriter, r *http.Request) {
 }
 
 type HeartbeatRequest struct {
-	SessionID string `json:"session_id"`
-	AgentID   string `json:"agent_id"`
+	SessionToken string `json:"session_token"`
+	SessionID    string `json:"session_id"`
+	AgentID      string `json:"agent_id"`
 }
 
 func (s *Server) handleHeartbeat(w http.ResponseWriter, r *http.Request) {
@@ -136,9 +157,20 @@ func (s *Server) handleHeartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req HeartbeatRequest
-	_ = json.NewDecoder(r.Body).Decode(&req)
-	shift, err := room.Heartbeat(s.TargetDir, req.SessionID, req.AgentID)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid JSON payload")
+		return
+	}
+	if req.SessionToken == "" {
+		respondError(w, http.StatusUnauthorized, "session_token is required")
+		return
+	}
+	shift, err := room.HeartbeatByToken(s.TargetDir, req.SessionToken)
 	if err != nil {
+		if errors.Is(err, room.ErrInvalidToken) {
+			respondError(w, http.StatusUnauthorized, err.Error())
+			return
+		}
 		respondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -154,7 +186,7 @@ func (s *Server) handleInbox(w http.ResponseWriter, r *http.Request) {
 	unreadOnly := r.URL.Query().Get("unread") == "true"
 	msgs, err := messaging.ReadInbox(s.TargetDir, agentID, unreadOnly)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
+		respondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]any{
