@@ -50,10 +50,16 @@ func (s *Server) routes() {
 	s.Mux.HandleFunc("/api/v1/bots", s.handleBots)
 }
 
+// MaxRequestBytes bounds every request body so a client cannot exhaust memory.
+const MaxRequestBytes = 1 << 20
+
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost && !isJSONContentType(r.Header.Get("Content-Type")) {
 		respondError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
 		return
+	}
+	if r.Body != nil {
+		r.Body = http.MaxBytesReader(w, r.Body, MaxRequestBytes)
 	}
 	s.Mux.ServeHTTP(w, r)
 }

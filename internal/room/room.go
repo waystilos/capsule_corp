@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"capsule-corp/internal/sanitize"
 )
@@ -37,29 +39,29 @@ type EnvInfo struct {
 }
 
 type Shift struct {
-	ShiftID       string    `json:"shift_id"`
-	AgentID       string    `json:"agent_id"`
-	AgentName     string    `json:"agent_name"`
-	Provider      string    `json:"provider"`
-	Model         string    `json:"model"`
-	Role          string    `json:"role"`
-	Task          string    `json:"task"`
-	Files         []string  `json:"files"`
-	ClockedInAt   time.Time `json:"clocked_in_at"`
-	LastSeenAt    time.Time `json:"last_seen_at"`
+	ShiftID     string    `json:"shift_id"`
+	AgentID     string    `json:"agent_id"`
+	AgentName   string    `json:"agent_name"`
+	Provider    string    `json:"provider"`
+	Model       string    `json:"model"`
+	Role        string    `json:"role"`
+	Task        string    `json:"task"`
+	Files       []string  `json:"files"`
+	ClockedInAt time.Time `json:"clocked_in_at"`
+	LastSeenAt  time.Time `json:"last_seen_at"`
 }
 
 type HistoryEntry struct {
-	ShiftID       string    `json:"shift_id"`
-	AgentID       string    `json:"agent_id"`
-	AgentName     string    `json:"agent_name"`
-	Provider      string    `json:"provider"`
-	Model         string    `json:"model"`
-	Role          string    `json:"role"`
-	Task          string    `json:"task"`
-	Summary       string    `json:"summary"`
-	ClockedInAt   time.Time `json:"clocked_in_at"`
-	ClockedOutAt  time.Time `json:"clocked_out_at"`
+	ShiftID      string    `json:"shift_id"`
+	AgentID      string    `json:"agent_id"`
+	AgentName    string    `json:"agent_name"`
+	Provider     string    `json:"provider"`
+	Model        string    `json:"model"`
+	Role         string    `json:"role"`
+	Task         string    `json:"task"`
+	Summary      string    `json:"summary"`
+	ClockedInAt  time.Time `json:"clocked_in_at"`
+	ClockedOutAt time.Time `json:"clocked_out_at"`
 }
 
 type RoomData struct {
@@ -197,11 +199,83 @@ func atomicWriteJSON(path string, v any, perm os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	tmp := fmt.Sprintf("%s.tmp.%d_%d", path, os.Getpid(), time.Now().UnixNano())
-	if err := os.WriteFile(tmp, data, perm); err != nil {
+	return atomicWriteFile(path, data, perm)
+}
+
+// atomicWriteFile writes data to a temp file in the same directory, fsyncs it, and
+// renames it over path so concurrent readers never observe a partial file. The temp
+// file is removed on any failure.
+func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
+	f, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".tmp.*")
+	if err != nil {
 		return err
 	}
-	return os.Rename(tmp, path)
+	tmp := f.Name()
+	ok := false
+	defer func() {
+		if !ok {
+			f.Close()
+			os.Remove(tmp)
+		}
+	}()
+	if err := f.Chmod(perm); err != nil {
+		return err
+	}
+	if _, err := f.Write(data); err != nil {
+		return err
+	}
+	if err := f.Sync(); err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		return err
+	}
+	ok = true
+	return nil
+}
+
+// truncate caps s at max bytes without splitting a multi-byte UTF-8 rune.
+func truncate(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	s = s[:max]
+	for len(s) > 0 && !utf8.ValidString(s) {
+		s = s[:len(s)-1]
+	}
+	return s
+}
+
+// normalizeClaim scrubs and cleans a claimed path so storage and conflict checks
+// compare the same form. Returns "" for empty or whole-workspace (".") claims.
+func normalizeClaim(f string) string {
+	c := filepath.Clean(strings.TrimSpace(sanitize.Scrub(f, false, false)))
+	if c == "." {
+		return ""
+	}
+	return truncate(c, MaxClaimLen)
+}
+
+// pruneSessions drops tokens and agent mappings whose shifts are no longer active,
+// so session.json does not accumulate credentials for pruned or retired shifts.
+func pruneSessions(rd *RoomData, sd *SessionData) {
+	for sid := range sd.Tokens {
+		if _, ok := rd.ActiveShifts[sid]; !ok {
+			delete(sd.Tokens, sid)
+		}
+	}
+	for agent, sid := range sd.ByAgent {
+		if _, ok := rd.ActiveShifts[sid]; !ok {
+			delete(sd.ByAgent, agent)
+		}
+	}
+	if _, ok := rd.ActiveShifts[sd.ShiftID]; !ok {
+		sd.ShiftID = ""
+		sd.AgentID = ""
+	}
 }
 
 func WithRoomLock(targetDir string, fn func() error) error {
@@ -308,30 +382,48 @@ func CheckConflicts(rd *RoomData, files []string, currentShiftID string) []Confl
 	var conflicts []Conflict
 	cleanReq := make(map[string]bool)
 	for _, f := range files {
-		clean := filepath.Clean(strings.TrimSpace(f))
-		if clean != "" && clean != "." {
-			cleanReq[clean] = true
+		if c := normalizeClaim(f); c != "" {
+			cleanReq[c] = true
 		}
 	}
 
-	for id, s := range rd.ActiveShifts {
+	ids := make([]string, 0, len(rd.ActiveShifts))
+	for id := range rd.ActiveShifts {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+
+	sep := string(filepath.Separator)
+	for _, id := range ids {
 		if id == currentShiftID {
 			continue
 		}
+		s := rd.ActiveShifts[id]
 		var overlap []string
+		seen := make(map[string]bool)
+		add := func(p string) {
+			if !seen[p] {
+				seen[p] = true
+				overlap = append(overlap, p)
+			}
+		}
 		for _, sf := range s.Files {
-			c := filepath.Clean(strings.TrimSpace(sf))
-			if cleanReq[c] {
-				overlap = append(overlap, c)
+			c := normalizeClaim(sf)
+			if c == "" {
 				continue
 			}
-			// Check prefix overlap
+			if cleanReq[c] {
+				add(c)
+				continue
+			}
+			// Directory claims overlap anything beneath them, in either direction.
 			for req := range cleanReq {
-				if strings.HasPrefix(req, c+string(filepath.Separator)) || strings.HasPrefix(c, req+string(filepath.Separator)) {
-					overlap = append(overlap, req)
+				if strings.HasPrefix(req, c+sep) || strings.HasPrefix(c, req+sep) {
+					add(req)
 				}
 			}
 		}
+		sort.Strings(overlap)
 		if len(overlap) > 0 {
 			conflicts = append(conflicts, Conflict{
 				ShiftID: id,
@@ -364,21 +456,25 @@ func ClockIn(targetDir, agentID, role, task string, files []string, force bool) 
 		if role == "" {
 			role = "Agent"
 		}
-		agentID = sanitize.Scrub(agentID, false, false)
-		if len(agentID) > MaxNameLen {
-			agentID = agentID[:MaxNameLen]
+		agentID = truncate(sanitize.Scrub(agentID, false, false), MaxNameLen)
+		role = truncate(sanitize.Scrub(role, false, false), MaxNameLen)
+		task = truncate(sanitize.Scrub(task, false, false), MaxTaskLen)
+
+		cleanFiles := make([]string, 0, len(files))
+		seenFiles := make(map[string]bool)
+		for _, f := range files {
+			if c := normalizeClaim(f); c != "" && !seenFiles[c] {
+				seenFiles[c] = true
+				cleanFiles = append(cleanFiles, c)
+			}
 		}
-		task = sanitize.Scrub(task, false, false)
-		if len(task) > MaxTaskLen {
-			task = task[:MaxTaskLen]
+		if len(cleanFiles) > MaxClaims {
+			return fmt.Errorf("too many claimed files: %d (max %d)", len(cleanFiles), MaxClaims)
 		}
 
-		sd, _ := LoadSessionData(targetDir)
-		if sd.Tokens == nil {
-			sd.Tokens = make(map[string]string)
-		}
-		if sd.ByAgent == nil {
-			sd.ByAgent = make(map[string]string)
+		sd, err := LoadSessionData(targetDir)
+		if err != nil {
+			return err
 		}
 
 		// Check if this agent already has an active shift to allow updating claims
@@ -397,17 +493,9 @@ func ClockIn(targetDir, agentID, role, task string, files []string, force bool) 
 			}
 		}
 
-		conflicts = CheckConflicts(rd, files, existingShiftID)
+		conflicts = CheckConflicts(rd, cleanFiles, existingShiftID)
 		if len(conflicts) > 0 && !force {
 			return fmt.Errorf("file collision detected: claimed files overlap with active shift(s)")
-		}
-
-		cleanFiles := make([]string, 0, len(files))
-		for _, f := range files {
-			f = sanitize.Scrub(f, false, false)
-			if f != "" {
-				cleanFiles = append(cleanFiles, f)
-			}
 		}
 
 		tokenBytes := make([]byte, 16)
@@ -439,15 +527,19 @@ func ClockIn(targetDir, agentID, role, task string, files []string, force bool) 
 		}
 
 		rd.ActiveShifts[shiftID] = shift
-		if err := SaveRoomData(targetDir, rd); err != nil {
-			return err
-		}
-
 		sd.ShiftID = shiftID
 		sd.AgentID = agentID
 		sd.Tokens[shiftID] = token
 		sd.ByAgent[agentID] = shiftID
+		pruneSessions(rd, sd)
+
+		// Persist the token before publishing the shift: if the room write then
+		// fails, an orphan token is harmless, whereas a published shift with no
+		// token could never be clocked out by token.
 		if err := SaveSessionData(targetDir, sd); err != nil {
+			return err
+		}
+		if err := SaveRoomData(targetDir, rd); err != nil {
 			return err
 		}
 
@@ -464,29 +556,53 @@ var ErrInvalidToken = errors.New("invalid or expired session token")
 // shiftResolver picks the target shift ID from loaded room and session state.
 type shiftResolver func(rd *RoomData, sd *SessionData) (string, error)
 
-// legacyResolver is the local CLI lookup: explicit shift ID, then agent, then the
-// last session, then any shift owned by the detected environment agent.
-func legacyResolver(sessionID, agentID string, fallbackOnMissing bool) shiftResolver {
+// legacyResolver is the local CLI lookup: an explicit shift ID or agent wins. With
+// neither, it resolves the shift owned by the detected environment agent, and only
+// falls back to the last session when that is the sole active shift. session.json
+// is shared by every agent in the workspace, so blindly using its last ShiftID
+// would let one agent clock out or heartbeat another agent's shift.
+func legacyResolver(sessionID, agentID string) shiftResolver {
 	return func(rd *RoomData, sd *SessionData) (string, error) {
-		target := sessionID
-		if target == "" {
-			if agentID != "" {
-				target = sd.ByAgent[agentID]
-			} else {
-				target = sd.ShiftID
-			}
+		active := func(sid string) bool {
+			_, ok := rd.ActiveShifts[sid]
+			return sid != "" && ok
 		}
-		_, active := rd.ActiveShifts[target]
-		if target == "" || (fallbackOnMissing && !active) {
-			env := DetectEnvironment()
-			for sid, s := range rd.ActiveShifts {
-				if s.AgentID == env.AgentID {
-					return sid, nil
-				}
-			}
+		if sessionID != "" {
+			return sessionID, nil
 		}
-		return target, nil
+		if agentID != "" {
+			if sid := sd.ByAgent[agentID]; active(sid) {
+				return sid, nil
+			}
+			return shiftOwnedBy(rd, agentID), nil
+		}
+		env := DetectEnvironment()
+		if sid := sd.ByAgent[env.AgentID]; active(sid) {
+			return sid, nil
+		}
+		if sid := shiftOwnedBy(rd, env.AgentID); sid != "" {
+			return sid, nil
+		}
+		if active(sd.ShiftID) && len(rd.ActiveShifts) == 1 {
+			return sd.ShiftID, nil
+		}
+		if len(rd.ActiveShifts) > 1 {
+			return "", fmt.Errorf("multiple active shifts; pass --session or --agent to choose one")
+		}
+		return "", nil
 	}
+}
+
+// shiftOwnedBy returns the most recently clocked-in active shift for agentID, or "".
+func shiftOwnedBy(rd *RoomData, agentID string) string {
+	var best string
+	var bestAt time.Time
+	for sid, s := range rd.ActiveShifts {
+		if s.AgentID == agentID && (best == "" || s.ClockedInAt.After(bestAt)) {
+			best, bestAt = sid, s.ClockedInAt
+		}
+	}
+	return best
 }
 
 // tokenResolver maps a clock-in session token to its shift with a constant-time
@@ -509,7 +625,7 @@ func tokenResolver(token string) shiftResolver {
 
 // ClockOut completes an active shift and writes a history entry.
 func ClockOut(targetDir, sessionID, agentID, summary string) (*HistoryEntry, error) {
-	return clockOut(targetDir, summary, legacyResolver(sessionID, agentID, true))
+	return clockOut(targetDir, summary, legacyResolver(sessionID, agentID))
 }
 
 // ClockOutByToken completes only the shift owned by the given session token.
@@ -526,7 +642,10 @@ func clockOut(targetDir, summary string, resolve shiftResolver) (*HistoryEntry, 
 		}
 		PruneStaleShifts(rd)
 
-		sd, _ := LoadSessionData(targetDir)
+		sd, err := LoadSessionData(targetDir)
+		if err != nil {
+			return err
+		}
 		targetShiftID, err := resolve(rd, sd)
 		if err != nil {
 			return err
@@ -549,10 +668,7 @@ func clockOut(targetDir, summary string, resolve shiftResolver) (*HistoryEntry, 
 			delete(sd.ByAgent, shift.AgentID)
 		}
 
-		summary = sanitize.Scrub(summary, false, false)
-		if len(summary) > MaxSummaryLen {
-			summary = summary[:MaxSummaryLen]
-		}
+		summary = truncate(sanitize.Scrub(summary, false, false), MaxSummaryLen)
 
 		now := time.Now().UTC()
 		hist := HistoryEntry{
@@ -573,10 +689,13 @@ func clockOut(targetDir, summary string, resolve shiftResolver) (*HistoryEntry, 
 			rd.History = rd.History[:MaxHistoryEntries]
 		}
 
-		if err := SaveRoomData(targetDir, rd); err != nil {
+		pruneSessions(rd, sd)
+		// Revoke the token before recording the clock-out so a failed room write
+		// can never leave a usable token for a shift that was reported as closed.
+		if err := SaveSessionData(targetDir, sd); err != nil {
 			return err
 		}
-		if err := SaveSessionData(targetDir, sd); err != nil {
+		if err := SaveRoomData(targetDir, rd); err != nil {
 			return err
 		}
 
@@ -588,7 +707,7 @@ func clockOut(targetDir, summary string, resolve shiftResolver) (*HistoryEntry, 
 
 // Heartbeat refreshes the last seen timestamp of the active shift.
 func Heartbeat(targetDir, sessionID, agentID string) (*Shift, error) {
-	return heartbeat(targetDir, legacyResolver(sessionID, agentID, false))
+	return heartbeat(targetDir, legacyResolver(sessionID, agentID))
 }
 
 // HeartbeatByToken refreshes only the shift owned by the given session token.
@@ -603,7 +722,10 @@ func heartbeat(targetDir string, resolve shiftResolver) (*Shift, error) {
 		if err != nil {
 			return err
 		}
-		sd, _ := LoadSessionData(targetDir)
+		sd, err := LoadSessionData(targetDir)
+		if err != nil {
+			return err
+		}
 		targetShiftID, err := resolve(rd, sd)
 		if err != nil {
 			return err
@@ -635,7 +757,15 @@ func RenderConferenceMarkdown(targetDir string, rd *RoomData) error {
 	if len(rd.ActiveShifts) == 0 {
 		sb.WriteString("*(No active agents currently clocked in. The workspace is idle.)*\n\n")
 	} else {
-		for id, s := range rd.ActiveShifts {
+		ids := make([]string, 0, len(rd.ActiveShifts))
+		for id := range rd.ActiveShifts {
+			ids = append(ids, id)
+		}
+		sort.Slice(ids, func(i, j int) bool {
+			return rd.ActiveShifts[ids[i]].ClockedInAt.Before(rd.ActiveShifts[ids[j]].ClockedInAt)
+		})
+		for _, id := range ids {
+			s := rd.ActiveShifts[id]
 			sb.WriteString(fmt.Sprintf("### `%s` (`%s`)\n", s.AgentName, id))
 			sb.WriteString(fmt.Sprintf("- **Company / Model:** `%s` (`%s`)\n", s.Provider, s.Model))
 			sb.WriteString(fmt.Sprintf("- **Role:** `%s`\n", s.Role))
@@ -660,5 +790,5 @@ func RenderConferenceMarkdown(targetDir string, rd *RoomData) error {
 	}
 
 	confPath := filepath.Join(targetDir, ".capsule", "CONFERENCE.md")
-	return os.WriteFile(confPath, []byte(sb.String()), 0644)
+	return atomicWriteFile(confPath, []byte(sb.String()), 0644)
 }

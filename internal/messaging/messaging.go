@@ -85,8 +85,29 @@ func StoreEnvelope(targetDir string, envelopeData []byte) (string, error) {
 		return "", err
 	}
 	filePath := filepath.Join(envDir, shaHex+".json")
-	if err := os.WriteFile(filePath, envelopeData, 0644); err != nil {
+	// Content-addressed: an existing file already holds these exact bytes.
+	if _, err := os.Stat(filePath); err == nil {
+		return shaHex, nil
+	}
+	// Write via temp+rename so a concurrent reader never sees a partial envelope.
+	tmp, err := os.CreateTemp(envDir, shaHex+".tmp.*")
+	if err != nil {
 		return "", err
+	}
+	_, werr := tmp.Write(envelopeData)
+	cerr := tmp.Close()
+	if werr == nil {
+		werr = cerr
+	}
+	if werr == nil {
+		werr = os.Chmod(tmp.Name(), 0644)
+	}
+	if werr == nil {
+		werr = os.Rename(tmp.Name(), filePath)
+	}
+	if werr != nil {
+		os.Remove(tmp.Name())
+		return "", werr
 	}
 	return shaHex, nil
 }
@@ -105,7 +126,7 @@ func Send(targetDir, fromAgent, toAgent, body string, envelopeData []byte) (*Mes
 
 	body = sanitize.Scrub(body, true, false)
 	if len(body) > MaxBodyLen {
-		body = body[:MaxBodyLen]
+		body = strings.ToValidUTF8(body[:MaxBodyLen], "")
 	}
 
 	var envSHA string
@@ -243,9 +264,11 @@ func Ack(targetDir, agentID, msgID string) error {
 			}
 		}
 		if !hasMsg {
-			if found, err := FindInboxForMessage(targetDir, msgID); err == nil {
-				agentID = found
+			found, err := FindInboxForMessage(targetDir, msgID)
+			if err != nil {
+				return err
 			}
+			agentID = found
 		}
 	}
 

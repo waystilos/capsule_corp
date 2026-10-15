@@ -767,7 +767,15 @@ func cmdServe(args []string) {
 	fmt.Println("  POST /api/v1/route")
 	fmt.Println("  GET  /api/v1/bots")
 
-	if err := http.ListenAndServe(addr, srv); err != nil {
+	httpSrv := &http.Server{
+		Addr:              addr,
+		Handler:           srv,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
+	if err := httpSrv.ListenAndServe(); err != nil {
 		fmt.Fprintf(os.Stderr, "Server failed: %v\n", err)
 		os.Exit(1)
 	}
