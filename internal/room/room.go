@@ -2,6 +2,7 @@ package room
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
@@ -47,8 +48,39 @@ type Shift struct {
 	Role        string    `json:"role"`
 	Task        string    `json:"task"`
 	Files       []string  `json:"files"`
+	SessionKey  string    `json:"session_key,omitempty"` // hashed agent session; "" if undetectable
 	ClockedInAt time.Time `json:"clocked_in_at"`
 	LastSeenAt  time.Time `json:"last_seen_at"`
+}
+
+// sessionEnvVars hold an identifier that stays stable across every CLI call made by
+// one agent session but differs between concurrent sessions of the same tool.
+var sessionEnvVars = []string{
+	"CAPSULE_SESSION_ID",
+	"CLAUDE_CODE_SESSION_ID",
+	"ANTIGRAVITY_CONVERSATION_ID",
+	"CODEX_SESSION_ID",
+	"CURSOR_SESSION_ID",
+}
+
+// DetectSessionKey returns a short hash of the current agent session identifier,
+// or "" when none is available. Only the hash is stored, so raw session IDs never
+// land in room.json or CONFERENCE.md.
+func DetectSessionKey() string {
+	for _, k := range sessionEnvVars {
+		if v := strings.TrimSpace(os.Getenv(k)); v != "" {
+			sum := sha256.Sum256([]byte(k + "=" + v))
+			return hex.EncodeToString(sum[:8])
+		}
+	}
+	return ""
+}
+
+// sameSession reports whether shift s may belong to the session identified by key.
+// An unknown key on either side matches, preserving one-shift-per-agent behavior
+// for tools that expose no session identifier.
+func sameSession(s Shift, key string) bool {
+	return key == "" || s.SessionKey == "" || s.SessionKey == key
 }
 
 type HistoryEntry struct {
@@ -477,20 +509,18 @@ func ClockIn(targetDir, agentID, role, task string, files []string, force bool) 
 			return err
 		}
 
-		// Check if this agent already has an active shift to allow updating claims
+		// Re-clocking in from the same session updates that session's shift. A
+		// concurrent session of the same tool shares agentID but gets its own shift,
+		// so it can neither retire the other nor skip conflict checks against it.
+		sessionKey := DetectSessionKey()
 		var existingShiftID string
 		if sid, ok := sd.ByAgent[agentID]; ok {
-			if _, active := rd.ActiveShifts[sid]; active {
+			if s, active := rd.ActiveShifts[sid]; active && sameSession(s, sessionKey) {
 				existingShiftID = sid
 			}
 		}
 		if existingShiftID == "" {
-			for sid, s := range rd.ActiveShifts {
-				if s.AgentID == agentID {
-					existingShiftID = sid
-					break
-				}
-			}
+			existingShiftID = shiftOwnedBy(rd, agentID, sessionKey, true)
 		}
 
 		conflicts = CheckConflicts(rd, cleanFiles, existingShiftID)
@@ -516,6 +546,7 @@ func ClockIn(targetDir, agentID, role, task string, files []string, force bool) 
 			Role:        role,
 			Task:        task,
 			Files:       cleanFiles,
+			SessionKey:  sessionKey,
 			ClockedInAt: now,
 			LastSeenAt:  now,
 		}
@@ -570,17 +601,17 @@ func legacyResolver(sessionID, agentID string) shiftResolver {
 		if sessionID != "" {
 			return sessionID, nil
 		}
+		key := DetectSessionKey()
 		if agentID != "" {
-			if sid := sd.ByAgent[agentID]; active(sid) {
-				return sid, nil
-			}
-			return shiftOwnedBy(rd, agentID), nil
+			// Explicit agent: prefer this session's shift, but allow closing any
+			// shift of that agent (e.g. a human cleaning up after a crashed agent).
+			return shiftOwnedBy(rd, agentID, key, false), nil
 		}
 		env := DetectEnvironment()
-		if sid := sd.ByAgent[env.AgentID]; active(sid) {
+		if sid := sd.ByAgent[env.AgentID]; active(sid) && sameSession(rd.ActiveShifts[sid], key) {
 			return sid, nil
 		}
-		if sid := shiftOwnedBy(rd, env.AgentID); sid != "" {
+		if sid := shiftOwnedBy(rd, env.AgentID, key, true); sid != "" {
 			return sid, nil
 		}
 		if active(sd.ShiftID) && len(rd.ActiveShifts) == 1 {
@@ -593,13 +624,23 @@ func legacyResolver(sessionID, agentID string) shiftResolver {
 	}
 }
 
-// shiftOwnedBy returns the most recently clocked-in active shift for agentID, or "".
-func shiftOwnedBy(rd *RoomData, agentID string) string {
+// shiftOwnedBy returns the most recently clocked-in active shift for agentID,
+// preferring shifts from the session identified by key. With strict, shifts from
+// other sessions are never returned.
+func shiftOwnedBy(rd *RoomData, agentID, key string, strict bool) string {
 	var best string
 	var bestAt time.Time
+	bestMatch := false
 	for sid, s := range rd.ActiveShifts {
-		if s.AgentID == agentID && (best == "" || s.ClockedInAt.After(bestAt)) {
-			best, bestAt = sid, s.ClockedInAt
+		if s.AgentID != agentID {
+			continue
+		}
+		match := sameSession(s, key)
+		if strict && !match {
+			continue
+		}
+		if best == "" || (match && !bestMatch) || (match == bestMatch && s.ClockedInAt.After(bestAt)) {
+			best, bestAt, bestMatch = sid, s.ClockedInAt, match
 		}
 	}
 	return best
