@@ -123,3 +123,13 @@ func TestReadInboxEmptyIsNonNil(t *testing.T) {
 		t.Fatal("expected empty non-nil slice (JSON []), got nil (JSON null)")
 	}
 }
+
+func TestAckUnknownMessageFails(t *testing.T) {
+	tmpDir := t.TempDir()
+	if _, err := Send(tmpDir, "goku", "vegeta", "hi", nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := Ack(tmpDir, "vegeta", "msg_doesnotexist"); err == nil {
+		t.Fatal("expected error acking a message that is in no inbox")
+	}
+}
